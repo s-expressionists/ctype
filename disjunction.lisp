@@ -26,6 +26,27 @@
                          (val (return (values t t)))))
               finally (return (if surety (values nil t) (call-next-method)))))))
 
+(macrolet
+    ((disjunction-disjointp (disjunction ctype)
+       `(let ((cts (junction-ctypes ,disjunction)))
+          (if (null cts)
+              (values (bot-p ,ctype) t)
+              ;; if a ^ z != 0 then (a v b) ^ z != 0.
+              ;; if a ^ z = 0 and b ^ z = 0 then (a v b) ^ z = 0,
+              ;; unless a v b = T.
+              (loop with surety = t
+                    for sct in cts
+                    do (multiple-value-bind (val subsurety)
+                           (disjointp sct ,ctype)
+                         (cond ((not subsurety) (setf surety nil))
+                               ((not val) (return (values nil t)))))
+                    finally (return
+                              (if surety (values t t) (call-next-method))))))))
+  (defmethod disjointp ((ct1 disjunction) (ct2 ctype))
+    (disjunction-disjointp ct1 ct2))
+  (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
+    (disjunction-disjointp ct2 ct1)))
+
 (defmethod negate ((ctype disjunction))
   (if (bot-p ctype)
       (top)

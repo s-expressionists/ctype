@@ -5,8 +5,17 @@
 
 ;;; To avoid infinite recursion, subctypep must not call negate, conjoin/2, or
 ;;; disjoin/2, and so those functions may call subctypep all they want.
+;;; When subctypep or disjointp call themselves or each other, it must be
+;;; ensured that the problem is simpler, e.g. by dropping negations.
 (defgeneric subctypep (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
+
+;;; Ditto the restrictions on calling negate etc.
+(defgeneric disjointp (ctype1 ctype2)
+  (:method ((ct1 ctype) (ct2 ctype))
+    (if (or (subctypep ct1 ct2) (subctypep ct2 ct1))
+        (values t t)
+        (values nil nil))))
 
 (defgeneric negate (ctype)
   (:method ((ctype ctype)) (negation ctype)))

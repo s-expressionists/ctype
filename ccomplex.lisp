@@ -7,6 +7,12 @@
 (defmethod subctypep ((ct1 ccomplex) (ct2 ccomplex))
   (equal (ccomplex-ucpt ct1) (ccomplex-ucpt ct2)))
 
+(defmethod disjointp ((ct1 ccomplex) (ct2 ccomplex))
+  (let ((ucpt1 (ccomplex-ucpt ct1)) (ucpt2 (ccomplex-ucpt ct2)))
+    (cond ((eq ucpt1 '*) (values t t))
+          ((eq ucpt2 '*) (values t t))
+          (t (values (equal ucpt1 ucpt2) t)))))
+
 (defmethod conjoin/2 ((ct1 ccomplex) (ct2 ccomplex))
   (let ((ucpt1 (ccomplex-ucpt ct1)) (ucpt2 (ccomplex-ucpt ct2)))
     (cond ((eq ucpt1 '*) ct2)

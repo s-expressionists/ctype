@@ -17,6 +17,17 @@
           (surety1 (values nil t))
           (t (call-next-method)))))
 
+(defmethod disjointp ((ct1 ccons) (ct2 ccons))
+  (multiple-value-bind (s1 surety1)
+      (disjointp (ccons-car ct1) (ccons-car ct2))
+    (if s1
+        (values t t)
+        (multiple-value-bind (s2 surety2)
+            (disjointp (ccons-cdr ct1) (ccons-cdr ct2))
+          (if s2
+              (values t t)
+              (values nil (and surety1 surety2)))))))
+
 (defmethod negate ((ctype ccons))
   ;; (not (cons a b))
   ;; = (or (not cons) (cons a (not b)) (cons (not a) b) (cons (not a) (not b)))

@@ -9,9 +9,11 @@
 ;;; However if A is not a subset of B it does not follow that A <: ~B;
 ;;; for example if A and B overlap.
 (defmethod subctypep ((ct1 ctype) (ct2 negation))
-  (cond ((bot-p ct1) (values t t))
-        ((subctypep ct1 (negation-ctype ct2)) (values nil t))
-        (t (call-next-method))))
+  (let ((neg (negation-ctype ct2)))
+    (cond ((bot-p ct1) (values t t))
+          ((subctypep ct1 neg) (values nil t))
+          ((disjointp ct1 neg) (values t t))
+          (t (call-next-method)))))
 ;;; Similar to above.
 (defmethod subctypep ((ct1 negation) (ct2 ctype))
   (cond ((top-p ct2) (values t t))

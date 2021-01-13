@@ -10,6 +10,8 @@
   `(progn
      (defmethod subctypep ((ct1 ,class1) (ct2 ,class2)) (values nil t))
      (defmethod subctypep ((ct1 ,class2) (ct2 ,class1)) (values nil t))
+     (defmethod disjointp ((ct1 ,class1) (ct2 ,class2)) (values t t))
+     (defmethod disjointp ((ct1 ,class2) (ct2 ,class1)) (values t t))
      (defmethod conjoin/2 ((ct1 ,class1) (ct2 ,class2)) (bot))
      (defmethod conjoin/2 ((ct1 ,class2) (ct2 ,class1)) (bot))
      (defmethod subtract ((ct1 ,class1) (ct2 ,class2)) ct1)
