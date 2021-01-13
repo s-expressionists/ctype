@@ -1,0 +1,2 @@
+(defpackage #:ctype
+  (:use #:cl))
