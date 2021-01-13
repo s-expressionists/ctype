@@ -45,7 +45,7 @@
         (if (bot-p ncdr)
             ;; (or (not cons) (cons (not a) b))
             (disjunction
-             (negation (cons cdr cdr))
+             (negation (ccons cdr cdr))
              (ccons ncar cdr))
             ;; as in the main comment,
             ;; except we reduce the last two to (cons (not a) t)
