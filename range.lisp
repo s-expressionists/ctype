@@ -1,7 +1,7 @@
 (in-package #:ctype)
 
 (defmethod ctypep (object (ct range))
-  (and (number-kindp object (range-kind ct))
+  (and (range-kindp object (range-kind ct))
        (let ((low (range-low ct)))
          (or (not low)
              (if (range-low-exclusive-p ct)

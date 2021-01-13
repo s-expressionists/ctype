@@ -29,9 +29,16 @@
   #+(or) (member super (mop:class-precedence-list sub))
   #-(or clasp) (error "SUBCLASSP not defined for implementation"))
 
+(defmacro complex-ucptp (objectf ucpt)
+  (declare (ignorable objectf))
+  `(ecase ,ucpt
+     ((*) t)
+     #+clasp ,@()
+     #-(or clasp) ,(error "COMPLEX-UCPTP not defined for implementation")))
+
 ;;;
 
-(defmacro number-kindp (objectf kindf)
+(defmacro range-kindp (objectf kindf)
   `(ecase ,kindf
      ((integer) (integerp ,objectf))
      ((ratio) (,+ratiop+ ,objectf))

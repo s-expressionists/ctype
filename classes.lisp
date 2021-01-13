@@ -34,6 +34,11 @@
    (%low-xp :initarg :lxp :reader range-low-exclusive-p :type boolean)
    (%high-xp :initarg :hxp :reader range-high-exclusive-p :type boolean)))
 
+(defclass ccomplex (ctype)
+  (;; The upgraded complex part type is some thing that can be meaningfully
+   ;; compared with EQUAL. CL:* is always allowed and has the standard meaning.
+   (%ucpt :initarg :ucpt :reader ccomplex-ucpt)))
+
 (defclass cmember (ctype)
   ((%members :initarg :members :reader cmember-members :type list)))
 

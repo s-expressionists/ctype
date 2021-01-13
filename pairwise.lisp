@@ -21,7 +21,7 @@
              nconc (loop for class2 in rest
                          collect `(defexclusive/2 ,class1 ,class2)))))
 
-(defexclusive cclass ccons range carray)
+(defexclusive cclass ccons range ccomplex carray)
 
 ;;; Some ctypes represent an infinite number of possible objects, so they are
 ;;; never subctypes of any member ctype.
@@ -32,4 +32,5 @@
 (definfinite cclass)
 (definfinite ccons)
 (definfinite range)
+(definfinite ccomplex)
 (definfinite carray)

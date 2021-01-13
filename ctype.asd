@@ -18,6 +18,8 @@
                                                    "packages"))
    (:file "range" :depends-on ("generic-functions" "create" "classes"
                                                    "config" "packages"))
+   (:file "ccomplex" :depends-on ("generic-functions" "create" "classes"
+                                                      "config" "packages"))
    (:file "cmember" :depends-on ("generic-functions" "create" "classes"
                                                      "packages"))
    (:file "csatisfies" :depends-on ("generic-functions" "create" "classes"
