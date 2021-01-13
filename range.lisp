@@ -21,15 +21,15 @@
               (and low1
                    (or (< low2 low1)
                        (and (= low2 low1)
-                            (or (range-low-exclusive-p low1)
-                                (not (range-low-exclusive-p low2))))))))
+                            (or (range-low-exclusive-p ct1)
+                                (not (range-low-exclusive-p ct2))))))))
         (let ((high1 (range-high ct1)) (high2 (range-high ct2)))
           (or (not high2)
               (and high1
                    (or (< high1 high2)
                        (and (= high1 high2)
-                            (or (range-low-exclusive-p high1)
-                                (not (range-high-exclusive-p high2)))))))))
+                            (or (range-low-exclusive-p ct1)
+                                (not (range-high-exclusive-p ct2)))))))))
    t))
 
 (defmethod negate ((ct range))
