@@ -1,11 +1,7 @@
 (in-package #:ctype)
 
 (defmethod ctypep (object (ct range))
-  (and (ecase (range-kind ct)
-         ((integer) (integerp object))
-         ((ratio) (ext::ratiop object))
-         ((single-float) (core:single-float-p object))
-         ((double-float) (core:double-float-p object)))
+  (and (number-kindp object (range-kind ct))
        (let ((low (range-low ct)))
          (or (not low)
              (if (range-low-exclusive-p ct)

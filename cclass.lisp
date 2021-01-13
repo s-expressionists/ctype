@@ -1,12 +1,12 @@
 (in-package #:ctype)
 
 (defmethod ctypep (object (ct cclass))
-  (core:subclassp (class-of object) (cclass-class ct)))
+  (subclassp (class-of object) (cclass-class ct)))
 
 (defmethod subctypep ((ct1 cclass) (ct2 cclass))
   ;; NOTE: If ctypes are supposed to work in the face of future redefinitions,
   ;; this should return NIL NIL except with unredefinable classes.
-  (values (core:subclassp (cclass-class ct1) (cclass-class ct2)) t))
+  (values (subclassp (cclass-class ct1) (cclass-class ct2)) t))
 
 (defmethod conjoin/2 ((ct1 cclass) (ct2 cclass))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
