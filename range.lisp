@@ -96,11 +96,18 @@
         (high1 (range-high ct1)) (high2 (range-high ct2))
         (hxp1 (range-high-exclusive-p ct1))
         (hxp2 (range-high-exclusive-p ct2)))
-    (if (and (eq rk1 rk2)
-             (or (not high1) (not low2)
-                 (> high1 low2)
-                 (and (= high1 low2)
-                      (or (not hxp1) (not lxp2)))))
+    ;; If the range kinds don't match, give up.
+    (unless (eq rk1 rk2) (return-from disjoin/2 (call-next-method)))
+    ;; If ct2 has a lesser infinum, swap.
+    (when (or (not low2)
+              (and low1 (< low2 low1)))
+      (rotatef low1 low2) (rotatef lxp1 lxp2)
+      (rotatef high1 high2) (rotatef hxp1 hxp2))
+    ;; Actually try to merge ranges.
+    (if (or (not high1) (not low2)
+            (> high1 low2)
+            (and (= high1 low2)
+                 (or (not hxp1) (not lxp2))))
         (multiple-value-bind (low lxp)
             (cond ((not low1) (values low1 lxp1))
                   ((not low2) (values low2 lxp2))
@@ -115,7 +122,7 @@
                     (t (values high1 (and hxp1 hxp2))))
             (make-instance 'range
               :kind rk1 :low low :lxp lxp :high high :hxp hxp)))
-        ;; Different kinds of range or noncontiguous - punt
+        ;; Ranges are not contiguous - give up
         (call-next-method))))
 
 (defmethod unparse ((ct range))
