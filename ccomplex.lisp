@@ -1,8 +1,8 @@
 (in-package #:ctype)
 
-(defmethod ctypep (object (ct ccomplex))
-  (and (complexp object)
-       (complex-ucptp object (ccomplex-ucpt ct))))
+(defmethod ctypep ((object complex) (ct ccomplex))
+  (complex-ucptp object (ccomplex-ucpt ct)))
+(defmethod ctypep ((object t) (ct ccomplex)) nil)
 
 (defmethod subctypep ((ct1 ccomplex) (ct2 ccomplex))
   (equal (ccomplex-ucpt ct1) (ccomplex-ucpt ct2)))
