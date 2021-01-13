@@ -29,6 +29,36 @@
 (defmethod disjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember (union (cmember-members ct1) (cmember-members ct2))))
 
+(defmethod subtract ((ct1 cmember) (ct2 cmember))
+  (let ((new (set-difference (cmember-members ct1) (cmember-members ct2))))
+    (if new
+        (apply #'cmember new)
+        (bot))))
+(defmethod subtract ((ct1 cmember) (ct2 ctype))
+  (let ((new
+          (loop with some = nil
+                for mem in (cmember-members ct1)
+                if (ctypep mem ct2)
+                  do (setf some t)
+                else
+                  collect mem
+                finally (unless some (return-from subtract nil)))))
+    (if new
+        (apply #'cmember new)
+        (bot))))
+(defmethod subtract ((ct1 ctype) (ct2 cmember))
+  (let ((new
+          (loop with never = t ; are all members not of the ctype?
+                with diff = nil ; is some member not of the ctype?
+                for mem in (cmember-members ct2)
+                if (ctypep mem ct1)
+                  collect mem
+                  and do (setf never nil)
+                else do (setf diff t)
+                finally (cond (never (return-from subtract ct1))
+                              ((not diff) (return-from subtract nil))))))
+    (conjunction ct1 (negation (apply #'cmember new)))))
+
 (defmethod unparse ((ct cmember))
   (let ((mems (cmember-members ct)))
     (cond ((equal mems '(nil)) 'null)

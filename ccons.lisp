@@ -56,6 +56,13 @@
         (cdr (disjoin (ccons-cdr ct1) (ccons-cdr ct2))))
     (ccons car cdr)))
 
+(defmethod subtract ((ct1 ccons) (ct2 ccons))
+  (let ((car (subtract (ccons-car ct1) (ccons-car ct2)))
+        (cdr (subtract (ccons-cdr ct1) (ccons-cdr ct2))))
+    (if (or (bot-p car) (bot-p cdr))
+        (bot)
+        (ccons car cdr))))
+
 (defmethod unparse ((ct ccons))
   (let ((car (ccons-car ct)) (cdr (ccons-cdr ct)))
     (if (top-p cdr)

@@ -32,13 +32,9 @@
                  (negate p)
                  (call-next-method)))))))
 (defmethod conjoin/2 ((ct1 negation) (ct2 ctype))
-  (if (subctypep ct2 (negation-ctype ct1))
-      (bot)
-      (call-next-method)))
+  (subtract ct2 (negation-ctype ct1)))
 (defmethod conjoin/2 ((ct1 ctype) (ct2 negation))
-  (if (subctypep ct1 (negation-ctype ct2))
-      (bot)
-      (call-next-method)))
+  (subtract ct1 (negation-ctype ct2)))
 
 (defmethod disjoin/2 ((ct1 negation) (ct2 negation))
   (let ((nt1 (negation-ctype ct1)) (nt2 (negation-ctype ct2)))
@@ -57,6 +53,9 @@
   (if (subctypep (negation-ctype ct2) ct1)
       (top)
       (call-next-method)))
+
+(defmethod subtract ((ct1 ctype) (ct2 negation))
+  (conjoin/2 ct1 (negation-ctype ct2)))
 
 (defmethod unparse ((ct negation))
   `(not ,(unparse (negation-ctype ct))))

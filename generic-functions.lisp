@@ -24,6 +24,14 @@
           ((subctypep ct2 ct1) ct1)
           (t nil))))
 
+;;; Simplifier for (conjoin/2 ct1 (negate ct2)).
+;;; Like the /2, returns NIL if no simplification is apparent.
+(defgeneric subtract (ctype1 ctype2)
+  (:argument-precedence-order ctype2 ctype1)
+  (:method ((ct1 ctype) (ct2 ctype))
+    (cond ((subctypep ct1 ct2) (bot))
+          (t nil))))
+
 (defgeneric unparse (ctype))
 
 (defmethod print-object ((ct ctype) stream)
