@@ -51,6 +51,41 @@
    ;; or * indicating nothing specified.
    (%dims :initarg :dims :reader carray-dims :type (or list (eql *)))))
 
+(defclass cvalues (ctype)
+  ((%required :initarg :required :reader cvalues-required
+              ;; A proper list of ctypes.
+              :type list)
+   (%optional :initarg :optional :reader cvalues-optional
+              ;; A proper list of ctypes.
+              :type list)
+   (%rest :initarg :rest :reader cvalues-rest :type ctype)))
+
+(defclass lambda-list (ctype)
+  ((%required :initarg :required :reader lambda-list-required
+              ;; A proper list of ctypes.
+              :type list)
+   (%optional :initarg :optional :reader lambda-list-optional
+              ;; A proper list of ctypes.
+              :type list)
+   (%rest :initarg :rest :reader lambda-list-rest
+          ;; Having no &rest is indicated by setting this to (bot).
+          :type ctype)
+   ;; Is there a &key? This may be true even if no actual ctypes are
+   ;; specified for keyword parameters.
+   (%keyp :initarg :keyp :reader lambda-list-keyp :type boolean)
+   (%keys :initarg :keys :reader lambda-list-key
+          ;; A proper list of (keyword . ctype) pairs.
+          :type list)
+   ;; Is there &allow-other-keys?
+   (%aokp :initarg :aokp :reader lambda-list-aokp :type boolean)))
+
+(defclass cfunction (ctype)
+  (;; A specification of * is equivalent to (&rest t).
+   (%lambda-list :initarg :lambda-list :reader cfunction-lambda-list
+                 :type lambda-list)
+   ;; A specification of * is equivalent to (values &rest t).
+   (%returns :initarg :returns :reader cfunction-returns :type cvalues)))
+
 (defclass csatisfies (ctype)
   ((%fname :initarg :fname :reader csatisfies-fname)))
 
