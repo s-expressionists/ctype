@@ -22,6 +22,8 @@
                                                       "config" "packages"))
    (:file "cmember" :depends-on ("generic-functions" "create" "classes"
                                                      "packages"))
+   (:file "carray" :depends-on ("generic-functions" "create" "classes"
+                                                    "packages"))
    (:file "csatisfies" :depends-on ("generic-functions" "create" "classes"
                                                         "packages"))
    (:file "pairwise" :depends-on ("generic-functions" "create" "classes"

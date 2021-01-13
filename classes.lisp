@@ -44,8 +44,12 @@
 
 (defclass carray (ctype)
   (;; Can be * to indicate all possible. Should be more efficient that way.
+   ;; Other than that, it's just something equal-comparable. Also should
+   ;; be what's returned by array-element-type.
    (%uaet :initarg :uaet :reader carray-uaet)
-   (%dims :initarg :dims :reader carray-dims)))
+   ;; Either a list of dimensions (which are either positive integers or *)
+   ;; or * indicating nothing specified.
+   (%dims :initarg :dims :reader carray-dims :type (or list (eql *)))))
 
 (defclass csatisfies (ctype)
   ((%fname :initarg :fname :reader csatisfies-fname)))
