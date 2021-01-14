@@ -29,6 +29,10 @@
   #+(or) (member super (mop:class-precedence-list sub))
   #-(or clasp) (error "SUBCLASSP not defined for implementation"))
 
+(defun typexpand (type-specifier environment)
+  #+clasp (cleavir-env:type-expand environment type-specifier)
+  #-(or clasp) (error "TYPEXPAND not defined for implementation"))
+
 (defmacro complex-ucptp (objectf ucpt)
   (declare (ignorable objectf))
   `(ecase ,ucpt
