@@ -28,7 +28,8 @@
 
 (defclass range (ctype)
   ((%kind :initarg :kind :reader range-kind
-          :type (or integer ratio single-float double-float))
+          :type (or integer ratio
+                    short-float single-float double-float long-float))
    (%low :initarg :low :reader range-low :type (or real null))
    (%high :initarg :high :reader range-high :type (or real null))
    (%low-xp :initarg :lxp :reader range-low-exclusive-p :type boolean)
