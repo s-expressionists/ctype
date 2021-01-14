@@ -53,12 +53,14 @@
           ;; If any pairwise junctions are simplifiable, recurse with that.
           ;; Otherwise dump into a junction type.
           (loop for (ctype1 . rest) on ctypes
-                do (loop for (ctype2 . more) on rest
+                do (loop for ctype2 in rest
                          for j = (,simp ctype1 ctype2)
                          when j
                            do (return-from ,name
-                                (apply #',name j
-                                       (append unsimplified more))))
+                                (apply #',name
+                                       (append (substitute j ctype2 rest
+                                                           :count 1)
+                                               unsimplified))))
                 collect ctype1 into unsimplified
                 finally (return (apply #',junct unsimplified))))))
   (defjoin conjoin conjoin/2 conjunction)
