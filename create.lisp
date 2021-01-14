@@ -25,7 +25,11 @@
 
 ;;; Others
 (defun ccons (car cdr)
-  (make-instance 'ccons :car car :cdr cdr))
+  (if (or (bot-p car) (bot-p cdr))
+      (bot)
+      (make-instance 'ccons :car car :cdr cdr)))
 
 (defun cmember (&rest members)
-  (make-instance 'cmember :members members))
+  (if members
+      (make-instance 'cmember :members members)
+      (bot)))
