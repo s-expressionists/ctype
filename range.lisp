@@ -104,26 +104,35 @@
       (rotatef low1 low2) (rotatef lxp1 lxp2)
       (rotatef high1 high2) (rotatef hxp1 hxp2))
     ;; Actually try to merge ranges.
-    (if (or (not high1) (not low2)
-            (> high1 low2)
-            (and (= high1 low2)
-                 (or (not hxp1) (not lxp2))))
-        (multiple-value-bind (low lxp)
-            (cond ((not low1) (values low1 lxp1))
-                  ((not low2) (values low2 lxp2))
-                  ((< low1 low2) (values low1 lxp1))
-                  ((< low2 low1) (values low2 lxp2))
-                  (t (values low1 (and lxp1 lxp2))))
-          (multiple-value-bind (high hxp)
-              (cond ((not high1) (values high1 hxp1))
-                    ((not high2) (values high2 hxp2))
-                    ((< high1 high2) (values high2 hxp2))
-                    ((< high2 high1) (values high1 hxp1))
-                    (t (values high1 (and hxp1 hxp2))))
-            (make-instance 'range
-              :kind rk1 :low low :lxp lxp :high high :hxp hxp)))
-        ;; Ranges are not contiguous - give up
-        (call-next-method))))
+    (cond
+      ((or (not high1) (not low2)
+           (> high1 low2)
+           (and (= high1 low2)
+                (or (not hxp1) (not lxp2))))
+       (multiple-value-bind (low lxp)
+           (cond ((not low1) (values low1 lxp1))
+                 ((not low2) (values low2 lxp2))
+                 ((< low1 low2) (values low1 lxp1))
+                 ((< low2 low1) (values low2 lxp2))
+                 (t (values low1 (and lxp1 lxp2))))
+         (multiple-value-bind (high hxp)
+             (cond ((not high1) (values high1 hxp1))
+                   ((not high2) (values high2 hxp2))
+                   ((< high1 high2) (values high2 hxp2))
+                   ((< high2 high1) (values high1 hxp1))
+                   (t (values high1 (and hxp1 hxp2))))
+           (make-instance 'range
+             :kind rk1 :low low :lxp lxp :high high :hxp hxp))))
+      ;; We can merge integer ranges that are off by a bit,
+      ;; e.g. (or (integer 1 5) (integer 6 10)) = (integer 1 10).
+      ((and (eq rk1 'integer)
+            high1 low2 ; already covered by the above, but let's be clear
+            (not hxp1) (not lxp2)
+            (= (1+ high1) low2))
+       (make-instance 'range
+         :kind rk1 :low low1 :lxp lxp1 :high high2 :hxp hxp2))
+      (t ;; Ranges are not contiguous - give up
+       (call-next-method)))))
 
 (defmethod unparse ((ct range))
   (let* ((kind (range-kind ct))
