@@ -21,7 +21,7 @@
   (let ((req1 (lambda-list-required ll1)) (req2 (lambda-list-required ll2))
         (rest1 (lambda-list-rest ll1)) (rest2 (lambda-list-rest ll2))
         (surety t))
-    (when (> (length req1) (length req2))
+    (when (> (length req2) (length req1))
       (return-from sub-lambda-list-p (values nil t)))
     (multiple-value-bind (val subsurety) (subctypep rest1 rest2)
       (unless val
