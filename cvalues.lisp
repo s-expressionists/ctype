@@ -1,5 +1,11 @@
 (in-package #:ctype)
 
+;;; Used in cfunction
+(defun top-values-p (cvalues)
+  (and (null (cvalues-required cvalues))
+       (every #'top-p (cvalues-optional cvalues))
+       (top-p (cvalues-rest cvalues))))
+
 (defmethod ctypep (object (ct cvalues))
   (declare (ignore object))
   (error "Values ctype ~a cannot be used with ~a" ct 'ctypep))
@@ -55,8 +61,8 @@
 ;;; Negation and subtraction are complicated for similar reasons.
 
 (defmethod unparse ((ct cvalues))
-  `(values ,@(cvalues-required ct)
+  `(values ,@(mapcar #'unparse (cvalues-required ct))
            ,@(let ((opt (cvalues-optional ct)))
                (when opt
-                 `(&optional ,@opt)))
-           &rest ,(cvalues-rest ct)))
+                 `(&optional ,@(mapcar #'unparse opt))))
+           &rest ,(unparse (cvalues-rest ct))))

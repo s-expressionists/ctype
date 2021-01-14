@@ -26,6 +26,8 @@
                                                     "packages"))
    (:file "cvalues" :depends-on ("generic-functions" "create" "classes"
                                                      "packages"))
+   (:file "cfunction" :depends-on ("cvalues" "generic-functions" "create"
+                                             "classes" "packages"))
    (:file "csatisfies" :depends-on ("generic-functions" "create" "classes"
                                                         "packages"))
    (:file "pairwise" :depends-on ("generic-functions" "create" "classes"
