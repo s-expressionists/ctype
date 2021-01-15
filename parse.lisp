@@ -223,8 +223,7 @@
                   :keyp nil :keys nil :aokp nil)
                 (parse-lambda-list ll env)))
         (rv (if (eq rv '*)
-                (make-instance 'cvalues
-                  :required nil :optional nil :rest (top))
+                (top)
                 (specifier-ctype rv))))
     (if (bot-p ll)
         ll
@@ -270,9 +269,7 @@
   (case sym
     ;; We include any CL type that an implementation might have defined as
     ;; a class but which we would like to be a ctype (which is kind of a lot of
-    ;; them) except in some subclassing cases,
-    ;; in which case class-specifier-ctype does it.
-    ;; That includes, for example, GENERIC-FUNCTION.
+    ;; them) except in some subclassing cases, like with subclasses of FUNCTION.
     ((array) (array-ctype '* '* env))
     ((atom) (negate (ccons (top) (top))))
     #+(or)
@@ -303,8 +300,7 @@
                :kind 'ratio :low nil :lxp nil :high nil :hxp nil))
     ((rational) (range-ctype 'rational '* '* env))
     ((real) (range-ctype 'real '* '* env))
-    #+(or)
-    ((sequence) ...)
+    ;; SEQUENCE is handled specially as a cclass.
     ((short-float) (range-ctype 'short-float '* '* env))
     ((signed-byte) (range-ctype 'integer '* '* env))
     ((simple-array) (array-ctype '* '* env))
@@ -323,10 +319,8 @@
     ((vector) (array-ctype '* '(*) env))))
 
 (defun class-specifier-ctype (class env)
-  (let ((base (make-instance 'cclass :class class)))
-    (cond ((subclassp class (find-class 'function t env))
-           (conjunction base (function-ctype '* '* env)))
-          (t base))))
+  (declare (ignore env))
+  (make-instance 'cclass :class class))
 
 (defun cons-specifier-ctype (head rest env)
   (flet ((recur (spec) (specifier-ctype spec env)))

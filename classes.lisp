@@ -7,7 +7,8 @@
 ;; A ctype corresponding to a class.
 ;; Note that to avoid complication, classes that could be some other ctype must
 ;; be instead of this. E.g. T, CONS, LIST, ARRAY, INTEGER must not end up as
-;; cclass ctypes.
+;; cclass ctypes. SEQUENCE and subclasses of FUNCTION are handled specially
+;; in pairwise.lisp (FUNCTION itself ends up as a CFUNCTION).
 (defclass cclass (ctype)
   ((%class :initarg :class :reader cclass-class :type class)))
 
