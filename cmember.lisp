@@ -11,41 +11,39 @@
   (values (subsetp (cmember-members ct1) (cmember-members ct2)) t))
 
 (defmethod conjoin/2 ((ct1 cmember) (ct2 cmember))
-  (let ((new (intersection (cmember-members ct1) (cmember-members ct2))))
-    (if new
-        (apply #'cmember new)
-        (bot))))
+  (apply #'cmember
+         (intersection (cmember-members ct1) (cmember-members ct2))))
 (defun conjoin-cmember (cmember ctype)
   ;; FIXME: Could save a little consing by checking subctypep first I guess.
-  (let ((new (loop for mem in (cmember-members cmember)
-                   when (ctypep mem ctype)
-                     collect mem)))
-    (if new
-        (apply #'cmember new)
-        (bot))))
+  (apply #'cmember
+         (loop for mem in (cmember-members cmember)
+               when (ctypep mem ctype) collect mem)))
 (defmethod conjoin/2 ((ct1 cmember) (ct2 ctype)) (conjoin-cmember ct1 ct2))
 (defmethod conjoin/2 ((ct1 ctype) (ct2 cmember)) (conjoin-cmember ct2 ct1))
 
 (defmethod disjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember (union (cmember-members ct1) (cmember-members ct2))))
+(defun disjoin-cmember (cmember ctype)
+  (let ((non (loop for mem in (cmember-members cmember)
+                   unless (ctypep cmember ctype) collect mem)))
+    (if non
+        (disjunction (apply #'cmember non) ctype)
+        ctype)))
+(defmethod disjoin/2 ((ct1 cmember) (ct2 ctype)) (disjoin-cmember ct1 ct2))
+(defmethod disjoin/2 ((ct1 ctype) (ct2 cmember)) (disjoin-cmember ct2 ct1))
 
 (defmethod subtract ((ct1 cmember) (ct2 cmember))
-  (let ((new (set-difference (cmember-members ct1) (cmember-members ct2))))
-    (if new
-        (apply #'cmember new)
-        (bot))))
+  (apply #'cmember
+         (set-difference (cmember-members ct1) (cmember-members ct2))))
 (defmethod subtract ((ct1 cmember) (ct2 ctype))
-  (let ((new
-          (loop with some = nil
-                for mem in (cmember-members ct1)
-                if (ctypep mem ct2)
-                  do (setf some t)
-                else
-                  collect mem
-                finally (unless some (return-from subtract nil)))))
-    (if new
-        (apply #'cmember new)
-        (bot))))
+  (apply #'cmember
+         (loop with some = nil
+               for mem in (cmember-members ct1)
+               if (ctypep mem ct2)
+                 do (setf some t)
+               else
+                 collect mem
+               finally (unless some (return-from subtract ct1)))))
 (defmethod subtract ((ct1 ctype) (ct2 cmember))
   (let ((new
           (loop with never = t ; are all members not of the ctype?
