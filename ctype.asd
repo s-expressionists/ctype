@@ -31,4 +31,6 @@
    (:file "csatisfies" :depends-on ("generic-functions" "create" "classes"
                                                         "packages"))
    (:file "pairwise" :depends-on ("generic-functions" "create" "classes"
-                                                      "packages"))))
+                                                      "cfunction" "packages"))
+   (:file "parse" :depends-on ("generic-functions" "create" "classes" "config"
+                                                   "packages"))))
