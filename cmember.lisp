@@ -24,13 +24,20 @@
 (defmethod disjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember (union (cmember-members ct1) (cmember-members ct2))))
 (defun disjoin-cmember (cmember ctype)
-  (let ((non (loop for mem in (cmember-members cmember)
-                   unless (ctypep cmember ctype) collect mem)))
+  (let ((non (loop with diff = nil
+                   for mem in (cmember-members cmember)
+                   if (ctypep cmember ctype)
+                     collect mem
+                   else do (setf diff t)
+                   ;; If there's no change, give up to avoid recursion
+                   finally (unless diff (return nil)))))
     (if non
         (disjunction (apply #'cmember non) ctype)
         ctype)))
-(defmethod disjoin/2 ((ct1 cmember) (ct2 ctype)) (disjoin-cmember ct1 ct2))
-(defmethod disjoin/2 ((ct1 ctype) (ct2 cmember)) (disjoin-cmember ct2 ct1))
+(defmethod disjoin/2 ((ct1 cmember) (ct2 ctype))
+  (or (disjoin-cmember ct1 ct2) (call-next-method)))
+(defmethod disjoin/2 ((ct1 ctype) (ct2 cmember))
+  (or (disjoin-cmember ct2 ct1) (call-next-method)))
 
 (defmethod subtract ((ct1 cmember) (ct2 cmember))
   (apply #'cmember
