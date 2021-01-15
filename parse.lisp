@@ -88,7 +88,7 @@
           ((integer)
            (let ((nlow (if (and nlow lxp) (1+ nlow) nlow))
                  (nhigh (if (and nhigh lxp) (1- nhigh) nhigh)))
-             (if (> nlow nhigh)
+             (if (and nlow nhigh (> nlow nhigh))
                  (bot)
                  (make-instance 'range :kind 'integer
                                 :low nlow :lxp nil :high nhigh :hxp nil))))
@@ -230,11 +230,11 @@
         ll
         (make-instance 'cfunction :lambda-list ll :returns rv))))
 
-(defun %parse-values-ctype (rest env)
-  (flet ((fail () (error "Bad syntax in values type: ~a" rest)))
+(defun %parse-values-ctype (vest env)
+  (flet ((fail () (error "Bad syntax in values type: ~a" vest)))
     (loop with state = :required
           with req with opt with rest
-          for elem in rest
+          for elem in vest
           do (case elem
                ((&optional)
                 (unless (eq state :required) (fail))
@@ -242,12 +242,13 @@
                ((&rest)
                 (unless (member state '(:required &optional)) (fail))
                 (setf state elem))
-               (t (ecase state
-                    ((:required) (push (specifier-ctype elem env) req))
-                    ((&optional) (push (specifier-ctype elem env) opt))
-                    ((&rest)
-                     (when rest (fail))
-                     (setf rest (specifier-ctype elem env))))))
+               (otherwise
+                (ecase state
+                  ((:required) (push (specifier-ctype elem env) req))
+                  ((&optional) (push (specifier-ctype elem env) opt))
+                  ((&rest)
+                   (when rest (fail))
+                   (setf rest (specifier-ctype elem env))))))
           finally (return (values (nreverse req) (nreverse opt) rest)))))
 
 (defun parse-values-ctype (rest env)
@@ -256,11 +257,9 @@
     (when (some #'bot-p req) (return-from parse-values-ctype (bot)))
     (let ((m (member-if #'bot-p opt)))
       (when m
-        (return-from parse-values-ctype
-          (make-instance 'cvalues
-            :required req :optional (ldiff opt m) :rest (bot)))))
-    (make-instance 'cvalues
-      :required req :optional opt :rest (or rest (bot)))))
+        (return-from parse-values-ctype (cvalues req (ldiff opt m) (bot)))))
+    ;; (top) because of CL:THE fuzziness.
+    (cvalues req opt (or rest (top)))))
 
 (defun satisfies-ctype (fname)
   (unless (symbolp fname)
