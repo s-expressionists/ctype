@@ -327,7 +327,7 @@
     (ecase head
       ((and) (apply #'conjoin (mapcar #'recur rest)))
       ((array) (destructuring-bind (&optional (et '*) (dims '*)) rest
-                 (array-ctype et dims)))
+                 (array-ctype et dims env)))
       ((base-string) (destructuring-bind (&optional (length '*)) rest
                        (array-ctype 'base-char (list length) env)))
       ((bit-vector) (destructuring-bind (&optional (length '*)) rest
