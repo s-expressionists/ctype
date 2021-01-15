@@ -306,14 +306,18 @@
     ((simple-array) (array-ctype '* '* env))
     ((simple-base-string) (array-ctype 'base-char '* env))
     ((simple-bit-vector) (array-ctype 'bit '* env))
-    #+(or)
-    ((simple-string) ...)
+    ((simple-string)
+     (apply #'disjunction
+            (loop for uaet in +string-uaets+
+                  collect (array-ctype uaet '(*) env))))
     ((simple-vector) (array-ctype 't '(*) env))
     ((single-float) (range-ctype 'single-float '* '* env))
     #+(or)
     ((standard-char) ...)
-    #+(or)
-    ((string) ...)
+    ((string)
+     (apply #'disjunction
+            (loop for uaet in +string-uaets+
+                  collect (array-ctype uaet '(*) env))))
     ((t) (top))
     ((unsigned-byte) (range-ctype 'integer 0 '* env))
     ((vector) (array-ctype '* '(*) env))))
@@ -371,14 +375,20 @@
                               (array-ctype 'base-char (list length) env)))
       ((simple-bit-vector) (destructuring-bind (&optional (length '*)) rest
                              (array-ctype 'bit (list length) env)))
-      #+(or)
-      ((simple-string) ...)
+      ((simple-string) (destructuring-bind (&optional (length '*)) rest
+                         (apply #'disjunction
+                                (loop with l = (list length)
+                                      for uaet in +string-uaets+
+                                      collect (array-ctype uaet l env)))))
       ((simple-vector) (destructuring-bind (&optional (length '*)) rest
                          (array-ctype 't (list length) env)))
       ((single-float) (destructuring-bind (&optional (low '*) (high '*)) rest
                         (range-ctype 'single-float low high env)))
-      #+(or)
-      ((string) ...)
+      ((string) (destructuring-bind (&optional (length '*)) rest
+                  (apply #'disjunction
+                         (loop with l = (list length)
+                               for uaet in +string-uaets+
+                               collect (array-ctype uaet l env)))))
       ((unsigned-byte) (destructuring-bind (&optional (s '*)) rest
                          (range-ctype 'integer 0
                                       (if (eq s '*)

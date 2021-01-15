@@ -24,6 +24,11 @@
   #-(or clasp) (error "FLOATS not defined for implementation")
   :test #'equal)
 
+(define-constant +string-uaets+
+  #+clasp '(base-char character)
+  #-(or clasp) (error "STRING-UAETS not defind for implementation")
+  :test #'equal)
+
 (defun subclassp (sub super)
   #+clasp (core:subclassp sub super)
   #+(or) (member super (mop:class-precedence-list sub))
