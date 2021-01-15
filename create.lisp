@@ -33,3 +33,11 @@
   (if members
       (make-instance 'cmember :members members)
       (bot)))
+
+(defun cvalues (required optional rest)
+  (if (and (null required)
+           (every #'top-p optional)
+           (top-p rest))
+      (top)
+      (make-instance 'cvalues
+        :required required :optional optional :rest rest)))

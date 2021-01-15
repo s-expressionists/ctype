@@ -1,11 +1,5 @@
 (in-package #:ctype)
 
-;;; Used in cfunction
-(defun top-values-p (cvalues)
-  (and (null (cvalues-required cvalues))
-       (every #'top-p (cvalues-optional cvalues))
-       (top-p (cvalues-rest cvalues))))
-
 (defmethod ctypep (object (ct cvalues))
   (declare (ignore object))
   (error "Values ctype ~a cannot be used with ~a" ct 'ctypep))
@@ -43,14 +37,12 @@
                       if (bot-p conj)
                         ;; This &optional is bottom, and so neither this value
                         ;; nor any later values can be provided.
-                        do (return-from conjoin/2
-                             (make-instance 'cvalues
-                               :required req :optional opts :rest conj))
+                        do (return-from conjoin/2 (cvalues req opts conj))
                       else collect conj into opts
                       until (and (null opt1) (null opt2))
                       finally (return opts)))
            (rest (conjoin rest1 rest2)))
-      (make-instance 'cvalues :required req :optional opt :rest rest))))
+      (cvalues req opt rest))))
 
 ;;; Disjunctions are much more limited; for example
 ;;; (or (values null null) (values cons cons))

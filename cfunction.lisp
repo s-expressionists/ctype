@@ -111,7 +111,7 @@
 (defmethod unparse ((ct cfunction))
   (let ((ull (unparse-lambda-list (cfunction-lambda-list ct)))
         (rv (cfunction-returns ct)))
-    (if (top-values-p rv)
+    (if (top-p rv)
         (if (eq ull '*)
             'function
             `(function ,ull))
