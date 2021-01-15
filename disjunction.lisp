@@ -19,6 +19,7 @@
         (values (bot-p ct1) t)
         ;; if a <: z then a <: z v y as z <: z v y.
         ;; if a ~<: z and a ~<: y and z v y is not bot then a ~<: z v y.
+        ;; I think. Assuming we normalize hard enough.
         (loop with surety = t
               for sct in cts
               do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
