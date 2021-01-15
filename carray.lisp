@@ -85,29 +85,31 @@
         (uaet2 (carray-uaet ct2)) (dims2 (carray-dims ct2)))
     ;; Since we don't really keep track of array types with chunks taken out
     ;; of them, our goal here is just to reduce things to bottom or ct1.
-    (cond ((not (or (eq uaet2 '*) (equal uaet1 uaet2)))
-           ;; Array types of different UAET are disjoint.
-           ct1)
-          ((eq dims2 '*)
-           ;; All dimensions are forbidden.
-           (bot))
-          ((eq dims1 '*)
-           ;; We can't take chunks out.
-           (call-next-method))
-          ((/= (length dims1) (length dims2))
-           ;; Array types of different rank are disjoint.
-           ct1)
-          ((loop for dim1 in dims1
-                 for dim2 in dims2
-                 always (or (eq dim2 '*)
-                            (and (not (eq dim1 '*))
-                                 (or (= dim1 dim2)
-                                     ;; Dimension mismatch
-                                     (return-from subtract ct1)))))
-           ;; ct2's dimensions are a superset of ct1's.
-           (bot))
-          (t ; too complicated.
-           (call-next-method)))))
+    (cond ((or (eq uaet2 '*) (equal uaet1 uaet2))
+           (cond ((eq dims2 '*) (bot)) ; all dimension forbidden
+                 ((eq dims1 '*) (call-next-method)) ; can't remove chunks
+                 ((/= (length dims1) (length dims2))
+                  ct1) ; different rank, dis joint
+                 ((loop for dim1 in dims1
+                        for dim2 in dims2
+                        always (or (eq dim2 '*)
+                                   (and (not (eq dim1 '*))
+                                        (or (= dim1 dim2)
+                                            ;; dim mismatch
+                                            (return-from subtract ct1)))))
+                  ;; ct2's dimensions are a superset of ct1's
+                  (bot))
+                 (t ; too complicated; e.g. for dims (3 *) - (* 3)
+                  (call-next-method))))
+          ;; If we have (array * ...) - (array something ...), we can ignore
+          ;; the subtrahend if it's of a distinct rank.
+          ((eq uaet1 '*)
+           (if (and (not (eq dims1 '*)) (not (eq dims2 '*))
+                    (/= (length dims1) (length dims2)))
+               ct1
+               (call-next-method)))
+          ;; Distinct uaets
+          (t ct1))))
 
 (defmethod unparse ((ct carray))
   (let ((uaet (carray-uaet ct)) (dims (carray-dims ct)))
