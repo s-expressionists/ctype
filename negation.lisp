@@ -57,7 +57,7 @@
       (call-next-method)))
 
 (defmethod subtract ((ct1 ctype) (ct2 negation))
-  (conjoin/2 ct1 (negation-ctype ct2)))
+  (or (conjoin/2 ct1 (negation-ctype ct2)) (call-next-method)))
 
 (defmethod unparse ((ct negation))
   `(not ,(unparse (negation-ctype ct))))
