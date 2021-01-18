@@ -28,7 +28,7 @@
               (and high1
                    (or (< high1 high2)
                        (and (= high1 high2)
-                            (or (range-low-exclusive-p ct1)
+                            (or (range-high-exclusive-p ct1)
                                 (not (range-high-exclusive-p ct2)))))))))
    t))
 

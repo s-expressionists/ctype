@@ -94,7 +94,7 @@
         (ecase kind
           ((integer)
            (let ((nlow (if (and nlow lxp) (1+ nlow) nlow))
-                 (nhigh (if (and nhigh lxp) (1- nhigh) nhigh)))
+                 (nhigh (if (and nhigh hxp) (1- nhigh) nhigh)))
              (if (and nlow nhigh (> nlow nhigh))
                  (bot)
                  (make-instance 'range :kind 'integer
