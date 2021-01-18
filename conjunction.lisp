@@ -63,13 +63,18 @@
   (apply #'conjoin ct1 (junction-ctypes ct2)))
 
 (defun disjoin-conjunction (conjunction ctype)
+  ;; If any disjunction is uninteresting, give up.
+  ;; This should have the effect of preferring a sum of products.
   (apply #'conjoin
          (loop for sct in (junction-ctypes conjunction)
-               collect (disjoin sct ctype))))
+               for dis = (disjoin/2 sct ctype)
+               if dis
+                 collect dis
+               else do (return-from disjoin-conjunction nil))))
 (defmethod disjoin/2 ((ct1 conjunction) (ct2 ctype))
-  (disjoin-conjunction ct1 ct2))
+  (or (disjoin-conjunction ct1 ct2) (call-next-method)))
 (defmethod disjoin/2 ((ct1 ctype) (ct2 conjunction))
-  (disjoin-conjunction ct2 ct1))
+  (or (disjoin-conjunction ct2 ct1) (call-next-method)))
 
 (defmethod unparse ((ct conjunction))
   (let ((cts (junction-ctypes ct)))
