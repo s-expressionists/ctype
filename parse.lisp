@@ -51,7 +51,7 @@
         (apply #'cmember non))))
 
 (defun error-interval-designator (nondesignator &optional kind)
-  (error "~a is not a valid interval designator~@[ for type ~a~}"
+  (error "~a is not a valid interval designator~@[ for type ~a~]"
          nondesignator kind))
 
 (defun parse-interval-designator (designator)
