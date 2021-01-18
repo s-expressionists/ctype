@@ -16,17 +16,21 @@
 
 (defconstant +ratiop+
   #+clasp 'ext::ratiop
-  #-(or clasp) (error "RATIOP not defined for implementation"))
+  #+sbcl 'sb-int:ratiop
+  #-(or clasp sbcl) (error "RATIOP not defined for implementation"))
 
 (define-constant +floats+
   #+clasp '((single-float . core:single-float-p)
             (double-float . core:double-float-p))
-  #-(or clasp) (error "FLOATS not defined for implementation")
+  #+sbcl '((single-float . sb-int:single-float-p)
+           (double-float . sb-int:double-float-p))
+  #-(or clasp sbcl) (error "FLOATS not defined for implementation")
   :test #'equal)
 
 (define-constant +string-uaets+
   #+clasp '(base-char character)
-  #-(or clasp) (error "STRING-UAETS not defined for implementation")
+  #+sbcl '(nil base-char character)
+  #-(or clasp sbcl) (error "STRING-UAETS not defined for implementation")
   :test #'equal)
 
 ;;; This should be T unless (and array (not simple-array)) = NIL.
@@ -36,7 +40,9 @@
 ;;; arrays - for example if they only exist for vectors.
 (define-constant +complex-arrays-exist-p+
   #+clasp t
-  #-(or clasp) (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
+  #+sbcl t
+  #-(or clasp sbcl)
+  (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
 ;;; List of (classname type-specifier); specifier-ctype will resolve
 ;;; classes with the former name in the same way as it would resolve the
@@ -175,24 +181,29 @@
              (and (not simple-array) (not vector) (array character)))
             (core:mdarray-t
              (and (not simple-array) (not vector) (array t))))
-  #-(or clasp) (error "CLASS-ALIASES not defined for implementation")
+  #+sbcl ()
+  #-(or clasp sbcl) (error "CLASS-ALIASES not defined for implementation")
   :test #'equal)
 
 (defun subclassp (sub super)
   #+clasp (core:subclassp sub super)
-  #+(or) (member super (mop:class-precedence-list sub))
-  #-(or clasp) (error "SUBCLASSP not defined for implementation"))
+  #+sbcl (member super (sb-mop:class-precedence-list sub))
+  #-(or clasp sbcl) (error "SUBCLASSP not defined for implementation"))
 
 (defun typexpand (type-specifier environment)
   #+clasp (cleavir-env:type-expand environment type-specifier)
-  #-(or clasp) (error "TYPEXPAND not defined for implementation"))
+  #+sbcl (sb-ext:typexpand type-specifier environment)
+  #-(or clasp sbcl) (error "TYPEXPAND not defined for implementation"))
 
 (defmacro complex-ucptp (objectf ucpt)
   (declare (ignorable objectf))
   `(ecase ,ucpt
      ((*) t)
      #+clasp ,@()
-     #-(or clasp) ,(error "COMPLEX-UCPTP not defined for implementation")))
+     #+sbcl ((single-float) (sb-kernel:complex-single-float-p ,objectf))
+     #+sbcl ((double-float) (sb-kernel:complex-double-float-p ,objectf))
+     #+sbcl ((rational) (sb-kernel:complex-rational-p ,objectf))
+     #-(or clasp sbcl) ,(error "COMPLEX-UCPTP not defined for implementation")))
 
 ;;;
 
