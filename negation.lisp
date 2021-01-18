@@ -34,9 +34,9 @@
                  (negate p)
                  (call-next-method)))))))
 (defmethod conjoin/2 ((ct1 negation) (ct2 ctype))
-  (subtract ct2 (negation-ctype ct1)))
+  (or (subtract ct2 (negation-ctype ct1)) (call-next-method)))
 (defmethod conjoin/2 ((ct1 ctype) (ct2 negation))
-  (subtract ct1 (negation-ctype ct2)))
+  (or (subtract ct1 (negation-ctype ct2)) (call-next-method)))
 
 (defmethod disjoin/2 ((ct1 negation) (ct2 negation))
   (let ((nt1 (negation-ctype ct1)) (nt2 (negation-ctype ct2)))
