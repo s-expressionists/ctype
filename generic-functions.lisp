@@ -13,9 +13,10 @@
 ;;; Ditto the restrictions on calling negate etc.
 (defgeneric disjointp (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype))
-    (if (or (subctypep ct1 ct2) (subctypep ct2 ct1))
-        (values t t)
-        (values nil nil))))
+    (cond ((or (bot-p ct1) (bot-p ct2)) (values t t))
+          ((or (subctypep ct1 ct2) (subctypep ct2 ct1))
+           (values nil t))
+          (t (values nil nil)))))
 
 (defgeneric negate (ctype)
   (:method ((ctype ctype)) (negation ctype)))
