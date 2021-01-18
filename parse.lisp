@@ -324,7 +324,11 @@
                   collect (array-ctype :either uaet '(*) env))))
     ((t) (top))
     ((unsigned-byte) (range-ctype 'integer 0 '* env))
-    ((vector) (array-ctype :either '* '(*) env))))
+    ((vector) (array-ctype :either '* '(*) env))
+    (otherwise
+     (let ((p (assoc sym +class-aliases+)))
+       (when p
+         (specifier-ctype (second p) env))))))
 
 (defun class-specifier-ctype (class env)
   (declare (ignore env))
