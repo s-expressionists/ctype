@@ -25,6 +25,15 @@
              (cond ((not subsurety) (setf surety nil))
                    ((not val) (return (values nil t)))))
         finally (return (if surety (values t t) (call-next-method)))))
+;;; We need to define this particularly to avoid false negatives from the
+;;; first method above.
+(defmethod subctypep ((ct1 conjunction) (ct2 conjunction))
+  (loop with surety = t
+        for sct in (junction-ctypes ct2)
+        do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
+             (cond ((not subsurety) (setf surety nil))
+                   ((not val) (return (values nil t)))))
+        finally (return (if surety (values t t) (call-next-method)))))
 
 (macrolet
     ((conjunction-disjointp (conjunction ctype)
