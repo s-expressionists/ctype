@@ -26,8 +26,17 @@
 
 (define-constant +string-uaets+
   #+clasp '(base-char character)
-  #-(or clasp) (error "STRING-UAETS not defind for implementation")
+  #-(or clasp) (error "STRING-UAETS not defined for implementation")
   :test #'equal)
+
+;;; This should be T unless (and array (not simple-array)) = NIL.
+;;; This is used only in the parser - if you make array ctypes directly be sure
+;;; to always apply simplicity :simple, if complex arrays do not exist.
+;;; FIXME?: Right now there's no provision for partial existence of complex
+;;; arrays - for example if they only exist for vectors.
+(define-constant +complex-arrays-exist-p+
+  #+clasp t
+  #-(or clasp) (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
 ;;; List of (classname type-specifier); specifier-ctype will resolve
 ;;; classes with the former name in the same way as it would resolve the

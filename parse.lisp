@@ -13,11 +13,14 @@
                                  dims))
                      dims)
                     (t (error "Invalid dimension specification: ~a" dims)))))
-    (if (eq simplicity :either)
-        (disjunction
-         (make-instance 'carray :simplicity :simple :uaet uaet :dims dims)
-         (make-instance 'carray :simplicity :complex :uaet uaet :dims dims))
-        (make-instance 'carray :simplicity simplicity :uaet uaet :dims dims))))
+    (if +complex-arrays-exist-p+
+        (if (eq simplicity :either)
+            (disjunction
+             (make-instance 'carray :simplicity :simple :uaet uaet :dims dims)
+             (make-instance 'carray :simplicity :complex :uaet uaet :dims dims))
+            (make-instance 'carray
+              :simplicity simplicity :uaet uaet :dims dims))
+        (make-instance 'carray :simplicity :simple :uaet uaet :dims dims))))
 
 (defun cons-ctype (car cdr env)
   (let ((car (if (eq car '*)
