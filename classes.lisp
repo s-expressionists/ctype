@@ -45,7 +45,9 @@
   ((%members :initarg :members :reader cmember-members :type list)))
 
 (defclass carray (ctype)
-  (;; Can be * to indicate all possible. Should be more efficient that way.
+  ((%simplicity :initarg :simplicity :reader carray-simplicity
+                :type (member :simple :complex))
+   ;; Can be * to indicate all possible. Should be more efficient that way.
    ;; Other than that, it's just something equal-comparable. Also should
    ;; be what's returned by array-element-type.
    (%uaet :initarg :uaet :reader carray-uaet)

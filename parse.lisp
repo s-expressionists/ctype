@@ -1,6 +1,6 @@
 (in-package #:ctype)
 
-(defun array-ctype (et dims env)
+(defun array-ctype (simplicity et dims env)
   (let ((uaet (if (eq et '*)
                   et
                   (upgraded-array-element-type et env)))
@@ -13,7 +13,11 @@
                                  dims))
                      dims)
                     (t (error "Invalid dimension specification: ~a" dims)))))
-    (make-instance 'carray :uaet uaet :dims dims)))
+    (if (eq simplicity :either)
+        (disjunction
+         (make-instance 'carray :simplicity :simple :uaet uaet :dims dims)
+         (make-instance 'carray :simplicity :complex :uaet uaet :dims dims))
+        (make-instance 'carray :simplicity simplicity :uaet uaet :dims dims))))
 
 (defun cons-ctype (car cdr env)
   (let ((car (if (eq car '*)
@@ -270,13 +274,13 @@
     ;; We include any CL type that an implementation might have defined as
     ;; a class but which we would like to be a ctype (which is kind of a lot of
     ;; them) except in some subclassing cases, like with subclasses of FUNCTION.
-    ((array) (array-ctype '* '* env))
+    ((array) (array-ctype :either '* '* env))
     ((atom) (negate (ccons (top) (top))))
     #+(or)
     ((base-char) ...)
-    ((base-string) (array-ctype 'base-char '* env))
+    ((base-string) (array-ctype :either 'base-char '* env))
     ((bignum) (negate (specifier-ctype 'fixnum env)))
-    ((bit-vector) (array-ctype 'bit '(*) env))
+    ((bit-vector) (array-ctype :either 'bit '(*) env))
     ((compiled-function)
      (conjunction (function-ctype '* '* env)
                   (make-instance 'csatisfies :fname 'compiled-function-p)))
@@ -303,24 +307,24 @@
     ;; SEQUENCE is handled specially as a cclass.
     ((short-float) (range-ctype 'short-float '* '* env))
     ((signed-byte) (range-ctype 'integer '* '* env))
-    ((simple-array) (array-ctype '* '* env))
-    ((simple-base-string) (array-ctype 'base-char '* env))
-    ((simple-bit-vector) (array-ctype 'bit '* env))
+    ((simple-array) (array-ctype :simple '* '* env))
+    ((simple-base-string) (array-ctype :simple 'base-char '* env))
+    ((simple-bit-vector) (array-ctype :simple 'bit '* env))
     ((simple-string)
      (apply #'disjunction
             (loop for uaet in +string-uaets+
-                  collect (array-ctype uaet '(*) env))))
-    ((simple-vector) (array-ctype 't '(*) env))
+                  collect (array-ctype :simple uaet '(*) env))))
+    ((simple-vector) (array-ctype :simple 't '(*) env))
     ((single-float) (range-ctype 'single-float '* '* env))
     #+(or)
     ((standard-char) ...)
     ((string)
-     (apply #'disjunction
+     (apply #'disjoin
             (loop for uaet in +string-uaets+
-                  collect (array-ctype uaet '(*) env))))
+                  collect (array-ctype :either uaet '(*) env))))
     ((t) (top))
     ((unsigned-byte) (range-ctype 'integer 0 '* env))
-    ((vector) (array-ctype '* '(*) env))))
+    ((vector) (array-ctype :either '* '(*) env))))
 
 (defun class-specifier-ctype (class env)
   (declare (ignore env))
@@ -331,11 +335,11 @@
     (ecase head
       ((and) (apply #'conjoin (mapcar #'recur rest)))
       ((array) (destructuring-bind (&optional (et '*) (dims '*)) rest
-                 (array-ctype et dims env)))
+                 (array-ctype :either et dims env)))
       ((base-string) (destructuring-bind (&optional (length '*)) rest
-                       (array-ctype 'base-char (list length) env)))
+                       (array-ctype :either 'base-char (list length) env)))
       ((bit-vector) (destructuring-bind (&optional (length '*)) rest
-                      (array-ctype 'bit (list length) env)))
+                      (array-ctype :either 'bit (list length) env)))
       ((complex) (destructuring-bind (&optional (et '*)) rest
                    (complex-ctype et env)))
       ((cons) (destructuring-bind (&optional (car '*) (cdr '*)) rest
@@ -370,25 +374,27 @@
                            (let ((es (expt 2 (1- s))))
                              (range-ctype 'integer (- es) (1- es) env)))))
       ((simple-array) (destructuring-bind (&optional (et '*) (dims '*)) rest
-                        (array-ctype et dims env)))
-      ((simple-base-string) (destructuring-bind (&optional (length '*)) rest
-                              (array-ctype 'base-char (list length) env)))
+                        (array-ctype :simple et dims env)))
+      ((simple-base-string)
+       (destructuring-bind (&optional (length '*)) rest
+         (array-ctype :simple 'base-char (list length) env)))
       ((simple-bit-vector) (destructuring-bind (&optional (length '*)) rest
-                             (array-ctype 'bit (list length) env)))
-      ((simple-string) (destructuring-bind (&optional (length '*)) rest
-                         (apply #'disjunction
-                                (loop with l = (list length)
-                                      for uaet in +string-uaets+
-                                      collect (array-ctype uaet l env)))))
+                             (array-ctype :simple 'bit (list length) env)))
+      ((simple-string)
+       (destructuring-bind (&optional (length '*)) rest
+         (apply #'disjunction
+                (loop with l = (list length)
+                      for uaet in +string-uaets+
+                      collect (array-ctype :simple uaet l env)))))
       ((simple-vector) (destructuring-bind (&optional (length '*)) rest
-                         (array-ctype 't (list length) env)))
+                         (array-ctype :simple 't (list length) env)))
       ((single-float) (destructuring-bind (&optional (low '*) (high '*)) rest
                         (range-ctype 'single-float low high env)))
       ((string) (destructuring-bind (&optional (length '*)) rest
-                  (apply #'disjunction
+                  (apply #'disjoin
                          (loop with l = (list length)
                                for uaet in +string-uaets+
-                               collect (array-ctype uaet l env)))))
+                               collect (array-ctype :either uaet l env)))))
       ((unsigned-byte) (destructuring-bind (&optional (s '*)) rest
                          (range-ctype 'integer 0
                                       (if (eq s '*)
@@ -397,7 +403,7 @@
                                       env)))
       ((values) (parse-values-ctype rest env))
       ((vector) (destructuring-bind (&optional (length '*)) rest
-                  (array-ctype '* (list length) env))))))
+                  (array-ctype :either '* (list length) env))))))
 
 (defun specifier-ctype (specifier &optional env)
   (let ((spec (typexpand specifier env)))
