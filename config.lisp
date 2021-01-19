@@ -56,6 +56,16 @@
   #-(or clasp sbcl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
+(define-constant +simple-array-p+
+  #+clasp '(lambda (o) (if (cleavir-primop:typeq o core:abstract-simple-vector)
+                           t nil))
+  #+sbcl 'sb-kernel:simple-array-p
+  #-(or clasp sbcl)
+  (if +complex-arrays-exist-p+
+      (error "SIMPLE-ARRAY-P not defined for implementation")
+      '(lambda (o) (declare (ignore o)) t))
+  :test #'equal)
+
 ;;; List of (classname type-specifier); specifier-ctype will resolve
 ;;; classes with the former name in the same way as it would resolve the
 ;;; specifier. CL names (e.g. FIXNUM, SIMPLE-BIT-VECTOR) are already handled
