@@ -23,9 +23,10 @@
              nconc (loop for class2 in rest
                          collect `(defexclusive/2 ,class1 ,class2)))))
 
-(defexclusive ccons range ccomplex carray cfunction)
+(defexclusive ccons range ccomplex carray charset cfunction)
 (defexclusive/2 cclass range)
 (defexclusive/2 cclass ccomplex)
+(defexclusive/2 cclass charset)
 
 ;;; Some cclass ctype relations we unfortunately have to handle specially.
 (defun sequence-cclass-p (cclass)

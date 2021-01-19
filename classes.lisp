@@ -55,6 +55,12 @@
    ;; or * indicating nothing specified.
    (%dims :initarg :dims :reader carray-dims :type (or list (eql *)))))
 
+(defclass charset (ctype)
+  ((%pairs :initarg :pairs :reader charset-pairs
+           ;; A list of (char-code . char-code) pairs, each representing
+           ;; an inclusive interval of codepoints, in order and exclusive.
+           :type list)))
+
 (defclass cvalues (ctype)
   ((%required :initarg :required :reader cvalues-required
               ;; A proper list of ctypes.

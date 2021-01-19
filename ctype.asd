@@ -24,6 +24,8 @@
                                                      "packages"))
    (:file "carray" :depends-on ("generic-functions" "create" "classes"
                                                     "packages"))
+   (:file "charset" :depends-on ("generic-functions" "create" "classes"
+                                                     "config" "packages"))
    (:file "cvalues" :depends-on ("generic-functions" "create" "classes"
                                                      "packages"))
    (:file "cfunction" :depends-on ("cvalues" "generic-functions" "create"

@@ -27,6 +27,18 @@
   #-(or clasp sbcl) (error "FLOATS not defined for implementation")
   :test #'equal)
 
+(define-constant +standard-charset+
+  ;; In ASCII (or Unicode)
+  #+(or clasp sbcl) '((10 . 10) (32 . 126))
+  #-(or clasp sbcl) (error "STANDARD-CHARSET not defined for implementation")
+  :test #'equal)
+
+(define-constant +base-charset+
+  #+clasp '((0 . 255))
+  #+sbcl '((0 . 127))
+  #-(or clasp sbcl) (error "BASE-CHARSET not defind for implementation")
+  :test #'equal)
+
 (define-constant +string-uaets+
   #+clasp '(base-char character)
   #+sbcl '(nil base-char character)
