@@ -24,6 +24,8 @@
 (defun bot-p (ctype) (eq ctype *bot*))
 
 ;;; Others
+(defun cclass (class) (make-instance 'cclass :class class))
+
 (defun ccons (car cdr)
   (if (or (bot-p car) (bot-p cdr))
       (bot)
@@ -37,6 +39,8 @@
 (defun carray (simplicity uaet dims)
   (make-instance 'carray :simplicity simplicity :uaet uaet :dims dims))
 
+(defun ccomplex (ucpt) (make-instance 'ccomplex :ucpt ucpt))
+
 (defun cmember (&rest members)
   (if members
       (make-instance 'cmember :members members)
@@ -49,3 +53,6 @@
       (top)
       (make-instance 'cvalues
         :required required :optional optional :rest rest)))
+
+(defun csatisfies (fname)
+  (make-instance 'csatisfies :fname fname))

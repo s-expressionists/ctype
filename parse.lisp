@@ -173,10 +173,9 @@
                     lj))))))))
 
 (defun complex-ctype (element-type env)
-  (make-instance 'ccomplex
-    :ucpt (if (eq element-type '*)
-              element-type
-              (upgraded-complex-part-type element-type env))))
+  (ccomplex (if (eq element-type '*)
+                element-type
+                (upgraded-complex-part-type element-type env))))
 
 (defun %parse-lambda-list (ll env)
   (loop with state = :required
@@ -271,7 +270,7 @@
 (defun satisfies-ctype (fname)
   (unless (symbolp fname)
     (error "Bad function name for ~a type: ~a" 'satisfies fname))
-  (make-instance 'csatisfies :fname fname))
+  (csatisfies fname))
 
 (defun symbol-specifier-ctype (sym &optional env)
   (case sym
@@ -286,8 +285,7 @@
     ((bit-vector) (array-ctype :either 'bit '(*) env))
     ((character) (charset `((0 . ,(1- char-code-limit)))))
     ((compiled-function)
-     (conjunction (function-ctype '* '* env)
-                  (make-instance 'csatisfies :fname 'compiled-function-p)))
+     (conjunction (function-ctype '* '* env) (csatisfies 'compiled-function-p)))
     ((complex) (complex-ctype '* env))
     ((cons) (ccons (top) (top)))
     ((double-float) (range-ctype 'double-float '* '* env))
@@ -297,9 +295,8 @@
     ((float) (range-ctype 'float '* '* env))
     ((function) (function-ctype '* '* env))
     ((integer) (range-ctype 'integer '* '* env))
-    ((keyword) (conjunction (make-instance 'cclass
-                              :class (find-class 'symbol t env))
-                            (make-instance 'csatisfies :fname 'keywordp)))
+    ((keyword) (conjunction (cclass (find-class 'symbol t env))
+                            (csatisfies 'keywordp)))
     ((list) (disjunction (cmember nil) (ccons (top) (top))))
     ((long-float) (range-ctype 'long-float '* '* env))
     ((null) (cmember nil))
@@ -336,7 +333,7 @@
 
 (defun class-specifier-ctype (class env)
   (declare (ignore env))
-  (make-instance 'cclass :class class))
+  (cclass class))
 
 (defun cons-specifier-ctype (head rest env)
   (flet ((recur (spec) (specifier-ctype spec env)))
