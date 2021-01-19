@@ -44,9 +44,7 @@
            (apply #'cmember non)
            (append
             (loop for i in integers
-                  collect (make-instance 'range
-                            :kind 'integer
-                            :low i :lxp nil :high i :hxp nil))
+                  collect (range 'integer i nil i nil))
             (loop for c in characters
                   for code = (char-code c)
                   collect (charset (list (cons code code))))))))
@@ -62,6 +60,33 @@
               (realp (car designator)))
          (values (car designator) t))
         (t (error-interval-designator designator))))
+
+(defun rational-range (low lxp high hxp)
+  ;; Check if this is a ratio-only range like (rational (0) (1))
+  (if (and low high
+           (or (< high (ceiling low))
+               (and hxp
+                    (or (= high (ceiling low))
+                        (and (integerp low)
+                             (= high (1+ low))
+                             lxp)))))
+      (range 'ratio low lxp high hxp)
+      ;; Compute bounds for the integer aspect.
+      (let ((ilow (cond ((null low) low)
+                        ((integerp low) (if lxp (1+ low) low))
+                        (t (ceiling low))))
+            (ihigh (cond ((null high) high)
+                         ((integerp high) (if hxp (1- high) high))
+                         (t (floor high)))))
+        (disjoin (range 'integer ilow nil ihigh nil)
+                 (range 'ratio low lxp high hxp)))))
+
+(defun float-range (low lxp high hxp)
+  (let ((lj (loop for (ty) in +floats+
+                  for nl = (if low (coerce low ty) low)
+                  for nh = (if high (coerce high ty) high)
+                  collect (range ty nl lxp nh hxp))))
+    (apply #'disjoin lj)))
 
 (defun range-ctype (kind low high env)
   (declare (ignore env))
@@ -87,90 +112,29 @@
           (error-interval-designator low kind))
         (unless (or (not nhigh) (funcall test nhigh))
           (error-interval-designator high kind))
-        (when (and nlow nhigh
-                   (or (> nlow nhigh)
-                       (and (= nlow nhigh)
-                            (or lxp hxp))))
-          (return-from range-ctype (bot)))
         (ecase kind
           ((integer)
            (let ((nlow (if (and nlow lxp) (1+ nlow) nlow))
                  (nhigh (if (and nhigh hxp) (1- nhigh) nhigh)))
-             (if (and nlow nhigh (> nlow nhigh))
-                 (bot)
-                 (make-instance 'range :kind 'integer
-                                :low nlow :lxp nil :high nhigh :hxp nil))))
-          ((rational)
-           ;; Check if this is a ratio-only range like (rational (0) (1))
-           (if (and nlow nhigh
-                    (or (< nhigh (ceiling nlow))
-                        (and hxp
-                             (or (= nhigh (ceiling nlow))
-                                 (and (integerp nlow)
-                                      (= nhigh (1+ nlow))
-                                      lxp)))))
-               (make-instance 'range :kind 'ratio
-                              :low nlow :lxp lxp :high nhigh :hxp hxp)
-               (disjunction
-                (make-instance 'range :kind 'integer
-                               :low nlow :lxp lxp :high nhigh :hxp hxp)
-                (make-instance 'range :kind 'ratio
-                               :low nlow :lxp lxp :high nhigh :hxp hxp))))
-          ((float)
-           (let ((lj (loop for (ty) in +floats+
-                           for nl = (if nlow
-                                        (coerce nlow ty)
-                                        nlow)
-                           for nh = (if nhigh
-                                        (coerce nhigh ty)
-                                        nhigh)
-                           collect (make-instance 'range
-                                     :kind ty
-                                     :low nl :lxp lxp :high nh :hxp hxp))))
-             (if (null (rest lj))
-                 (first lj)
-                 (apply #'disjunction lj))))
-          ((short-float)
-           (make-instance 'range
-             :kind (if (assoc 'short-float +floats+)
-                       'short-float
-                       'single-float)
-             :low nlow :lxp lxp :high nhigh :hxp hxp))
-          ((single-float)
-           (make-instance 'range
-             :kind 'single-float :low nlow :lxp lxp :high nhigh :hxp hxp))
-          ((double-float)
-           (make-instance 'range
-             :kind (if (assoc 'double-float +floats+)
-                       'double-float
-                       'single-float)
-             :low nlow :lxp lxp :high nhigh :hxp hxp))
+             (range 'integer nlow nil nhigh nil)))
+          ((rational) (rational-range nlow lxp nhigh hxp))
+          ((float) (float-range nlow lxp nhigh hxp))
+          ((short-float) (range (if (assoc 'short-float +floats+)
+                                    'short-float
+                                    'single-float)
+                                nlow lxp nhigh hxp))
+          ((single-float) (range 'single-float nlow lxp nhigh hxp))
+          ((double-float) (range (if (assoc 'double-float +floats+)
+                                     'double-float
+                                     'single-float)
+                                 nlow lxp nhigh hxp))
           ((long-float)
-           (make-instance 'range
-             :kind (cond ((assoc 'long-float +floats+) 'long-float)
-                         ((assoc 'double-float +floats+) 'double-float)
-                         (t 'single-float))
-             :low nlow :lxp lxp :high nhigh :hxp hxp))
-          ((real)
-           (let ((lj (loop for (ty) in +floats+
-                           for nl = (if nlow
-                                        (coerce nlow ty)
-                                        nlow)
-                           for nh = (if nhigh
-                                        (coerce nhigh ty)
-                                        nhigh)
-                           collect (make-instance 'range
-                                     :kind ty
-                                     :low nl :lxp lxp :high nh :hxp hxp)))
-                 (rlow (if low (rational low) nil))
-                 (rhigh (if high (rational high) nil)))
-             ;; TODO determine if integer range is empty, etc
-             (apply #'disjunction
-                    (make-instance 'range :kind 'ratio
-                                   :low rlow :lxp lxp :high rhigh :hxp hxp)
-                    (make-instance 'range :kind 'integer
-                                   :low rlow :lxp lxp :high rhigh :hxp hxp)
-                    lj))))))))
+           (range (cond ((assoc 'long-float +floats+) 'long-float)
+                        ((assoc 'double-float +floats+) 'double-float)
+                        (t 'single-float))
+                  nlow lxp nhigh hxp))
+          ((real) (disjoin (float-range nlow lxp nhigh hxp)
+                           (rational-range nlow lxp nhigh hxp))))))))
 
 (defun complex-ctype (element-type env)
   (ccomplex (if (eq element-type '*)
@@ -302,8 +266,7 @@
     ((null) (cmember nil))
     ((number) (disjunction (range-ctype 'real '* '* env)
                            (complex-ctype '* env)))
-    ((ratio) (make-instance 'range
-               :kind 'ratio :low nil :lxp nil :high nil :hxp nil))
+    ((ratio) (range 'ratio nil nil nil nil))
     ((rational) (range-ctype 'rational '* '* env))
     ((real) (range-ctype 'real '* '* env))
     ;; SEQUENCE is handled specially as a cclass.

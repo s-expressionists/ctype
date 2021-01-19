@@ -35,27 +35,14 @@
 (defmethod negate ((ct range))
   ;; (not (real x (y))) = (or (not real) (real * (x)) (real y *))
   (let* ((kind (range-kind ct))
-         (negk (negation (make-instance 'range
-                           :kind kind :low nil :lxp nil :high nil :hxp nil)))
+         (negk (negation (range kind nil nil nil nil)))
          (low (range-low ct)) (high (range-high ct))
          (lxp (range-low-exclusive-p ct)) (hxp (range-high-exclusive-p ct)))
     (cond ((and low high)
-           (disjunction
-            negk
-            (make-instance 'range
-              :kind kind :low nil :lxp nil :high low :hxp (not lxp))
-            (make-instance 'range
-              :kind kind :low high :lxp (not hxp) :high nil :hxp nil)))
-          (low
-           (disjunction
-            negk
-            (make-instance 'range
-              :kind kind :low nil :lxp nil :high low :hxp (not lxp))))
-          (high
-           (disjunction
-            negk
-            (make-instance 'range
-              :kind kind :low high :lxp (not hxp) :high nil :hxp nil)))
+           (disjunction negk (range kind nil nil low (not lxp))
+                        (range kind high (not hxp) nil nil)))
+          (low (disjunction negk (range kind nil nil low (not lxp))))
+          (high (disjunction negk (range kind high (not hxp) nil nil)))
           (t negk))))
 
 (defmethod conjoin/2 ((ct1 range) (ct2 range))
@@ -78,13 +65,7 @@
                     ((< high1 high2) (values high1 hxp1))
                     ((< high2 high1) (values high2 hxp2))
                     (t (values high1 (or hxp1 hxp2)))))
-          (if (and low high
-                   (or (> low high)
-                       (and (= low high) (or lxp hxp))))
-              ;; bounds have resulted in an empty range
-              (bot)
-              (make-instance 'range
-                :kind (range-kind ct1) :low low :lxp lxp :high high :hxp hxp))))
+          (range (range-kind ct1) low lxp high hxp)))
       ;; Different kinds of range - conjunction is empty
       (bot)))
 
@@ -121,16 +102,14 @@
                    ((< high1 high2) (values high2 hxp2))
                    ((< high2 high1) (values high1 hxp1))
                    (t (values high1 (and hxp1 hxp2))))
-           (make-instance 'range
-             :kind rk1 :low low :lxp lxp :high high :hxp hxp))))
-      ;; We can merge integer ranges that are off by a bit,
+           (range rk1 low lxp high hxp))))
+      ;; We can merge integer ranges that are off by one,
       ;; e.g. (or (integer 1 5) (integer 6 10)) = (integer 1 10).
       ((and (eq rk1 'integer)
             high1 low2 ; already covered by the above, but let's be clear
             (not hxp1) (not lxp2)
             (= (1+ high1) low2))
-       (make-instance 'range
-         :kind rk1 :low low1 :lxp lxp1 :high high2 :hxp hxp2))
+       (range rk1 low1 lxp1 high2 hxp2))
       (t ;; Ranges are not contiguous - give up
        (call-next-method)))))
 

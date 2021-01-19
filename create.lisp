@@ -31,6 +31,11 @@
       (bot)
       (make-instance 'ccons :car car :cdr cdr)))
 
+(defun range (kind low lxp high hxp)
+  (if (and low high (or (> low high) (and (= low high) (or lxp hxp))))
+      (bot)
+      (make-instance 'range :kind kind :low low :lxp lxp :high high :hxp hxp)))
+
 (defun charset (pairs)
   (if (null pairs)
       (bot)
