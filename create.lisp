@@ -24,6 +24,8 @@
 (defun bot-p (ctype) (eq ctype *bot*))
 
 ;;; Others
+(defun negation (ctype) (make-instance 'negation :ctype ctype))
+
 (defun cclass (class) (make-instance 'cclass :class class))
 
 (defun ccons (car cdr)

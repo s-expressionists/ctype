@@ -14,7 +14,6 @@
 
 (defclass negation (ctype)
   ((%ctype :initarg :ctype :reader negation-ctype :type ctype)))
-(defun negation (ctype) (make-instance 'negation :ctype ctype))
 
 (defclass junction (ctype)
   ((%ctypes :initarg :ctypes :reader junction-ctypes
