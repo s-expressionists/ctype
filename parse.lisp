@@ -32,23 +32,28 @@
     (ccons car cdr)))
 
 (defun member-ctype (elements)
-  ;; Cut out integer ranges.
+  ;; Cut out integer ranges and character sets.
   ;; Doing real ranges more generally might be a good idea (TODO?),
   ;; but those are not as mergeable.
-  (multiple-value-bind (integers non)
+  (multiple-value-bind (characters integers non)
       (loop for elem in elements
             if (integerp elem)
               collect elem into integers
+            else if (characterp elem)
+                   collect elem into characters
             else collect elem into non
-            finally (return (values integers non)))
-    (if integers
-        (apply #'disjoin ; let disjunction handle merging
-               (apply #'cmember non)
-               (loop for i in integers
-                     collect (make-instance 'range
-                               :kind 'integer
-                               :low i :lxp nil :high i :hxp nil)))
-        (apply #'cmember non))))
+            finally (return (values characters integers non)))
+    (apply #'disjoin ; let disjunction handle merging
+           (apply #'cmember non)
+           (append
+            (loop for i in integers
+                  collect (make-instance 'range
+                            :kind 'integer
+                            :low i :lxp nil :high i :hxp nil))
+            (loop for c in characters
+                  for code = (char-code c)
+                  collect (make-instance 'charset
+                            :pairs (list (cons code code))))))))
 
 (defun error-interval-designator (nondesignator &optional kind)
   (error "~a is not a valid interval designator~@[ for type ~a~]"
