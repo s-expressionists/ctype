@@ -146,6 +146,11 @@
              (rotatef pairs1 pairs2))
            (let ((pair1-high (cdr pair1)))
              (cond
+               ((= (car pair2) (1+ pair1-high))
+                ;; they just barely touch.
+                ;; modify pair1 and then advance pair2.
+                (setf pair1 (cons (car pair1) (cdr pair2)))
+                (advance2))
                ((> (car pair2) pair1-high)
                 ;; No overlap - include pair1 and move on
                 (push (cons (car pair1) pair1-high) res)
