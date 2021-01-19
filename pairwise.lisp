@@ -67,7 +67,7 @@
   (if (sequence-cclass-p cclass)
       (let ((dims (carray-dims carray)))
         (cond ((eq dims '*)
-               (make-instance 'carray :uaet (carray-uaet carray) :dims '(*)))
+               (carray (carray-simplicity carray) (carray-uaet carray) '(*)))
               ((= (length dims) 1) carray)
               (t (bot))))
       (bot)))

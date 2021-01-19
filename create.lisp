@@ -34,6 +34,9 @@
       (bot)
       (make-instance 'charset :pairs pairs)))
 
+(defun carray (simplicity uaet dims)
+  (make-instance 'carray :simplicity simplicity :uaet uaet :dims dims))
+
 (defun cmember (&rest members)
   (if members
       (make-instance 'cmember :members members)

@@ -77,8 +77,7 @@
             ((and (equal new-uaet uaet2) (equal new-dims dims2)
                   (eq new-simplicity simplicity2))
              ct2)
-            (t (make-instance 'carray
-                 :simplicity new-simplicity :uaet new-uaet :dims new-dims))))))
+            (t (carray new-simplicity new-uaet new-dims))))))
 
 (defmethod disjoin/2 ((ct1 carray) (ct2 carray))
   (let ((uaet1 (carray-uaet ct1)) (dims1 (carray-dims ct1))
@@ -105,9 +104,7 @@
                       (t (return-from disjoin/2 (call-next-method))))))
           (cond ((and (equal new-uaet uaet1) (equal new-dims dims1)) ct1)
                 ((and (equal new-uaet uaet2) (equal new-dims dims2)) ct2)
-                (t (make-instance 'carray
-                     :simplicity simplicity1
-                     :uaet new-uaet :dims new-dims))))
+                (t (carray simplicity1 new-uaet new-dims))))
         (call-next-method))))        
 
 (defmethod subtract ((ct1 carray) (ct2 carray))
