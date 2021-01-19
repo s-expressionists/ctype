@@ -1,2 +1,4 @@
 (defpackage #:ctype
-  (:use #:cl))
+  (:use #:cl)
+  (:export #:specifier-ctype)
+  (:export #:ctypep #:subctypep))
