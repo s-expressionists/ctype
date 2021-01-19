@@ -54,12 +54,10 @@
         (call-next-method)
         (let ((not-character
                 (negation
-                 (make-instance 'charset
-                   :pairs `((0 . ,(1- char-code-limit)))))))
+                 (charset `((0 . ,(1- char-code-limit)))))))
           (disjunction
            not-character
-           (make-instance 'charset
-             :pairs (negate-charset-pairs pairs)))))))
+           (charset (negate-charset-pairs pairs)))))))
 
 (defun conjoin-charset-pairs (pairs1 pairs2)
   (if (and pairs1 pairs2)
@@ -114,11 +112,7 @@
       nil))
 
 (defmethod conjoin/2 ((ct1 charset) (ct2 charset))
-  (let ((pairs
-          (conjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
-    (if (null pairs)
-        (bot)
-        (make-instance 'charset :pairs pairs))))
+  (charset (conjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
 
 (defun disjoin-charset-pairs (pairs1 pairs2)
   (cond
@@ -165,21 +159,12 @@
                 (advance1))))))))))
 
 (defmethod disjoin/2 ((ct1 charset) (ct2 charset))
-  (let ((pairs
-          (disjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
-    (if (null pairs)
-        ;; should be impossible w/normalization. but better safe than sorry.
-        (bot)
-        (make-instance 'charset :pairs pairs))))
+  (charset (disjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
 
 (defmethod subtract ((ct1 charset) (ct2 charset))
   ;; lazy
-  (let ((pairs
-          (conjoin-charset-pairs (charset-pairs ct1)
-                                 (negate-charset-pairs (charset-pairs ct2)))))
-    (if (null pairs)
-        (bot)
-        (make-instance 'charset :pairs pairs))))
+  (charset (conjoin-charset-pairs (charset-pairs ct1)
+                                  (negate-charset-pairs (charset-pairs ct2)))))
 
 (defmethod unparse ((ct charset))
   (let ((pairs (charset-pairs ct)))

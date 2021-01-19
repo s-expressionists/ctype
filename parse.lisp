@@ -52,8 +52,7 @@
                             :low i :lxp nil :high i :hxp nil))
             (loop for c in characters
                   for code = (char-code c)
-                  collect (make-instance 'charset
-                            :pairs (list (cons code code))))))))
+                  collect (charset (list (cons code code))))))))
 
 (defun error-interval-designator (nondesignator &optional kind)
   (error "~a is not a valid interval designator~@[ for type ~a~]"
@@ -284,18 +283,18 @@
     ;; them) except in some subclassing cases, like with subclasses of FUNCTION.
     ((array) (array-ctype :either '* '* env))
     ((atom) (negate (ccons (top) (top))))
-    ((base-char) (make-instance 'charset :pairs +base-charset+))
+    ((base-char) (charset +base-charset+))
     ((base-string) (array-ctype :either 'base-char '* env))
     ((bignum) (negate (specifier-ctype 'fixnum env)))
     ((bit-vector) (array-ctype :either 'bit '(*) env))
-    ((character) (make-instance 'charset :pairs `((0 . ,(1- char-code-limit)))))
+    ((character) (charset `((0 . ,(1- char-code-limit)))))
     ((compiled-function)
      (conjunction (function-ctype '* '* env)
                   (make-instance 'csatisfies :fname 'compiled-function-p)))
     ((complex) (complex-ctype '* env))
     ((cons) (ccons (top) (top)))
     ((double-float) (range-ctype 'double-float '* '* env))
-    ((extended-char) (negate (make-instance 'charset :pairs +base-charset+)))
+    ((extended-char) (negate (charset +base-charset+)))
     ((fixnum)
      (range-ctype 'integer most-negative-fixnum most-positive-fixnum env))
     ((float) (range-ctype 'float '* '* env))
@@ -325,7 +324,7 @@
                   collect (array-ctype :simple uaet '(*) env))))
     ((simple-vector) (array-ctype :simple 't '(*) env))
     ((single-float) (range-ctype 'single-float '* '* env))
-    ((standard-char) (make-instance 'charset :pairs +standard-charset+))
+    ((standard-char) (charset +standard-charset+))
     ((string)
      (apply #'disjoin
             (loop for uaet in +string-uaets+

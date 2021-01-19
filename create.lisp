@@ -29,6 +29,11 @@
       (bot)
       (make-instance 'ccons :car car :cdr cdr)))
 
+(defun charset (pairs)
+  (if (null pairs)
+      (bot)
+      (make-instance 'charset :pairs pairs)))
+
 (defun cmember (&rest members)
   (if members
       (make-instance 'cmember :members members)
