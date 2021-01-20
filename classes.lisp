@@ -97,18 +97,3 @@
 
 (defclass csatisfies (ctype)
   ((%fname :initarg :fname :reader csatisfies-fname)))
-
-#|
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;; PARSING
-;;;
-
-(defun specifier-ctype (type-specifier &optional env)
-  (let ((ts (cleavir-env:type-expand env type-specifier)))
-    (etypecase ts
-      (class
-       (case (class-name class)
-         ((null) (cmember nil))
-         ((cons) (ccons (top) (top)))
-|#
