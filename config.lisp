@@ -14,9 +14,10 @@
 
 ;;;
 
-(defconstant +ratiop+
-  #+clasp 'ext::ratiop
-  #+sbcl 'sb-int:ratiop
+(declaim (inline ratiop))
+(defun ratiop (object)
+  #+clasp (ext::ratiop object)
+  #+sbcl (sb-int:ratiop object)
   #-(or clasp sbcl) (error "RATIOP not defined for implementation"))
 
 (define-constant +floats+
@@ -56,15 +57,14 @@
   #-(or clasp sbcl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
-(define-constant +simple-array-p+
-  #+clasp '(lambda (o) (if (cleavir-primop:typeq o core:abstract-simple-vector)
-                           t nil))
-  #+sbcl 'sb-kernel:simple-array-p
+(declaim (inline simple-array-p))
+(defun simple-array-p (object)
+  #+clasp (if (cleavir-primop:typeq object core:abstract-simple-vector) t nil)
+  #+sbcl (sb-kernel:simple-array-p object)
   #-(or clasp sbcl)
   (if +complex-arrays-exist-p+
       (error "SIMPLE-ARRAY-P not defined for implementation")
-      '(lambda (o) (declare (ignore o)) t))
-  :test #'equal)
+      t))
 
 ;;; List of (classname type-specifier); specifier-ctype will resolve
 ;;; classes with the former name in the same way as it would resolve the
@@ -232,6 +232,6 @@
 (defmacro range-kindp (objectf kindf)
   `(ecase ,kindf
      ((integer) (integerp ,objectf))
-     ((ratio) (,+ratiop+ ,objectf))
+     ((ratio) (ratiop ,objectf))
      ,@(loop for (kind . pred) in +floats+
              collect `((,kind) (,pred ,objectf)))))
