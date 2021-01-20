@@ -33,9 +33,26 @@ This system is intended for use in an implementation of `typep` and `subtypep`, 
  * `typexpand`: A function of a type specifier and an environment, that performs any `deftype` expansions, analogous to `macroexpand`.
  * `complex-ucptp`: A macro that expands into code that returns ture iff the object its first form evaluates into, which is a `complex`, has the given upgraded complex part type.
 
+Additionally, there is a constraint that `char-code-limit` is the actual upper limit of character codes (i.e. there are no positive integers less than `char-code-limit` that are not character codes), and that `cl:upgraded-array-element-type` and `cl:upgraded-complex-part-type` return objects that can be sensibly compared with `cl:equal`.
+
 # Classes
 
-Ctypes are of class `ctype`. Various subclasses of `ctype` implement kinds of types in the CL type system. Additional classes may be defined by the programmer.
+Ctypes are of class `ctype`. Various subclasses of `ctype` implement kinds of types in the CL type system. The following subclasses are defined by the system:
+
+ * `cclass`: a ctype representing a class. The class may be read with the `cclass-class` function.
+ * `negation`: The negation of its `negation-ctype`.
+ * `conjunction`/`disjunction`: Represents uses of the `and`/`or` (resp.) type specifier that could not be further simplified. `junction-ctypes` returns a list of the ctypes it is a con/disjunction of.
+ * `ccons`: A cons type. `ccons-car` and `ccons-cdr` read the `car` and `cdr` types respectively.
+ * `range`: A range of real numbers. `range-kind` is one of `integer`, `ratio`, `short-float`, `single-float`, `double-float`, or `long-float`. `range-low`, `range-low-exclusive-p`, `range-high`, and `range-high-exclusive-p` read the properties of the range.
+ * `ccomplex`: A `complex` type. `ccomplex-ucpt` reads the upgraded complex part type, which is either the symbol `cl:*`, or something returned by `cl:upgraded-complex-part-type`.
+ * `cmember`: A `member` or `eql` type. `cmember-members` returns a list of the objects of the type.
+ * `carray`: An array type. `carray-simplicity` reads `:simple` or `:complex` accordingly; array types including both are represented as disjunctions. `carray-uaet` reads the upgraded array element type. `carray-dims` reads the dimension specification, which is a `dimension-spec` as accepted by the `cl:array` compound type specifier.
+ * `charset`: A subtype of `character`. `charset-pairs` reads the description of the codes included, which is as described above for `+standard-charset+` in the configuration section.
+ * `cvalues`: A `values` type.
+ * `cfunction`: A `function` type.
+ * `csatisfies`: A `satisfies` type.
+
+Additional classes may be defined by the programmer.
 
 # Generic functions
 
