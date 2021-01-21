@@ -128,6 +128,8 @@
                        (list ulow))
                    (list ulow uhigh))))
     (if (eq kind 'ratio) ; no extended ratio type in CL, so we do stupid things
-        `(and (not integer)
-              ,@(if rest `((rational ,@rest)) '(rational)))
+        (if rest
+            `(and (not integer)
+                  ,@(if rest `((rational ,@rest)) '(rational)))
+            'ratio)
         (if rest `(,kind ,@rest) kind))))
