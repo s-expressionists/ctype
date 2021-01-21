@@ -115,6 +115,44 @@
       (t ;; Ranges are not contiguous - give up
        (call-next-method)))))
 
+(defmethod subtract ((ct1 range) (ct2 range))
+  (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
+        (low1 (range-low ct1)) (low2 (range-low ct2))
+        (lxp1 (range-low-exclusive-p ct1))
+        (lxp2 (range-low-exclusive-p ct2))
+        (high1 (range-high ct1)) (high2 (range-high ct2))
+        (hxp1 (range-high-exclusive-p ct1))
+        (hxp2 (range-high-exclusive-p ct2)))
+    (cond ((not (eq rk1 rk2)) ct1)
+          ((and low1 high2
+                (or (< high2 low1) (and (= high2 low1) (or hxp2 lxp1))))
+           ;; ct2 is too negative to overlap with ct1
+           ct1)
+          ((and high1 low2
+                (or (> low2 high1) (and (= low2 high1) (or lxp2 hxp1))))
+           ;; ct2 is too positive to overlap with ct1
+           ct1)
+          ;; ct2 overlaps ct1, so we actually need to do something here.
+          ((or (not low2)
+               (and low1 (or (< low2 low1)
+                             (and (= low2 low1) (or lxp1 (not lxp2))))))
+           (if (or (not high2)
+                   (and high1 (or (> high2 high1)
+                                  (and (= high2 high1) (or hxp1 (not hxp2))))))
+               ;; ct1 is a strict subrange of ct1
+               (bot)
+               ;; ct2's low is <= that of ct1, so chop off the low end of ct1.
+               (range rk1 high2 (not hxp2) high1 hxp1)))
+          ((or (not high2)
+               (and high1 (or (> high2 high1)
+                              (and (= high2 high1) (or hxp1 (not hxp2))))))
+           ;; ct2's high is >= that of ct1, so chop off the high end of ct1.
+           (range rk1 low1 lxp1 low2 (not lxp2)))
+          (t
+           ;; ct2 is a strict subrange of ct1
+           (disjunction (range rk1 low1 lxp1 low2 (not lxp2))
+                        (range rk1 high2 (not hxp2) high1 hxp1))))))
+
 (defmethod unparse ((ct range))
   (let* ((kind (range-kind ct))
          (low (range-low ct)) (high (range-high ct))
