@@ -12,10 +12,12 @@
        (top-p (cfunction-returns cfunction))))
 
 (defmethod ctypep (object (ct cfunction))
-  (if (top-function-p ct)
-      (functionp object)
-      (error "Cannot use complex function type ~a for ~a"
-             ct 'ctypep)))
+  (if (functionp object)
+      (if (top-function-p ct)
+          t
+          (error "Cannot use complex function type ~a for ~a"
+                 ct 'ctypep))
+      nil))
 
 (defun sub-lambda-list-p (ll1 ll2)
   (let ((req1 (lambda-list-required ll1)) (req2 (lambda-list-required ll2))
