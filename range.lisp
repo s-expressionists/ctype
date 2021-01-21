@@ -32,6 +32,8 @@
                                 (not (range-high-exclusive-p ct2)))))))))
    t))
 
+(defmethod cofinitep ((ct range)) (values nil t))
+
 (defmethod negate ((ct range))
   ;; (not (real x (y))) = (or (not real) (real * (x)) (real y *))
   (let* ((kind (range-kind ct))

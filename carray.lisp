@@ -37,6 +37,8 @@
                                          (= dim1 dim2)))))))
      t)))
 
+(defmethod cofinitep ((ct carray)) (values nil t))
+
 (defmethod conjoin/2 ((ct1 carray) (ct2 carray))
   (let ((uaet1 (carray-uaet ct1)) (dims1 (carray-dims ct1))
         (simplicity1 (carray-simplicity ct1))

@@ -8,6 +8,8 @@
   ;; this should return NIL NIL except with unredefinable classes.
   (values (subclassp (cclass-class ct1) (cclass-class ct2)) t))
 
+(defmethod cofinitep ((ct cclass)) (values nil t))
+
 (defmethod conjoin/2 ((ct1 cclass) (ct2 cclass))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
     (cond ((eq c1 c2) ct1)

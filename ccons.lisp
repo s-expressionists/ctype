@@ -28,6 +28,8 @@
               (values t t)
               (values nil (and surety1 surety2)))))))
 
+(defmethod cofinitep ((ct1 ccons)) (values nil t))
+
 (defmethod negate ((ctype ccons))
   ;; (not (cons a b))
   ;; = (or (not cons) (cons a (not b)) (cons (not a) b) (cons (not a) (not b)))

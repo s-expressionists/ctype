@@ -18,6 +18,12 @@
            (values nil t))
           (t (values nil nil)))))
 
+;;; Ditto the restrictions etc., and returns the same kinds of values.
+;;; Determines whether the negation of a type is finite. This is used to
+;;; resolve questions like (subtypep '(not X) '(member ...))
+(defgeneric cofinitep (ctype)
+  (:method ((ct ctype)) (values nil nil)))
+
 (defgeneric negate (ctype)
   (:method ((ctype ctype)) (negation ctype)))
 

@@ -59,6 +59,8 @@
                 (surety1 (values t t))
                 (t (values nil nil)))))))
 
+(defmethod cofinitep ((ct cfunction)) (values nil t))
+
 (defun lambda-list-conjoin (ll1 ll2)
   (let* ((req1 (lambda-list-required ll1)) (req2 (lambda-list-required ll2))
          (opt1 (lambda-list-optional ll1)) (opt2 (lambda-list-optional ll2))

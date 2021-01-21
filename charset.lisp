@@ -32,6 +32,8 @@
            never (position pair1 pairs2 :test #'overlap-p)))
    t))
 
+(defmethod cofinitep ((ct charset)) (values nil t))
+
 (defun negate-charset-pairs (pairs)
   (if (null pairs)
       `((0 . ,(1- char-code-limit)))

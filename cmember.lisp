@@ -10,6 +10,8 @@
 (defmethod subctypep ((ct1 cmember) (ct2 cmember))
   (values (subsetp (cmember-members ct1) (cmember-members ct2)) t))
 
+(defmethod cofinitep ((ct cmember)) (values nil t))
+
 (defmethod conjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember
          (intersection (cmember-members ct1) (cmember-members ct2))))

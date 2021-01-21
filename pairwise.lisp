@@ -134,6 +134,14 @@
 ;;; characters. charsets are not infinite, though.
 (defmethod subctypep ((ct1 charset) (ct2 cmember)) (values nil t))
 
+;;; Resolve some (subtypep '(not X) '(member ...)) questions negatively.
+(defmethod subctypep ((ct1 negation) (ct2 cmember))
+  (multiple-value-bind (cofinitep surety)
+      (cofinitep (negation-ctype ct1))
+    (if (and surety (not cofinitep))
+        (values nil t)
+        (call-next-method))))
+
 ;;; These methods exist so that disjoin-cmember doesn't produce nested
 ;;; disjunctions, e.g. from (or boolean list) => (or (eql t) (or cons null))
 (defun disjoin-cmember-disjunction (cmember disjunction)
