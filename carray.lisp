@@ -10,11 +10,12 @@
          (or (eq uaet '*)
              (equal uaet (array-element-type object)))
          (or (eq dims '*)
-             (and (= (array-rank object) (length dims))
-                  (loop for i from 0
-                        for dim in dims
-                        always (or (eq dim '*)
-                                   (= (array-dimension object i) dim))))))))
+             (let ((rank (length dims)))
+               (and (= (array-rank object) rank)
+                    (loop for i from 0 below rank
+                          for dim in dims
+                          always (or (eq dim '*)
+                                     (= (array-dimension object i) dim)))))))))
 (defmethod ctypep ((object t) (ct carray)) nil)
 
 (defmethod subctypep ((ct1 carray) (ct2 carray))
