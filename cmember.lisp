@@ -26,11 +26,12 @@
 (defun disjoin-cmember (cmember ctype)
   (let ((non (loop with diff = nil
                    for mem in (cmember-members cmember)
-                   if (ctypep cmember ctype)
+                   if (ctypep mem ctype)
+                     do (setf diff t)
+                   else
                      collect mem
-                   else do (setf diff t)
                    ;; If there's no change, give up to avoid recursion
-                   finally (unless diff (return nil)))))
+                   finally (unless diff (return-from disjoin-cmember nil)))))
     (if non
         (disjunction (apply #'cmember non) ctype)
         ctype)))
