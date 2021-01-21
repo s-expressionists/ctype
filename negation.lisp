@@ -60,4 +60,7 @@
   (or (conjoin/2 ct1 (negation-ctype ct2)) (call-next-method)))
 
 (defmethod unparse ((ct negation))
-  `(not ,(unparse (negation-ctype ct))))
+  (let ((up (unparse (negation-ctype ct))))
+    (if (eq up 'cons)
+        'atom
+        `(not ,up))))

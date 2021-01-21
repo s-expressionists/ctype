@@ -127,6 +127,11 @@
                        nil
                        (list ulow))
                    (list ulow uhigh))))
+    ;; print fixnum nicely
+    (when (and (eq kind 'integer)
+               (eql low most-negative-fixnum) (eql high most-positive-fixnum))
+      (return-from unparse 'fixnum))
+    ;; general case
     (if (eq kind 'ratio) ; no extended ratio type in CL, so we do stupid things
         (if rest
             `(and (not integer)

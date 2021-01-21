@@ -68,5 +68,6 @@
 (defmethod unparse ((ct cmember))
   (let ((mems (cmember-members ct)))
     (cond ((equal mems '(nil)) 'null)
+          ((or (equal mems '(nil t)) (equal mems '(t nil))) 'boolean)
           ((null (rest mems)) `(eql ,(first mems)))
           (t `(member ,@(cmember-members ct))))))

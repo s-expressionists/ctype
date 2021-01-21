@@ -86,8 +86,22 @@
   (or (disjoin-conjunction ct2 ct1) (call-next-method)))
 
 (defmethod unparse ((ct conjunction))
-  (let ((cts (junction-ctypes ct)))
-    (if (null cts)
-        't
-        ;; (and x) should be impossible under normalization so don't check.
-        `(and ,@(mapcar #'unparse cts)))))
+  (let ((ups (mapcar #'unparse (junction-ctypes ct))))
+    ;; Pick off special cases
+    (when (null ups) (return-from unparse 't))
+    ;; compiled-function
+    (when (and (member 'function ups)
+               (member '(satisfies compiled-function-p) ups :test #'equal))
+      (setf ups (delete 'function ups)
+            ups (delete '(satisfies compiled-function-p) ups :test #'equal))
+      (push 'compiled-function ups))
+    ;; keyword
+    (when (and (member 'symbol ups)
+               (member '(satisfies keywordp) ups :test #'equal))
+      (setf ups (delete 'symbol ups)
+            ups (delete '(satisfies keywordp) ups :test #'equal))
+      (push 'keyword ups))
+    ;; finally,
+    (if (= (length ups) 1)
+        (first ups)
+        `(and ,@ups))))

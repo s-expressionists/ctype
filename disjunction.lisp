@@ -71,7 +71,15 @@
   (conjoin-disjunction ct2 ct1))
 
 (defmethod unparse ((ct disjunction))
-  (let ((cts (junction-ctypes ct)))
-    (if (null cts)
-        'nil
-        `(or ,@(mapcar #'unparse cts)))))
+  (let ((ups (mapcar #'unparse (junction-ctypes ct))))
+    ;; special cases
+    (when (null ups) (return-from unparse 'nil))
+    ;; list
+    (when (and (member 'null ups) (member 'cons ups))
+      (setf ups (delete 'null ups)
+            ups (delete 'cons ups))
+      (push 'list ups))
+    ;; finally,
+    (if (= (length ups) 1)
+        (first ups)
+        `(or ,@ups))))
