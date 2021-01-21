@@ -247,6 +247,7 @@
     ((base-string) (array-ctype :either 'base-char '* env))
     ((bignum) (negate (specifier-ctype 'fixnum env)))
     ((bit-vector) (array-ctype :either 'bit '(*) env))
+    ((boolean) (cmember nil t))
     ((character) (charset `((0 . ,(1- char-code-limit)))))
     ((compiled-function)
      (conjunction (function-ctype '* '* env) (csatisfies 'compiled-function-p)))
