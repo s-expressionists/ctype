@@ -129,3 +129,7 @@
 (definfinite ccomplex)
 (definfinite carray)
 (definfinite cfunction)
+
+;;; We normalize characters out of member types, so members never contain
+;;; characters. charsets are not infinite, though.
+(defmethod subctypep ((ct1 charset) (ct2 cmember)) (values nil t))
