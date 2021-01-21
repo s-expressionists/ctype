@@ -133,3 +133,20 @@
 ;;; We normalize characters out of member types, so members never contain
 ;;; characters. charsets are not infinite, though.
 (defmethod subctypep ((ct1 charset) (ct2 cmember)) (values nil t))
+
+;;; These methods exist so that disjoin-cmember doesn't produce nested
+;;; disjunctions, e.g. from (or boolean list) => (or (eql t) (or cons null))
+(defun disjoin-cmember-disjunction (cmember disjunction)
+  (let* ((scts (junction-ctypes disjunction))
+         (non (loop for elem in (cmember-members cmember)
+                    unless (loop for sct in scts
+                                   thereis (ctypep elem sct))
+                      collect elem)))
+    ;; We use disjoin instead of creating a disjunction in case one of our
+    ;; disjunction ctypes is another cmember to be merged.
+    ;; Inefficient? Probably.
+    (apply #'disjoin (apply #'cmember non) scts)))
+(defmethod disjoin/2 ((ct1 cmember) (ct2 disjunction))
+  (disjoin-cmember-disjunction ct1 ct2))
+(defmethod disjoin/2 ((ct1 disjunction) (ct2 cmember))
+  (disjoin-cmember-disjunction ct2 ct1))
