@@ -21,7 +21,7 @@ The functions `top` and `bot` return the top ctype and bottom ctype (`t` and `ni
 
 This system is intended for use in an implementation of `typep` and `subtypep`, and so does not use `cl:typep` or `cl:subtypep` at all. Unfortunately, not all aspects of the type system on a given Lisp system are determinable with standard means without using `typep` and `subtypep`, and must be manually configured. The configuration of the system is in config.lisp and consists of
 
- * `ratiop`: a function that returns true iff its one argument evaluates to a ratio.
+ * `ratiop`: a function that returns true iff its one argument is a ratio.
  * `+floats+`: An alist. Each `car` is one of `short-float`, `single-float`, `double-float`, or `long-float`. Each `cdr` is a symbol naming an operator that returns true iff its one argument is of the corresponding type. If the system merges one or more float types, only the float types it actually has should be defined, as explained in the CLHS page on these types.
  * `+standard-charset+`: A list of pairs of character codes. Each pair represents an inclusive range. These ranges must not overlap or touch. All character codes for characters of type `standard-char`, and no others, should be included. For example, as mentioned in the file implementations where character codes are as in ASCII will have a `+standard-charset+` of `((10 . 10) (32 . 126))`.
  * `+base-charset+`: As `+standard-charset+`, but all and only codes for characters of type `base-char` should be included.
