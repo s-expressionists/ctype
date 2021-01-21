@@ -238,9 +238,9 @@
 
 (defun symbol-specifier-ctype (sym &optional env)
   (case sym
-    ;; We include any CL type that an implementation might have defined as
-    ;; a class but which we would like to be a ctype (which is kind of a lot of
-    ;; them) except in some subclassing cases, like with subclasses of FUNCTION.
+    ;; We include all standard CL atomic type specifiers that either can be not
+    ;; classes (e.g. simple-bit-vector, nil), or which are or can be classes
+    ;; but which we would prefer a ctype for, like CONS.
     ((array) (array-ctype :either '* '* env))
     ((atom) (negate (ccons (top) (top))))
     ((base-char) (charset +base-charset+))
@@ -263,6 +263,7 @@
                             (csatisfies 'keywordp)))
     ((list) (disjunction (cmember nil) (ccons (top) (top))))
     ((long-float) (range-ctype 'long-float '* '* env))
+    ((nil) (bot))
     ((null) (cmember nil))
     ((number) (disjunction (range-ctype 'real '* '* env)
                            (complex-ctype '* env)))
