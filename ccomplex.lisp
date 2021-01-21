@@ -5,7 +5,7 @@
 (defmethod ctypep ((object t) (ct ccomplex)) nil)
 
 (defmethod subctypep ((ct1 ccomplex) (ct2 ccomplex))
-  (equal (ccomplex-ucpt ct1) (ccomplex-ucpt ct2)))
+  (values (equal (ccomplex-ucpt ct1) (ccomplex-ucpt ct2)) t))
 
 (defmethod disjointp ((ct1 ccomplex) (ct2 ccomplex))
   (let ((ucpt1 (ccomplex-ucpt ct1)) (ucpt2 (ccomplex-ucpt ct2)))
