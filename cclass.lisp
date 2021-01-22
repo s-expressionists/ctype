@@ -18,7 +18,11 @@
 (defparameter *disjoint-classes*
   (list (find-class 'symbol) (find-class 'hash-table) (find-class 'function)
         (find-class 'readtable) (find-class 'package) (find-class 'pathname)
-        (find-class 'stream) (find-class 'random-state) (find-class 'restart)))
+        (find-class 'stream) (find-class 'random-state) (find-class 'restart)
+        ;; These appear AFTER the system classes, so that even if one of the
+        ;; system classes is a subclass of structure-object or whatever, it can
+        ;; be understood to be disjoint from user classes.
+        (find-class 'structure-object) (find-class 'standard-object)))
 
 (defmethod disjointp ((ct1 cclass) (ct2 cclass))
   ;; Pick off cases defined by 4.2.2.
