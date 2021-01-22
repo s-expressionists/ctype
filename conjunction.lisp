@@ -72,14 +72,27 @@
   (apply #'conjoin ct1 (junction-ctypes ct2)))
 
 (defun disjoin-conjunction (conjunction ctype)
-  ;; If any disjunction is uninteresting, give up.
-  ;; This should have the effect of preferring a sum of products.
-  (apply #'conjoin
-         (loop for sct in (junction-ctypes conjunction)
-               for dis = (disjoin/2 sct ctype)
-               if dis
-                 collect dis
-               else do (return-from disjoin-conjunction nil))))
+  ;; If any disjunction is uninteresting, give up - except that if some
+  ;; of the disjunctions are T, factor those out.
+  ;; (This factoring is important for correctly computing that (or x (not x))
+  ;;  is top when X involves complicated intersections, for example.)
+  ;; This is more complicated than the analogous conjoin-disjunction in order
+  ;; to avoid infinite recursion while preferring a sum of products.
+  (loop with topseent = nil
+        for sct in (junction-ctypes conjunction)
+        for dis = (disjoin/2 sct ctype)
+        if (not dis)
+          collect sct into uninteresting
+        else if (top-p dis)
+               do (setf topseent t)
+        else collect dis into djs
+             and collect sct into uninteresting
+        finally (return
+                  (cond ((null uninteresting) (apply #'conjoin djs))
+                        (topseent
+                         (disjunction ctype
+                                      (apply #'conjunction uninteresting)))
+                        (t nil)))))
 (defmethod disjoin/2 ((ct1 conjunction) (ct2 ctype))
   (or (disjoin-conjunction ct1 ct2) (call-next-method)))
 (defmethod disjoin/2 ((ct1 ctype) (ct2 conjunction))
