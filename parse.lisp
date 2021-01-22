@@ -29,22 +29,40 @@
     (ccons car cdr)))
 
 (defun member-ctype (elements)
-  ;; Cut out integer ranges and character sets.
-  ;; Doing real ranges more generally might be a good idea (TODO?),
-  ;; but those are not as mergeable.
-  (multiple-value-bind (characters integers non)
+  ;; Cut out real ranges and character sets.
+  (multiple-value-bind
+        (characters integers ratios shorts singles doubles longs non)
       (loop for elem in elements
             if (integerp elem)
               collect elem into integers
+            else if (ratiop elem)
+                   collect elem into ratios
+            else if (let ((pred (cdr (assoc 'short-float +floats+))))
+                      (and pred (funcall pred elem)))
+                   collect elem into shorts
+            else if (let ((pred (cdr (assoc 'single-float +floats+))))
+                      (and pred (funcall pred elem)))
+                   collect elem into singles
+            else if (let ((pred (cdr (assoc 'double-float +floats+))))
+                      (and pred (funcall pred elem)))
+                   collect elem into doubles
+            else if (let ((pred (cdr (assoc 'long-float +floats+))))
+                      (and pred (funcall pred elem)))
+                   collect elem into longs
             else if (characterp elem)
                    collect elem into characters
             else collect elem into non
-            finally (return (values characters integers non)))
+            finally (return (values characters integers ratios
+                                    shorts singles doubles longs non)))
     (apply #'disjoin ; let disjunction handle merging
            (apply #'cmember non)
            (append
-            (loop for i in integers
-                  collect (range 'integer i nil i nil))
+            (loop for i in integers collect (range 'integer i nil i nil))
+            (loop for r in ratios collect (range 'ratio r nil r nil))
+            (loop for s in shorts collect (range 'short-float s nil s nil))
+            (loop for s in singles collect (range 'single-float s nil s nil))
+            (loop for d in doubles collect (range 'double-float d nil d nil))
+            (loop for l in longs collect (range 'long-float l nil l nil))
             (loop for c in characters
                   for code = (char-code c)
                   collect (charset (list (cons code code))))))))
