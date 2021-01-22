@@ -62,12 +62,27 @@
          (conjoin (ccons-cdr ct1) (ccons-cdr ct2))))
 
 (defmethod disjoin/2 ((ct1 ccons) (ct2 ccons))
-  (ccons (disjoin (ccons-car ct1) (ccons-car ct2))
-         (disjoin (ccons-cdr ct1) (ccons-cdr ct2))))
+  ;; (or (cons a b) (cons b d)) is in general a strict subtype of
+  ;; (cons (or a b) (cons b d)), which includes (cons a d) etc.
+  ;; TODO: Enhance this. For now, we just do the special case of
+  ;; (or (cons a b) (cons a d)) = (cons a (or b d)).
+  (let ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
+        (car2 (ccons-car ct2)) (cdr2 (ccons-cdr ct2)))
+    (cond ((and (subctypep car1 car2) (subctypep car2 car1))
+           (ccons car1 (disjoin cdr1 cdr2)))
+          ((and (subctypep cdr1 cdr2) (subctypep cdr2 cdr1))
+           (ccons (disjoin car1 car2) cdr1))
+          (t (call-next-method)))))
 
 (defmethod subtract ((ct1 ccons) (ct2 ccons))
-  (ccons (subtract (ccons-car ct1) (ccons-car ct2))
-         (subtract (ccons-cdr ct1) (ccons-cdr ct2))))
+  ;; similar concerns as in disjoin/2.
+  (let ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
+        (car2 (ccons-car ct1)) (cdr2 (ccons-cdr ct2)))
+    (cond ((and (subctypep car1 car2) (subctypep car2 car1))
+           (ccons car1 (conjoin cdr1 (negate cdr2))))
+          ((and (subctypep cdr1 cdr2) (subctypep cdr2 cdr1))
+           (ccons (conjoin car1 (negate car2)) cdr1))
+          (t (call-next-method)))))
 
 (defmethod unparse ((ct ccons))
   (let ((car (ccons-car ct)) (cdr (ccons-cdr ct)))
