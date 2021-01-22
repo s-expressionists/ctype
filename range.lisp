@@ -32,6 +32,22 @@
                                 (not (range-high-exclusive-p ct2)))))))))
    t))
 
+(defmethod disjointp ((ct1 range) (ct2 range))
+  (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
+        (low1 (range-low ct1)) (low2 (range-low ct2))
+        (lxp1 (range-low-exclusive-p ct1))
+        (lxp2 (range-low-exclusive-p ct2))
+        (high1 (range-high ct1)) (high2 (range-high ct2))
+        (hxp1 (range-high-exclusive-p ct1))
+        (hxp2 (range-high-exclusive-p ct2)))
+    (values
+     (or (not (eq rk1 rk2))
+         (and high1 low2
+              (or (< high1 low2) (and (= high1 low2) (or hxp1 lxp2))))
+         (and high2 low1
+              (or (< high2 low1) (and (= high2 low1) (or hxp2 lxp1)))))
+     t)))
+
 (defmethod cofinitep ((ct range)) (values nil t))
 
 (defmethod negate ((ct range))
