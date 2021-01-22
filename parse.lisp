@@ -244,7 +244,7 @@
     ((array) (array-ctype :either '* '* env))
     ((atom) (negate (ccons (top) (top))))
     ((base-char) (charset +base-charset+))
-    ((base-string) (array-ctype :either 'base-char '* env))
+    ((base-string) (array-ctype :either 'base-char '(*) env))
     ((bignum) (negate (specifier-ctype 'fixnum env)))
     ((bit-vector) (array-ctype :either 'bit '(*) env))
     ((boolean) (cmember nil t))
@@ -275,8 +275,8 @@
     ((short-float) (range-ctype 'short-float '* '* env))
     ((signed-byte) (range-ctype 'integer '* '* env))
     ((simple-array) (array-ctype :simple '* '* env))
-    ((simple-base-string) (array-ctype :simple 'base-char '* env))
-    ((simple-bit-vector) (array-ctype :simple 'bit '* env))
+    ((simple-base-string) (array-ctype :simple 'base-char '(*) env))
+    ((simple-bit-vector) (array-ctype :simple 'bit '(*) env))
     ((simple-string)
      (apply #'disjunction
             (loop for uaet in +string-uaets+
