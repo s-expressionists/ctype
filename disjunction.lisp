@@ -16,7 +16,7 @@
 (defmethod subctypep ((ct1 ctype) (ct2 disjunction))
   (let ((cts (junction-ctypes ct2)))
     (if (null cts)
-        (values (bot-p ct1) t)
+        (call-next-method)
         ;; if a <: z then a <: z v y as z <: z v y.
         ;; if a ~<: z and a ~<: y and z v y is not bot then a ~<: z v y.
         ;; I think. Assuming we normalize hard enough.
@@ -26,12 +26,16 @@
                    (cond ((not subsurety) (setf surety nil))
                          (val (return (values t t)))))
               finally (return (if surety (values nil t) (call-next-method)))))))
+(defmethod subctypep ((ct1 disjunction) (ct2 disjunction))
+  (if (bot-p ct1)
+      (values t t)
+      (call-next-method)))
 
 (macrolet
     ((disjunction-disjointp (disjunction ctype)
        `(let ((cts (junction-ctypes ,disjunction)))
           (if (null cts)
-              (values (bot-p ,ctype) t)
+              (values t t)
               ;; if a ^ z != 0 then (a v b) ^ z != 0.
               ;; if a ^ z = 0 and b ^ z = 0 then (a v b) ^ z = 0,
               ;; unless a v b = T.

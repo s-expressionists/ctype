@@ -117,6 +117,25 @@
       (call-next-method)
       ct1))
 
+;;; Some ctypes are never empty and also never top. Define this explicitly.
+(defmacro defexistential (class)
+  `(progn
+     (defmethod subctypep ((ct1 ,class) (ct2 disjunction))
+       (if (bot-p ct2)
+           (values nil t)
+           (call-next-method)))
+     (defmethod subctypep ((ct1 conjunction) (ct2 ,class))
+       (if (top-p ct1)
+           (values nil t)
+           (call-next-method)))))
+(defexistential cclass)
+(defexistential ccons)
+(defexistential range)
+(defexistential ccomplex)
+(defexistential carray)
+(defexistential charset)
+(defexistential cfunction)
+
 ;;; Some ctypes represent an infinite number of possible objects, so they are
 ;;; never subctypes of any member ctype.
 

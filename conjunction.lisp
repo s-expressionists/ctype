@@ -7,7 +7,7 @@
 (defmethod subctypep ((ct1 conjunction) (ct2 ctype))
   (let ((cts (junction-ctypes ct1)))
     (if (null cts)
-        (values (top-p ct2) t)
+        (call-next-method)
         ;; if a <: z then a ^ b <: z, as a ^ b <: a.
         ;; if a ~<: z and b ~<: z and a ^ b is not top then a ^ b ~<: z
         (loop with surety = t
@@ -39,7 +39,7 @@
     ((conjunction-disjointp (conjunction ctype)
        `(let ((cts (junction-ctypes ,conjunction)))
           (if (null cts)
-              (values t t)
+              (values nil t)
               ;; if a ^ z = 0 then a ^ b ^ z = 0.
               ;; if a ^ z != 0 and b ^ z != 0 then a ^ b ^ z != 0,
               ;; unless a ^ b = 0.
