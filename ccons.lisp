@@ -64,14 +64,21 @@
 (defmethod disjoin/2 ((ct1 ccons) (ct2 ccons))
   ;; (or (cons a b) (cons b d)) is in general a strict subtype of
   ;; (cons (or a b) (cons b d)), which includes (cons a d) etc.
-  ;; TODO: Enhance this. For now, we just do the special case of
-  ;; (or (cons a b) (cons a d)) = (cons a (or b d)).
+  ;; TODO: Enhance this.
   (let ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
         (car2 (ccons-car ct2)) (cdr2 (ccons-cdr ct2)))
     (cond ((and (subctypep car1 car2) (subctypep car2 car1))
            (ccons car1 (disjoin cdr1 cdr2)))
           ((and (subctypep cdr1 cdr2) (subctypep cdr2 cdr1))
            (ccons (disjoin car1 car2) cdr1))
+          ;; FIXME: Redundant computation - but we want to get the type= cases
+          ;; first, so we'd have to be clever.
+          ((subtypep car1 car2)
+           (disjunction (ccons car1 (disjoin cdr1 cdr2))
+                        (ccons (conjoin car2 (negate car1)) cdr2)))
+          ((subtypep car2 car1)
+           (disjunction (ccons car2 (disjoin cdr2 cdr1))
+                        (ccons (conjoin car1 (negate car2)) cdr1)))
           (t (call-next-method)))))
 
 (defmethod subtract ((ct1 ccons) (ct2 ccons))
