@@ -39,12 +39,12 @@
           ((disjointp ct1 ct2) (bot))
           ;; These classes may have a common subclass. Who knows?
           ;; (Strictly speaking we could check...)
-          (t nil))))
+          (t (call-next-method)))))
 
 (defmethod disjoin/2 ((ct1 cclass) (ct2 cclass))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
     (cond ((eq c1 c2) ct1)
-          (t nil))))
+          (t (call-next-method)))))
 
 (defmethod unparse ((ct cclass))
   (class-name (cclass-class ct)))
