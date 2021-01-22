@@ -73,10 +73,10 @@
            (ccons (disjoin car1 car2) cdr1))
           ;; FIXME: Redundant computation - but we want to get the type= cases
           ;; first, so we'd have to be clever.
-          ((subtypep car1 car2)
+          ((subctypep car1 car2)
            (disjunction (ccons car1 (disjoin cdr1 cdr2))
                         (ccons (conjoin car2 (negate car1)) cdr2)))
-          ((subtypep car2 car1)
+          ((subctypep car2 car1)
            (disjunction (ccons car2 (disjoin cdr2 cdr1))
                         (ccons (conjoin car1 (negate car2)) cdr1)))
           (t (call-next-method)))))
