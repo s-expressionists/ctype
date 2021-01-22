@@ -121,44 +121,23 @@
     ((not pairs1) pairs2)
     ((not pairs2) pairs1)
     (t
-     (let ((res nil)
-           (pair1 (pop pairs1)) (pair2 (pop pairs2)))
-       (labels ((finish (pair rest)
-                  (push pair res)
-                  (loop for p in rest do (push p res))
-                  (return-from disjoin-charset-pairs (nreverse res)))
-                (advance1 ()
-                  (if (null pairs1)
-                      (finish pair2 pairs2)
-                      (setf pair1 (pop pairs1))))
-                (advance2 ()
-                  (if (null pairs2)
-                      (finish pair1 pairs1)
-                      (setf pair2 (pop pairs2)))))
-         (loop
-           ;; Put the higher pair on the right.
-           (when (> (car pair1) (car pair2))
-             (rotatef pair1 pair2)
-             (rotatef pairs1 pairs2))
-           (let ((pair1-high (cdr pair1)))
-             (cond
-               ((= (car pair2) (1+ pair1-high))
-                ;; they just barely touch.
-                ;; modify pair1 and then advance pair2.
-                (setf pair1 (cons (car pair1) (cdr pair2)))
-                (advance2))
-               ((> (car pair2) pair1-high)
-                ;; No overlap - include pair1 and move on
-                (push (cons (car pair1) pair1-high) res)
-                (advance1))
-               ((<= (cdr pair2) pair1-high)
-                ;; pair2 is a subrange of pair1, so discard pair2
-                (advance2))
-               (t
-                ;; (> (cdr pair2) (cdr pair1)) so we have partial overlap.
-                ;; modify pair2 and then advance pair1.
-                (setf pair2 (cons (car pair1) (cdr pair2)))
-                (advance1))))))))))
+     (let ((res nil))
+       (loop (let* ((current (if (> (caar pairs2) (caar pairs1))
+                                 (pop pairs1)
+                                 (pop pairs2)))
+                    (low (car current)) (high (cdr current)))
+               ;; Keep grabbing overlapping pairs until we run out.
+               (loop (cond ((and pairs1
+                                 (<= (caar pairs1) (1+ high)))
+                            (setf high (max high (cdr (pop pairs1)))))
+                           ((and pairs2
+                                 (<= (caar pairs2) (1+ high)))
+                            (setf high (max high (cdr (pop pairs2)))))
+                           (t (return)))) ; ran out
+               (push (cons low high) res)
+               ;; Check to see if we're really done.
+               (unless (or pairs1 pairs2)
+                 (return (nreverse res)))))))))
 
 (defmethod disjoin/2 ((ct1 charset) (ct2 charset))
   (charset (disjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
