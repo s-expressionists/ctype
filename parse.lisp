@@ -113,10 +113,7 @@
         (unless (or (not nhigh) (funcall test nhigh))
           (error-interval-designator high kind))
         (ecase kind
-          ((integer)
-           (let ((nlow (if (and nlow lxp) (1+ nlow) nlow))
-                 (nhigh (if (and nhigh hxp) (1- nhigh) nhigh)))
-             (range 'integer nlow nil nhigh nil)))
+          ((integer) (range 'integer nlow lxp nhigh hxp))
           ((rational) (rational-range nlow lxp nhigh hxp))
           ((float) (float-range nlow lxp nhigh hxp))
           ((short-float) (range (if (assoc 'short-float +floats+)
@@ -245,7 +242,9 @@
     ((atom) (negate (ccons (top) (top))))
     ((base-char) (charset +base-charset+))
     ((base-string) (array-ctype :either 'base-char '(*) env))
-    ((bignum) (negate (specifier-ctype 'fixnum env)))
+    ((bignum) (disjunction
+               (range 'integer nil nil (1- most-negative-fixnum) nil)
+               (range 'integer (1+ most-positive-fixnum) nil nil nil)))
     ((bit-vector) (array-ctype :either 'bit '(*) env))
     ((boolean) (cmember nil t))
     ((character) (charset `((0 . ,(1- char-code-limit)))))
