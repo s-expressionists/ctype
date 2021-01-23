@@ -6,34 +6,24 @@
 
 (defmethod subctypep ((ct1 conjunction) (ct2 ctype))
   (let ((cts (junction-ctypes ct1)))
-    (if (null cts)
-        (call-next-method)
-        ;; if a <: z then a ^ b <: z, as a ^ b <: a.
-        ;; if a ~<: z and b ~<: z and a ^ b is not top then a ^ b ~<: z
-        (loop with surety = t
-              for sct in cts
-              do (multiple-value-bind (val subsurety) (subctypep sct ct2)
-                   (cond ((not subsurety) (setf surety nil))
-                         (val (return (values t t)))))
-              finally (return (if surety (values nil t) (call-next-method)))))))
+    (cond
+      ;; if a <: z then a ^ b <: z, as a ^ b <: a
+      ((loop for sct in cts thereis (subctypep sct ct2)) (values t t))
+      ;; give up
+      (t (call-next-method)))))
 (defmethod subctypep ((ct1 ctype) (ct2 conjunction))
   ;; if a ~<: z then a ~<: z ^ y, as z ^ y <: z.
-  ;; if a <: z and a <: y then a <: z ^ y
-  (loop with surety = t
-        for sct in (junction-ctypes ct2)
-        do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
-             (cond ((not subsurety) (setf surety nil))
-                   ((not val) (return (values nil t)))))
-        finally (return (if surety (values t t) (call-next-method)))))
-;;; We need to define this particularly to avoid false negatives from the
-;;; first method above.
-(defmethod subctypep ((ct1 conjunction) (ct2 conjunction))
-  (loop with surety = t
-        for sct in (junction-ctypes ct2)
-        do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
-             (cond ((not subsurety) (setf surety nil))
-                   ((not val) (return (values nil t)))))
-        finally (return (if surety (values t t) (call-next-method)))))
+  ;; if a <: z and a <: y, a ^ z = a and a ^ y = a
+  ;; a <: z ^ y <=> a ^ z ^ y = a <=> (a ^ z) ^ (a ^ y) = a <=> a ^ a = a
+  ;; this also covers the case of ct2 being top.
+  (let ((cts (junction-ctypes ct2)))
+    (loop with surety = t
+          for sct in cts
+          do (multiple-value-bind (val subsurety)
+                 (subctypep ct1 sct)
+               (cond ((not subsurety) (setf surety nil))
+                     ((not val) (return (values nil t)))))
+          finally (return (if surety (values t t) (call-next-method))))))
 
 (macrolet
     ((conjunction-disjointp (conjunction ctype)

@@ -3,19 +3,6 @@
 ;;;; Pair methods
 ;;;; That is, methods on two specific ctype classes.
 
-;;; This is necessary since otherwise the usual method on (conjunction ctype)
-;;; would get called and might return false early.
-;;; It is identical to the (ctype disjunction) method, except it does
-;;; call-next-method instead of returning false.
-(defmethod subctypep ((ct1 conjunction) (ct2 disjunction))
-  (let ((cts (junction-ctypes ct2)))
-    (if (null cts)
-        (call-next-method)
-        (loop for sct in cts
-              when (subctypep ct1 sct)
-                return (values t t)
-              finally (return (call-next-method))))))
-
 ;;; cclass ctypes are excluded from several other ctypes (when things are
 ;;; normalized correctly), so we can mark their conjunctions as empty, etc.
 

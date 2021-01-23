@@ -6,30 +6,24 @@
 
 (defmethod subctypep ((ct1 disjunction) (ct2 ctype))
   ;; if a ~<: z then a v b ~<: z as a <: a v b.
-  ;; if a <: z and b <: z then a v b <: z.
-  (loop with surety = t
-        for sct in (junction-ctypes ct1)
-        do (multiple-value-bind (val subsurety) (subctypep sct ct2)
-             (cond ((not subsurety) (setf surety nil))
-                   ((not val) (return (values nil t)))))
-        finally (return (if surety (values t t) (call-next-method)))))
+  ;; if a <: z and b <: z, a v b <: z, as can be seen from a <: z <=> a ^ z = a:
+  ;; a v b <: z <=> (a v b) ^ z = a v b <=> (a ^ z) v (b ^ z) = a v b
+  ;; this also covers the case of ct1 being bot.
+  (let ((cts (junction-ctypes ct1)))
+    (loop with surety = t
+          for sct in cts
+          do (multiple-value-bind (val subsurety)
+                 (subctypep sct ct2)
+               (cond ((not subsurety) (setf surety nil))
+                     ((not val) (return (values nil t)))))
+          finally (return (if surety (values t t) (call-next-method))))))
 (defmethod subctypep ((ct1 ctype) (ct2 disjunction))
   (let ((cts (junction-ctypes ct2)))
-    (if (null cts)
-        (call-next-method)
-        ;; if a <: z then a <: z v y as z <: z v y.
-        ;; if a ~<: z and a ~<: y and z v y is not bot then a ~<: z v y.
-        ;; I think. Assuming we normalize hard enough.
-        (loop with surety = t
-              for sct in cts
-              do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
-                   (cond ((not subsurety) (setf surety nil))
-                         (val (return (values t t)))))
-              finally (return (if surety (values nil t) (call-next-method)))))))
-(defmethod subctypep ((ct1 disjunction) (ct2 disjunction))
-  (if (bot-p ct1)
-      (values t t)
-      (call-next-method)))
+    (cond
+      ;; if a <: z then a <: z v y as z <: z v y.
+      ((loop for sct in cts thereis (subctypep ct1 sct)) (values t t))
+      ;; give up
+      (t (call-next-method)))))
 
 (macrolet
     ((disjunction-disjointp (disjunction ctype)
