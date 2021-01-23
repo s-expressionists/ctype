@@ -5,48 +5,31 @@
         always (ctypep object sct)))
 
 (defmethod subctypep ((ct1 conjunction) (ct2 ctype))
-  (let ((cts (junction-ctypes ct1)))
-    (cond
-      ;; if a <: z then a ^ b <: z, as a ^ b <: a
-      ((loop for sct in cts thereis (subctypep sct ct2)) (values t t))
-      ;; give up
-      (t (call-next-method)))))
+  (or/tri
+   ;; if a <: z then a ^ b <: z, as a ^ b <: a.
+   ;; unfortunately it does not folow that if a ~<: z and b ~<: z, a ^ b ~<: z,
+   ;; because a ^ b could be bot when a and b aren't.
+   (some/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
+   (call-next-method)))
 (defmethod subctypep ((ct1 ctype) (ct2 conjunction))
   ;; if a ~<: z then a ~<: z ^ y, as z ^ y <: z.
   ;; if a <: z and a <: y, a ^ z = a and a ^ y = a
   ;; a <: z ^ y <=> a ^ z ^ y = a <=> (a ^ z) ^ (a ^ y) = a <=> a ^ a = a
   ;; this also covers the case of ct2 being top.
-  (let ((cts (junction-ctypes ct2)))
-    (loop with surety = t
-          for sct in cts
-          do (multiple-value-bind (val subsurety)
-                 (subctypep ct1 sct)
-               (cond ((not subsurety) (setf surety nil))
-                     ((not val) (return (values nil t)))))
-          finally (return (if surety (values t t) (call-next-method))))))
+  (surely
+   (every/tri (lambda (sct) (subctypep ct1 sct)) (junction-ctypes ct2))
+   (call-next-method)))
 
-(macrolet
-    ((conjunction-disjointp (conjunction ctype)
-       `(let ((cts (junction-ctypes ,conjunction)))
-          (if (null cts)
-              (values nil t)
-              ;; if a ^ z = 0 then a ^ b ^ z = 0.
-              ;; if a ^ z != 0 and b ^ z != 0 then a ^ b ^ z != 0,
-              ;; unless a ^ b = 0.
-              (loop with surety = t
-                    for sct in cts
-                    do (multiple-value-bind (val subsurety)
-                           (disjointp sct ,ctype)
-                         (cond ((not subsurety) (setf surety nil))
-                               (val (return (values t t)))))
-                    finally (return
-                              (if surety
-                                  (values nil t)
-                                  (call-next-method))))))))
-  (defmethod disjointp ((ct1 conjunction) (ct2 ctype))
-    (conjunction-disjointp ct1 ct2))
-  (defmethod disjointp ((ct1 ctype) (ct2 conjunction))
-    (conjunction-disjointp ct2 ct1)))
+(defmethod disjointp ((ct1 conjunction) (ct2 ctype))
+  ;; if a ^ z = 0 then a ^ b ^ z = 0.
+  ;; doesn't follow the other way, though.
+  (or/tri
+   (some/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
+   (call-next-method)))
+(defmethod disjointp ((ct1 ctype) (ct2 conjunction))
+  (or/tri
+   (some/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
+   (call-next-method)))
 
 (defmethod negate ((ctype conjunction))
   (if (top-p ctype)

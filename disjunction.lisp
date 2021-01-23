@@ -9,42 +9,26 @@
   ;; if a <: z and b <: z, a v b <: z, as can be seen from a <: z <=> a ^ z = a:
   ;; a v b <: z <=> (a v b) ^ z = a v b <=> (a ^ z) v (b ^ z) = a v b
   ;; this also covers the case of ct1 being bot.
-  (let ((cts (junction-ctypes ct1)))
-    (loop with surety = t
-          for sct in cts
-          do (multiple-value-bind (val subsurety)
-                 (subctypep sct ct2)
-               (cond ((not subsurety) (setf surety nil))
-                     ((not val) (return (values nil t)))))
-          finally (return (if surety (values t t) (call-next-method))))))
+  (surely
+   (every/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
+   (call-next-method)))
 (defmethod subctypep ((ct1 ctype) (ct2 disjunction))
-  (let ((cts (junction-ctypes ct2)))
-    (cond
-      ;; if a <: z then a <: z v y as z <: z v y.
-      ((loop for sct in cts thereis (subctypep ct1 sct)) (values t t))
-      ;; give up
-      (t (call-next-method)))))
+  (or/tri
+   (some/tri (lambda (sct) (subctypep ct1 sct)) (junction-ctypes ct2))
+   (call-next-method)))
 
-(macrolet
-    ((disjunction-disjointp (disjunction ctype)
-       `(let ((cts (junction-ctypes ,disjunction)))
-          (if (null cts)
-              (values t t)
-              ;; if a ^ z != 0 then (a v b) ^ z != 0.
-              ;; if a ^ z = 0 and b ^ z = 0 then (a v b) ^ z = 0,
-              ;; unless a v b = T.
-              (loop with surety = t
-                    for sct in cts
-                    do (multiple-value-bind (val subsurety)
-                           (disjointp sct ,ctype)
-                         (cond ((not subsurety) (setf surety nil))
-                               ((not val) (return (values nil t)))))
-                    finally (return
-                              (if surety (values t t) (call-next-method))))))))
-  (defmethod disjointp ((ct1 disjunction) (ct2 ctype))
-    (disjunction-disjointp ct1 ct2))
-  (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
-    (disjunction-disjointp ct2 ct1)))
+(defmethod disjointp ((ct1 disjunction) (ct2 ctype))
+  ;; if a ^ z ~= 0, (a v b) ^ z ~= 0.
+  ;; the other way works unless a v b = T.
+  ;; Put another way, unless every subtype is disjoint, there's no way
+  ;; the whole disjunction is.
+  (or/tri
+   (notevery/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
+   (call-next-method)))
+(defmethod disjointp ((ct1 ctype) (ct2 disjunction))
+  (or/tri
+   (notevery/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
+   (call-next-method)))
 
 (defmethod negate ((ctype disjunction))
   (if (bot-p ctype)

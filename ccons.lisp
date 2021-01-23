@@ -6,27 +6,14 @@
 (defmethod ctypep ((object t) (ct ccons)) nil)
 
 (defmethod subctypep ((ct1 ccons) (ct2 ccons))
-  (multiple-value-bind (s1 surety1)
-      (subctypep (ccons-car ct1) (ccons-car ct2))
-    (cond (s1
-           (multiple-value-bind (s2 surety2)
-               (subctypep (ccons-cdr ct1) (ccons-cdr ct2))
-             (cond (s2 (values t t))
-                   (surety2 (values nil t))
-                   (t (call-next-method)))))
-          (surety1 (values nil t))
-          (t (call-next-method)))))
+  (surely (and/tri (subctypep (ccons-car ct1) (ccons-car ct2))
+                   (subctypep (ccons-cdr ct1) (ccons-cdr ct2)))
+          (call-next-method)))
 
 (defmethod disjointp ((ct1 ccons) (ct2 ccons))
-  (multiple-value-bind (s1 surety1)
-      (disjointp (ccons-car ct1) (ccons-car ct2))
-    (if s1
-        (values t t)
-        (multiple-value-bind (s2 surety2)
-            (disjointp (ccons-cdr ct1) (ccons-cdr ct2))
-          (if s2
-              (values t t)
-              (values nil (and surety1 surety2)))))))
+  (surely (or/tri (disjointp (ccons-car ct1) (ccons-car ct2))
+                  (disjointp (ccons-cdr ct1) (ccons-cdr ct2)))
+          (call-next-method)))
 
 (defmethod cofinitep ((ct1 ccons)) (values nil t))
 

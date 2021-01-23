@@ -2,6 +2,7 @@
   :depends-on ()
   :components
   ((:file "packages")
+   (:file "trivalent" :depends-on ("packages"))
    (:file "config" :depends-on ("packages"))
    (:file "classes" :depends-on ("packages"))
    (:file "create" :depends-on ("classes" "packages"))
@@ -9,13 +10,13 @@
    (:file "cclass" :depends-on ("generic-functions" "classes" "config"
                                                     "packages"))
    (:file "negation" :depends-on ("generic-functions" "create" "classes"
-                                                      "packages"))
+                                                      "trivalent" "packages"))
    (:file "conjunction" :depends-on ("generic-functions" "create" "classes"
-                                                         "packages"))
+                                     "trivalent" "packages"))
    (:file "disjunction" :depends-on ("generic-functions" "create" "classes"
-                                                         "packages"))
+                                     "trivalent" "packages"))
    (:file "ccons" :depends-on ("generic-functions" "create" "classes"
-                                                   "packages"))
+                                                   "trivalent" "packages"))
    (:file "range" :depends-on ("generic-functions" "create" "classes"
                                                    "config" "packages"))
    (:file "ccomplex" :depends-on ("generic-functions" "create" "classes"

@@ -8,16 +8,7 @@
 (defmethod subctypep ((ct1 ctype) (ct2 negation))
   ;; if a ^ b = 0, a ^ ~b = a - b = a, so a <: b
   ;; if a ^ b ~= 0, a ^ ~b = a - b ~= a, so a ~<: b
-  (multiple-value-bind (disjointp surety)
-      (disjointp ct1 (negation-ctype ct2))
-    (if surety
-        (values disjointp surety)
-        (call-next-method))))
-;;; Similar to above.
-(defmethod subctypep ((ct1 negation) (ct2 ctype))
-  (cond ((top-p ct2) (values t t))
-        ((subctypep (negation-ctype ct1) ct2) (values nil t))
-        (t (call-next-method))))
+  (surely (disjointp ct1 (negation-ctype ct2)) (call-next-method)))
 
 (defmethod disjointp ((ct1 negation) (ct2 ctype))
   (if (subctypep ct2 (negation-ctype ct1))
