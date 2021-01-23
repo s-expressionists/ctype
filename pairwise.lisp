@@ -27,6 +27,12 @@
 (defexclusive/2 cclass range)
 (defexclusive/2 cclass ccomplex)
 (defexclusive/2 cclass charset)
+(defexclusive/2 fpzero cmember)
+(defexclusive/2 fpzero ccons)
+(defexclusive/2 fpzero ccomplex)
+(defexclusive/2 fpzero carray)
+(defexclusive/2 fpzero charset)
+(defexclusive/2 fpzero cfunction)
 
 ;;; Some cclass ctype relations we unfortunately have to handle specially.
 (defun sequence-cclass-p (cclass)
@@ -177,3 +183,53 @@
   (disjoin-cmember-disjunction ct1 ct2))
 (defmethod disjoin/2 ((ct1 disjunction) (ct2 cmember))
   (disjoin-cmember-disjunction ct2 ct1))
+
+;;; Deal with fpzeros and ranges.
+(defmethod subctypep ((ct1 fpzero) (ct2 range))
+  (values (ctypep (fpzero-zero ct1) ct2) t))
+(defmethod subctypep ((ct1 range) (ct2 fpzero)) (values nil t))
+
+(defmethod disjointp ((ct1 fpzero) (ct2 range))
+  (values (not (ctypep (fpzero-zero ct1) ct2)) t))
+(defmethod disjointp ((ct1 range) (ct2 fpzero))
+  (values (not (ctypep (fpzero-zero ct2) ct1)) t))
+
+(defmethod conjoin/2 ((ct1 fpzero) (ct2 range))
+  (if (ctypep (fpzero-zero ct1) ct2)
+      ct1
+      (bot)))
+(defmethod conjoin/2 ((ct1 range) (ct2 fpzero))
+  (if (ctypep (fpzero-zero ct2) ct1)
+      ct2
+      (bot)))
+
+(defmethod disjoin/2 ((ct1 fpzero) (ct2 range))
+  (if (ctypep (fpzero-zero ct1) ct2)
+      ct2
+      (call-next-method)))
+(defmethod disjoin/2 ((ct1 range) (ct2 fpzero))
+  (if (ctypep (fpzero-zero ct2) ct1)
+      ct1
+      (call-next-method)))
+
+(defmethod subtract ((ct1 fpzero) (ct2 range))
+  (if (ctypep (fpzero-zero ct1) ct2)
+      (bot)
+      ct1))
+(defmethod subtract ((ct1 range) (ct2 fpzero))
+  (let ((zero (fpzero-zero ct2)))
+    (if (ctypep zero ct1)
+        ;; Here's the pain.
+        (let ((k (range-kind ct1))
+              (low (range-low ct1)) (lxp (range-low-exclusive-p ct1))
+              (high (range-high ct1)) (hxp (range-high-exclusive-p ct1)))
+          (cond ((and low (= zero low))
+                 (disjunction (fpzero k (- zero))
+                              (range k low t high hxp)))
+                ((and high (= zero high))
+                 (disjunction (fpzero k (- zero))
+                              (range k low lxp high t)))
+                (t
+                 (disjunction (fpzero k (- zero))
+                              (range k low lxp zero t)
+                              (range k zero t high hxp))))))))

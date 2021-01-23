@@ -28,12 +28,17 @@
 
 (defclass range (ctype)
   ((%kind :initarg :kind :reader range-kind
-          :type (or integer ratio
-                    short-float single-float double-float long-float))
+          :type (member integer ratio
+                        short-float single-float double-float long-float))
    (%low :initarg :low :reader range-low :type (or real null))
    (%high :initarg :high :reader range-high :type (or real null))
    (%low-xp :initarg :lxp :reader range-low-exclusive-p :type boolean)
    (%high-xp :initarg :hxp :reader range-high-exclusive-p :type boolean)))
+
+(defclass fpzero (ctype)
+  ((%kind :initarg :kind :reader fpzero-kind
+          :type (member short-float single-float double-float long-float))
+   (%zero :initarg :zero :reader fpzero-zero :type float)))
 
 (defclass ccomplex (ctype)
   (;; The upgraded complex part type is some thing that can be meaningfully

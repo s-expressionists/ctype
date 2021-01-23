@@ -29,43 +29,36 @@
     (ccons car cdr)))
 
 (defun member-ctype (elements)
-  ;; Cut out real ranges and character sets.
-  (multiple-value-bind
-        (characters integers ratios shorts singles doubles longs non)
-      (loop for elem in elements
-            if (integerp elem)
-              collect elem into integers
-            else if (ratiop elem)
-                   collect elem into ratios
-            else if (let ((pred (cdr (assoc 'short-float +floats+))))
-                      (and pred (funcall pred elem)))
-                   collect elem into shorts
-            else if (let ((pred (cdr (assoc 'single-float +floats+))))
-                      (and pred (funcall pred elem)))
-                   collect elem into singles
-            else if (let ((pred (cdr (assoc 'double-float +floats+))))
-                      (and pred (funcall pred elem)))
-                   collect elem into doubles
-            else if (let ((pred (cdr (assoc 'long-float +floats+))))
-                      (and pred (funcall pred elem)))
-                   collect elem into longs
-            else if (characterp elem)
-                   collect elem into characters
-            else collect elem into non
-            finally (return (values characters integers ratios
-                                    shorts singles doubles longs non)))
-    (apply #'disjoin ; let disjunction handle merging
-           (apply #'cmember non)
-           (append
-            (loop for i in integers collect (range 'integer i nil i nil))
-            (loop for r in ratios collect (range 'ratio r nil r nil))
-            (loop for s in shorts collect (range 'short-float s nil s nil))
-            (loop for s in singles collect (range 'single-float s nil s nil))
-            (loop for d in doubles collect (range 'double-float d nil d nil))
-            (loop for l in longs collect (range 'long-float l nil l nil))
-            (loop for c in characters
-                  for code = (char-code c)
-                  collect (charset (list (cons code code))))))))
+  ;; Cut out real ranges, floating point zeroes, and character sets.
+  (apply
+   #'disjoin
+   (loop with shortp = (cdr (assoc 'short-float +floats+))
+         with singlep = (cdr (assoc 'single-float +floats+))
+         with doublep = (cdr (assoc 'double-float +floats+))
+         with longp = (cdr (assoc 'long-float +floats+))
+         for elem in elements
+         collect (cond ((integerp elem) (range 'integer elem nil elem nil))
+                       ((ratiop elem) (range 'ratio elem nil elem nil))
+                       ((characterp elem)
+                        (let ((code (char-code elem)))
+                          (charset (list (cons code code)))))
+                       ((and shortp (funcall shortp elem))
+                        (if (and +distinct-short-float-zeroes-p+ (zerop elem))
+                            (fpzero 'short-float elem)
+                            (range 'short-float elem nil elem nil)))
+                       ((and singlep (funcall singlep elem))
+                        (if (and +distinct-single-float-zeroes-p+ (zerop elem))
+                            (fpzero 'single-float elem)
+                            (range 'single-float elem nil elem nil)))
+                       ((and doublep (funcall doublep elem))
+                        (if (and +distinct-double-float-zeroes-p+ (zerop elem))
+                            (fpzero 'double-float elem)
+                            (range 'double-float elem nil elem nil)))
+                       ((and longp (funcall longp elem))
+                        (if (and +distinct-long-float-zeroes-p+ (zerop elem))
+                            (fpzero 'long-float elem)
+                            (range 'long-float elem nil elem nil)))
+                       (t (cmember elem))))))
 
 (defun error-interval-designator (nondesignator &optional kind)
   (error "~a is not a valid interval designator~@[ for type ~a~]"

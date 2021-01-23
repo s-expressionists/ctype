@@ -44,6 +44,8 @@
         (make-instance 'range
           :kind kind :low low :lxp lxp :high high :hxp hxp))))
 
+(defun fpzero (kind zero) (make-instance 'fpzero :kind kind :zero zero))
+
 (defun charset (pairs)
   (if (null pairs)
       (bot)
