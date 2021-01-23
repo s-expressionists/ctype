@@ -5,20 +5,29 @@
 
 (defmethod subctypep ((ct1 negation) (ct2 negation))
   (subctypep (negation-ctype ct2) (negation-ctype ct1)))
-;;; If A is a subset of B, A is not a subset of ~B. Unless A is bottom.
-;;; However if A is not a subset of B it does not follow that A <: ~B;
-;;; for example if A and B overlap.
 (defmethod subctypep ((ct1 ctype) (ct2 negation))
-  (let ((neg (negation-ctype ct2)))
-    (cond ((bot-p ct1) (values t t))
-          ((subctypep ct1 neg) (values nil t))
-          ((disjointp ct1 neg) (values t t))
-          (t (call-next-method)))))
+  ;; if a ^ b = 0, a ^ ~b = a - b = a, so a <: b
+  ;; if a ^ b ~= 0, a ^ ~b = a - b ~= a, so a ~<: b
+  (multiple-value-bind (disjointp surety)
+      (disjointp ct1 (negation-ctype ct2))
+    (if surety
+        (values disjointp surety)
+        (call-next-method))))
 ;;; Similar to above.
 (defmethod subctypep ((ct1 negation) (ct2 ctype))
   (cond ((top-p ct2) (values t t))
         ((subctypep (negation-ctype ct1) ct2) (values nil t))
         (t (call-next-method))))
+
+(defmethod disjointp ((ct1 negation) (ct2 ctype))
+  (if (subctypep ct2 (negation-ctype ct1))
+      (values t t)
+      (call-next-method)))
+
+(defmethod disjointp ((ct1 ctype) (ct2 negation))
+  (if (subctypep ct1 (negation-ctype ct2))
+      (values t t)
+      (call-next-method)))
 
 (defmethod negate ((ctype negation)) (negation-ctype ctype))
 
