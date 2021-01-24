@@ -52,17 +52,14 @@
                             (call-next-method)))))
 
 (defmethod disjointp ((ct1 disjunction) (ct2 ctype))
-  ;; if a ^ z ~= 0, (a v b) ^ z ~= 0.
-  ;; the other way works unless a v b = T.
-  ;; Put another way, unless every subtype is disjoint, there's no way
-  ;; the whole disjunction is.
-  (if (notevery/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
-      (values nil t)
-      (call-next-method)))
+  ;; (a v b) ^ z = 0 <=> (a ^ z) v (b ^ z) = 0
+  ;; so if any a ^ z ~= 0, (a v b) ~= 0,
+  ;; and if every (a ^ z) = 0, (a v b) ^ z = 0
+  (surely (every/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
+          (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
-  (if (notevery/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
-      (values nil t)
-      (call-next-method)))
+  (surely (every/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
+          (call-next-method)))
 
 (defmethod negate ((ctype disjunction))
   (apply #'conjoin (mapcar #'negate (junction-ctypes ctype))))
