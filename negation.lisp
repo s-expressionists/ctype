@@ -4,7 +4,8 @@
   (not (ctypep object (negation-ctype ct))))
 
 (defmethod subctypep ((ct1 negation) (ct2 negation))
-  (subctypep (negation-ctype ct2) (negation-ctype ct1)))
+  (surely (subctypep (negation-ctype ct2) (negation-ctype ct1))
+          (call-next-method)))
 (defmethod subctypep ((ct1 ctype) (ct2 negation))
   ;; if a ^ b = 0, a ^ ~b = a - b = a, so a <: ~b
   ;; if a ^ b ~= 0, a ^ ~b = a - b ~= a, so a ~<: ~b
@@ -14,7 +15,6 @@
   (if (subctypep ct2 (negation-ctype ct1))
       (values t t)
       (call-next-method)))
-
 (defmethod disjointp ((ct1 ctype) (ct2 negation))
   (if (subctypep ct1 (negation-ctype ct2))
       (values t t)

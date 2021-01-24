@@ -5,12 +5,15 @@
         always (ctypep object sct)))
 
 (defmethod subctypep ((ct1 conjunction) (ct2 ctype))
-  (or/tri
-   ;; if a <: z then a ^ b <: z, as a ^ b <: a.
-   ;; unfortunately it does not folow that if a ~<: z and b ~<: z, a ^ b ~<: z,
-   ;; because a ^ b could be bot when a and b aren't.
-   (some/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
-   (call-next-method)))
+  ;; a ^ b <: z <=> a ^ b ^ z = a ^ b.
+  ;; if a <: z, a ^ z = a, so (a ^ z) ^ b = a ^ b, so a ^ b <: z.
+  ;; We don't make conjunction types unless we don't have a better
+  ;; representation, and if we don't have a better representation it's probably
+  ;; because we can't even tell if the conjunction is empty. So more analysis
+  ;; here is probably hopeless.
+  (if (some (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
+      (values t t)
+      (call-next-method)))
 (defmethod subctypep ((ct1 ctype) (ct2 conjunction))
   ;; if a ~<: z then a ~<: z ^ y, as z ^ y <: z.
   ;; if a <: z and a <: y, a ^ z = a and a ^ y = a
@@ -23,19 +26,17 @@
 (defmethod disjointp ((ct1 conjunction) (ct2 ctype))
   ;; if a ^ z = 0 then a ^ b ^ z = 0.
   ;; doesn't follow the other way, though.
-  (or/tri
-   (some/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
-   (call-next-method)))
+  (if (some/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
+      (values t t)
+      (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 conjunction))
-  (or/tri
-   (some/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
-   (call-next-method)))
+  (if (some/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
+      (values t t)
+      (call-next-method)))
 
 (defmethod negate ((ctype conjunction))
-  (if (top-p ctype)
-      (bot)
-      ;; de Morgan: ~(a & b) = ~a | ~b
-      (apply #'disjoin (mapcar #'negate (junction-ctypes ctype)))))
+  ;; de Morgan: ~(a & b) = ~a | ~b
+  (apply #'disjoin (mapcar #'negate (junction-ctypes ctype))))
 
 (defmethod conjoin/2 ((ct1 conjunction) (ct2 conjunction))
   (apply #'conjoin (append (junction-ctypes ct1) (junction-ctypes ct2))))

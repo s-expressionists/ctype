@@ -13,27 +13,58 @@
    (every/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
    (call-next-method)))
 (defmethod subctypep ((ct1 ctype) (ct2 disjunction))
+  #+(or)
   (or/tri
    (some/tri (lambda (sct) (subctypep ct1 sct)) (junction-ctypes ct2))
-   (call-next-method)))
+   (call-next-method))
+  ;; a <: (z v y) <=> a ^ (z v y) = a <=> (a ^ z) v (a ^ y) = a
+  ;; Obviously if a <: z this reduces to a v (a ^ y) = a which is true. Ditto y.
+  ;; Getting a definite negative result is a little more challenging.
+  ;; One special case is that if a ^ z = 0, the question is a ^ y = a.
+  ;; That is to say, if a is (definitely) not a subtype of y, and a is
+  ;; (definitely) disjoint from z, a is not a subtype of z v y.
+  ;; For a disjunction with any number of terms like this, a better phrasing
+  ;; might be: if a is definitely disjoint with all the junction types, except
+  ;; for one which it is definitely a subtypep of, a is not a subtype of the
+  ;; disjunction.
+  ;; Note that if a is disjoint from ALL of them, this doesn't work.
+  ;; Practically speaking this would only come up if we could prove disjointness
+  ;; for all of them but not understand subtypes, which is unlikely, but we
+  ;; check for it anyway because all this math is hard enough without making
+  ;; assumptions about how correct the rest of the system is.
+  ;; Anyway, this all covers questions like
+  ;; (subtypep '(integer 10) '(rational 11))
+  ;; (where the rational is broken up into an integer and a ratio range).
+  (loop with subctypep-surety = t
+        with disjointp-surety = nil
+        with seen-false = nil
+        for sct in (junction-ctypes ct2)
+        do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
+             (cond ((not subsurety) (setf subctypep-surety nil))
+                   (val (return (values t t)))
+                   ((not (disjointp ct1 sct))
+                    (if seen-false
+                        (setf disjointp-surety nil)
+                        (setf disjointp-surety t seen-false t)))))
+        finally (return (if (or subctypep-surety disjointp-surety)
+                            (values nil t)
+                            (call-next-method)))))
 
 (defmethod disjointp ((ct1 disjunction) (ct2 ctype))
   ;; if a ^ z ~= 0, (a v b) ^ z ~= 0.
   ;; the other way works unless a v b = T.
   ;; Put another way, unless every subtype is disjoint, there's no way
   ;; the whole disjunction is.
-  (or/tri
-   (notevery/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
-   (call-next-method)))
+  (if (notevery (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
+      (values nil t)
+      (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
-  (or/tri
-   (notevery/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
-   (call-next-method)))
+  (if (notevery (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
+      (values nil t)
+      (call-next-method)))
 
 (defmethod negate ((ctype disjunction))
-  (if (bot-p ctype)
-      (top)
-      (apply #'conjoin (mapcar #'negate (junction-ctypes ctype)))))
+  (apply #'conjoin (mapcar #'negate (junction-ctypes ctype))))
 
 (defmethod disjoin/2 ((ct1 disjunction) (ct2 disjunction))
   (apply #'disjoin (append (junction-ctypes ct1)
