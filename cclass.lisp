@@ -8,6 +8,9 @@
   ;; this should return NIL NIL except with unredefinable classes.
   (values (subclassp (cclass-class ct1) (cclass-class ct2)) t))
 
+(defmethod ctype= ((ct1 cclass) (ct2 cclass))
+  (values (eql (cclass-class ct1) (cclass-class ct2)) t))
+
 (defmethod cofinitep ((ct cclass)) (values nil t))
 
 ;;; These classes are defined as disjoint in CLHS 4.2.2.

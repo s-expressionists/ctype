@@ -21,6 +21,9 @@
            always (position pair1 pairs2 :test #'subrangep)))
    t))
 
+(defmethod ctype= ((ct1 charset) (ct2 charset))
+  (values (equal (charset-pairs ct1) (charset-pairs ct2)) t))
+
 (defmethod disjointp ((ct1 charset) (ct2 charset))
   (values
    (flet ((overlap-p (pair1 pair2)

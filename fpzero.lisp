@@ -19,6 +19,9 @@
 (defmethod subctypep ((ct1 fpzero) (ct2 fpzero))
   (values (eql (fpzero-zero ct1) (fpzero-zero ct2)) t))
 
+(defmethod ctype= ((ct1 fpzero) (ct2 fpzero))
+  (values (eql (fpzero-zero ct1) (fpzero-zero ct2)) t))
+
 (defmethod disjointp ((ct1 fpzero) (ct2 fpzero))
   (values (not (eql (fpzero-zero ct1) (fpzero-zero ct2))) t))
 

@@ -10,6 +10,11 @@
                    (subctypep (ccons-cdr ct1) (ccons-cdr ct2)))
           (call-next-method)))
 
+(defmethod ctype= ((ct1 ccons) (ct2 ccons))
+  (surely (and/tri (ctype= (ccons-car ct1) (ccons-car ct2))
+                   (ctype= (ccons-cdr ct1) (ccons-cdr ct2)))
+          (call-next-method)))
+
 (defmethod disjointp ((ct1 ccons) (ct2 ccons))
   (surely (or/tri (disjointp (ccons-car ct1) (ccons-car ct2))
                   (disjointp (ccons-cdr ct1) (ccons-cdr ct2)))
@@ -94,24 +99,20 @@
   ;; So we only do it on the cdrs (arbitrarily chosen) if we know that the
   ;; cons types are not disjoint.
   (let* ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
-         (car2 (ccons-car ct2)) (cdr2 (ccons-cdr ct2))
-         (st-car-12 (subctypep car1 car2)) (st-car-21 (subctypep car2 car1))
-         (st-cdr-12 (subctypep cdr1 cdr2)) (st-cdr-21 (subctypep cdr2 cdr1)))
-    (cond ((and st-car-12 st-car-21) ; cars are equal
-           (ccons car1 (disjoin cdr1 cdr2)))
-          ((and st-cdr-12 st-cdr-21) ; cdrs are equal
-           (ccons (disjoin car1 car2) cdr1))
+         (car2 (ccons-car ct2)) (cdr2 (ccons-cdr ct2)))
+    (cond ((ctype= car1 car2) (ccons car1 (disjoin cdr1 cdr2)))
+          ((ctype= cdr1 cdr2) (ccons (disjoin car1 car2) cdr1))
           ;; In the following, the subtractions should really never be bottom,
           ;; because one is a strict subtype of the other. If one is bottom it
           ;; would indicate that the simplifier (like conjoin/2) is smarter
           ;; than subctypep, which is unfortunate.
-          (st-car-12
+          ((subctypep car1 car2)
            (let ((car-2-1 (conjoin car2 (negate car1)))
                  (reg (ccons car1 (disjoin cdr1 cdr2))))
              (if (bot-p car-2-1)
                  reg
                  (disjunction reg (ccons car-2-1 cdr2)))))
-          (st-car-21
+          ((subctypep car2 car1)
            (let ((car-1-2 (conjoin car1 (negate car2)))
                  (reg (ccons car2 (disjoin cdr1 cdr2))))
              (if (bot-p car-1-2)
@@ -124,13 +125,13 @@
                  (multiple-value-bind (val2 surety2) (disjointp cdr1 cdr2)
                    (or val2 (not surety2)))))
            (call-next-method))
-          (st-cdr-12
+          ((subctypep cdr1 cdr2)
            (let ((cdr-2-1 (conjoin cdr2 (negate cdr1)))
                  (reg (ccons (disjoin car1 car2) cdr1)))
              (if (bot-p cdr-2-1)
                  reg
                  (disjunction reg (ccons car2 cdr-2-1)))))
-          (st-cdr-21
+          ((subctypep cdr2 cdr1)
            (let ((cdr-1-2 (conjoin cdr1 (negate cdr2)))
                  (reg (ccons (disjoin car1 car2) cdr2)))
              (if (bot-p cdr-1-2)

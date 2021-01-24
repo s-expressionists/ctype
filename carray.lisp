@@ -37,6 +37,12 @@
                                          (= dim1 dim2)))))))
      t)))
 
+(defmethod ctype= ((ct1 carray) (ct2 carray))
+  (values (and (eq (carray-simplicity ct1) (carray-simplicity ct2))
+               (equal (carray-uaet ct1) (carray-uaet ct2))
+               (equal (carray-dims ct1) (carray-dims ct2)))
+          t))
+
 (defmethod cofinitep ((ct carray)) (values nil t))
 
 (defmethod conjoin/2 ((ct1 carray) (ct2 carray))

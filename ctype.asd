@@ -6,7 +6,8 @@
    (:file "config" :depends-on ("packages"))
    (:file "classes" :depends-on ("packages"))
    (:file "create" :depends-on ("classes" "packages"))
-   (:file "generic-functions" :depends-on ("create" "classes" "packages"))
+   (:file "generic-functions"
+    :depends-on ("trivalent" "create" "classes" "packages"))
    (:file "cclass"
     :depends-on ("generic-functions" "classes" "config" "packages"))
    (:file "negation"

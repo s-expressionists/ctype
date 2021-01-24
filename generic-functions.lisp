@@ -10,6 +10,11 @@
 (defgeneric subctypep (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
 
+;;; Optional wrapper to speed up subctypep and make usage clearer.
+(defgeneric ctype= (ctype1 ctype2)
+  (:method ((ct1 ctype) (ct2 ctype))
+    (and/tri (subctypep ct1 ct2) (subctypep ct2 ct1))))
+
 ;;; Ditto the restrictions on calling negate etc.
 (defgeneric disjointp (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype))

@@ -11,6 +11,10 @@
   ;; if a ^ b ~= 0, a ^ ~b = a - b ~= a, so a ~<: ~b
   (surely (disjointp ct1 (negation-ctype ct2)) (call-next-method)))
 
+(defmethod ctype= ((ct1 negation) (ct2 negation))
+  (surely (ctype= (negation-ctype ct1) (negation-ctype ct2))
+          (call-next-method)))
+
 (defmethod disjointp ((ct1 negation) (ct2 ctype))
   (if (subctypep ct2 (negation-ctype ct1))
       (values t t)

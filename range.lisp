@@ -32,6 +32,14 @@
                                 (not (range-high-exclusive-p ct2)))))))))
    t))
 
+(defmethod ctype= ((ct1 range) (ct2 range))
+  (values (and (eq (range-kind ct1) (range-kind ct2))
+               (= (range-low ct1) (range-low ct2))
+               (eql (range-low-exclusive-p ct1) (range-low-exclusive-p ct2))
+               (= (range-high ct1) (range-high ct2))
+               (eql (range-high-exclusive-p ct1) (range-high-exclusive-p ct2)))
+          t))
+
 (defmethod disjointp ((ct1 range) (ct2 range))
   (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
         (low1 (range-low ct1)) (low2 (range-low ct2))
