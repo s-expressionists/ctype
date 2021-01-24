@@ -42,10 +42,14 @@
         do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
              (cond ((not subsurety) (setf subctypep-surety nil))
                    (val (return (values t t)))
-                   ((not (disjointp ct1 sct))
-                    (if seen-false
-                        (setf disjointp-surety nil)
-                        (setf disjointp-surety t seen-false t)))))
+                   (t
+                    (multiple-value-bind (val subsurety) (disjointp ct1 sct)
+                      (cond ((not subsurety) (setf seen-false t
+                                                   disjointp-surety nil))
+                            ((not val) (if seen-false
+                                           (setf disjointp-surety nil)
+                                           (setf seen-false t
+                                                 disjointp-surety t))))))))
         finally (return (if (or subctypep-surety disjointp-surety)
                             (values nil t)
                             (call-next-method)))))
@@ -55,11 +59,11 @@
   ;; the other way works unless a v b = T.
   ;; Put another way, unless every subtype is disjoint, there's no way
   ;; the whole disjunction is.
-  (if (notevery (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
+  (if (notevery/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
       (values nil t)
       (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
-  (if (notevery (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
+  (if (notevery/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
       (values nil t)
       (call-next-method)))
 
