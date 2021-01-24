@@ -3,12 +3,24 @@
 (defmethod ctypep (object (ct negation))
   (not (ctypep object (negation-ctype ct))))
 
+;;; Negation identities:
+;;; a ^ ~a = 0
+;;; a v ~a = T
+;;; ~~a = a
+
+;;; a = a v 0 = a v (b ^ ~b) = (a v b) ^ (a v ~b)
+;;; 0 = a ^ 0 = a ^ (b ^ ~b) = (a ^ b) ^ (a ^ ~b)
+;;; a = a ^ T = a ^ (b v ~b) = (a ^ b) v (a ^ ~b)
+;;; T = a v T = a v (b v ~b) = (a v b) v (a v ~b)
+
 (defmethod subctypep ((ct1 negation) (ct2 negation))
+  ;; ~a <: ~b <=> ~a ^ ~b = ~a <=> ~(a v b) = ~a <=> a v b = a <=> b <: a
   (surely (subctypep (negation-ctype ct2) (negation-ctype ct1))
           (call-next-method)))
 (defmethod subctypep ((ct1 ctype) (ct2 negation))
-  ;; if a ^ b = 0, a ^ ~b = a - b = a, so a <: ~b
-  ;; if a ^ b ~= 0, a ^ ~b = a - b ~= a, so a ~<: ~b
+  ;; a ^ b = 0 => 0 v (a ^ ~b) = a <=> a ^ ~b = a <=> a <: ~b
+  ;; a <: ~b <=> a ^ ~b = a => (a ^ b) ^ a = 0 <=> a ^ b = 0
+  ;; therefore, a ^ b = 0 <=> a <: ~b
   (surely (disjointp ct1 (negation-ctype ct2)) (call-next-method)))
 
 (defmethod ctype= ((ct1 negation) (ct2 negation))
@@ -16,13 +28,9 @@
           (call-next-method)))
 
 (defmethod disjointp ((ct1 negation) (ct2 ctype))
-  (if (subctypep ct2 (negation-ctype ct1))
-      (values t t)
-      (call-next-method)))
+  (surely (subctypep ct2 (negation-ctype ct1)) (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 negation))
-  (if (subctypep ct1 (negation-ctype ct2))
-      (values t t)
-      (call-next-method)))
+  (surely (subctypep ct1 (negation-ctype ct2)) (call-next-method)))
 
 (defmethod negate ((ctype negation)) (negation-ctype ctype))
 
