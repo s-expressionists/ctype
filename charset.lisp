@@ -34,6 +34,7 @@
            for pair1 in (charset-pairs ct1)
            never (position pair1 pairs2 :test #'overlap-p)))
    t))
+(defmethod conjointp ((ct1 charset) (ct2 charset)) (values nil t))
 
 (defmethod cofinitep ((ct charset)) (values nil t))
 

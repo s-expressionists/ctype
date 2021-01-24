@@ -24,6 +24,7 @@
 
 (defmethod disjointp ((ct1 fpzero) (ct2 fpzero))
   (values (not (eql (fpzero-zero ct1) (fpzero-zero ct2))) t))
+(defmethod conjointp ((ct1 fpzero) (ct2 fpzero)) (values nil t))
 
 (defmethod cofinitep ((ct fpzero)) (values nil t))
 

@@ -33,6 +33,13 @@
   (if (some/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
       (values t t)
       (call-next-method)))
+(defmethod conjointp ((ct1 conjunction) (ct2 ctype))
+  ;; (a ^ b) v z = T <=> (a v z) ^ (b v z) = T
+  (surely (every/tri (lambda (sct) (conjointp sct ct2)) (junction-ctypes ct1))
+          (call-next-method)))
+(defmethod conjointp ((ct1 ctype) (ct2 conjunction))
+  (surely (every/tri (lambda (sct) (conjointp ct1 sct)) (junction-ctypes ct2))
+          (call-next-method)))
 
 (defmethod negate ((ctype conjunction))
   ;; de Morgan: ~(a & b) = ~a | ~b

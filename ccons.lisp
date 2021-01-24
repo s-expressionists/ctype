@@ -19,6 +19,7 @@
   (surely (or/tri (disjointp (ccons-car ct1) (ccons-car ct2))
                   (disjointp (ccons-cdr ct1) (ccons-cdr ct2)))
           (call-next-method)))
+(defmethod conjointp ((ct1 ccons) (ct2 ccons)) (values nil t))
 
 (defmethod cofinitep ((ct1 ccons)) (values nil t))
 

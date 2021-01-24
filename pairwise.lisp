@@ -34,6 +34,19 @@
 (defexclusive/2 fpzero charset)
 (defexclusive/2 fpzero cfunction)
 
+(macrolet ((defnonconjoint/2 (c1 c2)
+             `(progn
+                (defmethod conjointp ((ct1 ,c1) (ct2 ,c2)) (values nil t))
+                (defmethod conjointp ((ct1 ,c2) (ct2 ,c1)) (values nil t))))
+           (defnonconjoint (&rest classes)
+             `(progn
+                ,@(loop for (class1 . rest) on classes
+                        nconc (loop for class2 in rest
+                                    collect `(defnonconjoint/2
+                                                 ,class1 ,class2))))))
+  (defnonconjoint cclass ccons range fpzero ccomplex cmember carray
+    charset cfunction))
+
 ;;; Some cclass ctype relations we unfortunately have to handle specially.
 (defun sequence-cclass-p (cclass)
   (eq (class-name (cclass-class cclass)) 'sequence))

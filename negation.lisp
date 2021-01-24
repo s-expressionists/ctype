@@ -22,15 +22,33 @@
   ;; a <: ~b <=> a ^ ~b = a => (a ^ b) ^ a = 0 <=> a ^ b = 0
   ;; therefore, a ^ b = 0 <=> a <: ~b
   (surely (disjointp ct1 (negation-ctype ct2)) (call-next-method)))
+(defmethod subctypep ((ct1 negation) (ct2 ctype))
+  ;; ~b <: a <=> ~b v a = a => (a v b) v a = T <=> a v b = T
+  ;; a v b = T => T ^ (a v ~b) = a <=> a v ~b = a <=> ~b <: a
+  ;; therefore, a v b = T <=> ~b <: a
+  (surely (conjointp ct2 (negation-ctype ct1)) (call-next-method)))
 
 (defmethod ctype= ((ct1 negation) (ct2 negation))
   (surely (ctype= (negation-ctype ct1) (negation-ctype ct2))
           (call-next-method)))
 
+(defmethod disjointp ((ct1 negation) (ct2 negation))
+  ;; ~a ^ ~b = 0 <=> ~(a v b) = 0 <=> a v b = T
+  (surely (conjointp (negation-ctype ct1) (negation-ctype ct2))
+          (call-next-method)))
 (defmethod disjointp ((ct1 negation) (ct2 ctype))
   (surely (subctypep ct2 (negation-ctype ct1)) (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 negation))
   (surely (subctypep ct1 (negation-ctype ct2)) (call-next-method)))
+
+(defmethod conjointp ((ct1 negation) (ct2 negation))
+  ;; ~a v ~b = T <=> ~(a ^ b) = T <=> a ^ b = 0
+  (surely (disjointp (negation-ctype ct1) (negation-ctype ct2))
+          (call-next-method)))
+(defmethod conjointp ((ct1 negation) (ct2 ctype))
+  (surely (subctypep (negation-ctype ct1) ct2) (call-next-method)))
+(defmethod conjointp ((ct1 ctype) (ct2 negation))
+  (surely (subctypep (negation-ctype ct2) ct1) (call-next-method)))
 
 (defmethod negate ((ctype negation)) (negation-ctype ctype))
 

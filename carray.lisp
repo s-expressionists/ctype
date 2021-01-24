@@ -52,6 +52,7 @@
                                never (or (eq dim1 '*) (eq dim2 '*)
                                          (unless (= dim1 dim2) (return t)))))))
             t)))
+(defmethod conjointp ((ct1 carray) (ct2 carray)) (values nil t))
 
 (defmethod ctype= ((ct1 carray) (ct2 carray))
   (values (and (eq (carray-simplicity ct1) (carray-simplicity ct2))
