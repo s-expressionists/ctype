@@ -50,7 +50,7 @@
                     (values nil ,surety1)
                     (multiple-value-bind (,val2 ,surety2)
                         (and/tri ,@(rest forms))
-                      (if ,val1 ; = (and ,val1 ,surety1)
+                      (if (or ,val1 (and ,surety2 (not ,val2)))
                           (values ,val2 ,surety2)
                           (values nil nil)))))))))
 
@@ -68,7 +68,7 @@
                     (values ,val1 ,surety1)
                     (multiple-value-bind (,val2 ,surety2)
                         (or/tri ,@(rest forms))
-                      (if ,surety1 ; = (and (not ,val1) ,surety1)
+                      (if (or ,surety1 ,val2)
                           (values ,val2 ,surety2)
                           (values nil nil)))))))))
 
