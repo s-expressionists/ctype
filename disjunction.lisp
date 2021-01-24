@@ -20,34 +20,35 @@
   ;; a <: (z v y) <=> a ^ (z v y) = a <=> (a ^ z) v (a ^ y) = a
   ;; Obviously if a <: z this reduces to a v (a ^ y) = a which is true. Ditto y.
   ;; Getting a definite negative result is a little more challenging.
-  ;; One special case is that if a ^ z = 0, the question is a ^ y = a.
-  ;; That is to say, if a is (definitely) not a subtype of y, and a is
-  ;; (definitely) disjoint from z, a is not a subtype of z v y.
-  ;; For a disjunction with any number of terms like this, a better phrasing
-  ;; might be: if a is definitely disjoint with all the junction types, except
-  ;; for one which it is definitely not a subtypep of, a is not a subtype of the
-  ;; disjunction.
-  ;; Note that if a is disjoint from ALL of them, this doesn't work.
-  ;; Practically speaking this would only come up if we could prove disjointness
-  ;; for all of them but not understand subtypes, which is unlikely, but we
-  ;; check for it anyway because all this math is hard enough without making
-  ;; assumptions about how correct the rest of the system is.
-  ;; Anyway, this all covers questions like
+  ;; First, we can see that if a ^ z = 0, (a ^ z) v (a ^ y) = a <=> a ^ y = a
+  ;; <=> a <: y. With more elements, say a <: (z v y v x), the reduction is
+  ;; to (a ^ y) v (a ^ x) = a <=> a <: (y v x), i.e. z becomes irrelevant.
+  ;; So: if a <: z, a <: (z v y). If a is disjoint with all but one, the
+  ;; result for that last one controls.
+  ;; If a ^ z = 0 and a ^ y = 0, the question becomes a = 0, which we can answer
+  ;; false if we also know that a ~<: z or a ~<: y.
+  ;; The ambiguous case is when we don't know that a is a subtype of at least
+  ;; one and don't know that a is disjoint with all or all but one.
+  ;; These are sufficient but not necessary conditions.
+  ;; This all covers questions like
   ;; (subtypep '(integer 10) '(rational 11))
   ;; (where the rational is broken up into an integer and a ratio range).
   (loop with surety = t
-        with seen-false = nil
+        with not-subtype = 0
+        with not-subtype-and-not-disjoint = 0
         for sct in (junction-ctypes ct2)
         do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
              (cond ((not subsurety) (setf surety nil))
                    (val (return (values t t)))
                    (t
+                    (incf not-subtype)
                     (multiple-value-bind (val subsurety) (disjointp ct1 sct)
-                      (cond ((not subsurety) (setf seen-false t surety nil))
-                            ((not val) (if seen-false
-                                           (setf surety nil)
-                                           (setf seen-false t))))))))
-        finally (return (if (and surety seen-false)
+                      (cond ((not subsurety) (setf surety nil))
+                            ((not val) (incf not-subtype-and-not-disjoint)))))))
+        finally (return (if (and surety
+                                 (or (= not-subtype-and-not-disjoint 1)
+                                     (and (> not-subtype 0)
+                                          (= not-subtype-and-not-disjoint 0))))
                             (values nil t)
                             (call-next-method)))))
 
