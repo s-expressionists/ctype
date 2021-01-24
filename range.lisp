@@ -185,7 +185,7 @@
        (cond ((and low high)
               ;; we should have normalized out exclusivities and stuff.
               (assert (integerp low)) (assert (integerp high))
-              (assert (> high low))
+              (assert (>= high low))
               ;; sbcl crib
               (let ((high-count (logcount high))
                     (high-length (integer-length high)))
