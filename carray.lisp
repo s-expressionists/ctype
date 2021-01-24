@@ -37,6 +37,22 @@
                                          (= dim1 dim2)))))))
      t)))
 
+(defmethod disjointp ((ct1 carray) (ct2 carray))
+  (let ((uaet1 (carray-uaet ct1)) (dims1 (carray-dims ct1))
+        (simplicity1 (carray-simplicity ct1))
+        (uaet2 (carray-uaet ct2)) (dims2 (carray-dims ct2))
+        (simplicity2 (carray-simplicity ct2)))
+    (values (or (not (eq simplicity1 simplicity2))
+                (and (not (eq uaet1 '*)) (not (eq uaet2 '*))
+                     (not (equal uaet1 uaet2)))
+                (and (not (eq dims1 '*)) (not (eq dims2 '*))
+                     (or (/= (length dims1) (length dims2))
+                         (loop for dim1 in dims1
+                               for dim2 in dims2
+                               never (or (eq dim1 '*) (eq dim2 '*)
+                                         (unless (= dim1 dim2) (return t)))))))
+            t)))
+
 (defmethod ctype= ((ct1 carray) (ct2 carray))
   (values (and (eq (carray-simplicity ct1) (carray-simplicity ct2))
                (equal (carray-uaet ct1) (carray-uaet ct2))
