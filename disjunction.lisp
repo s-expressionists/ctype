@@ -25,7 +25,7 @@
   ;; (definitely) disjoint from z, a is not a subtype of z v y.
   ;; For a disjunction with any number of terms like this, a better phrasing
   ;; might be: if a is definitely disjoint with all the junction types, except
-  ;; for one which it is definitely a subtypep of, a is not a subtype of the
+  ;; for one which it is definitely not a subtypep of, a is not a subtype of the
   ;; disjunction.
   ;; Note that if a is disjoint from ALL of them, this doesn't work.
   ;; Practically speaking this would only come up if we could prove disjointness
@@ -35,22 +35,19 @@
   ;; Anyway, this all covers questions like
   ;; (subtypep '(integer 10) '(rational 11))
   ;; (where the rational is broken up into an integer and a ratio range).
-  (loop with subctypep-surety = t
-        with disjointp-surety = nil
+  (loop with surety = t
         with seen-false = nil
         for sct in (junction-ctypes ct2)
         do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
-             (cond ((not subsurety) (setf subctypep-surety nil))
+             (cond ((not subsurety) (setf surety nil))
                    (val (return (values t t)))
                    (t
                     (multiple-value-bind (val subsurety) (disjointp ct1 sct)
-                      (cond ((not subsurety) (setf seen-false t
-                                                   disjointp-surety nil))
+                      (cond ((not subsurety) (setf seen-false t surety nil))
                             ((not val) (if seen-false
-                                           (setf disjointp-surety nil)
-                                           (setf seen-false t
-                                                 disjointp-surety t))))))))
-        finally (return (if (or subctypep-surety disjointp-surety)
+                                           (setf surety nil)
+                                           (setf seen-false t))))))))
+        finally (return (if (and surety seen-false)
                             (values nil t)
                             (call-next-method)))))
 
