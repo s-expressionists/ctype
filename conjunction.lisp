@@ -5,15 +5,29 @@
         always (ctypep object sct)))
 
 (defmethod subctypep ((ct1 conjunction) (ct2 ctype))
-  ;; a ^ b <: z <=> a ^ b ^ z = a ^ b.
-  ;; if a <: z, a ^ z = a, so (a ^ z) ^ b = a ^ b, so a ^ b <: z.
-  ;; We don't make conjunction types unless we don't have a better
-  ;; representation, and if we don't have a better representation it's probably
-  ;; because we can't even tell if the conjunction is empty. So more analysis
-  ;; here is probably hopeless.
-  (if (some (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
-      (values t t)
-      (call-next-method)))
+  ;; This is dual to the (ctype disjunction) method in disjunction.lisp.
+  ;; Check that comment if you want to see how this works.
+  ;; Knowing conjointness is much rarer than knowing conjointness, but does
+  ;; happen occasionally; an example is that we can know that
+  ;; (subtypep '(and (not integer) (not cons)) 'integer) => NIL, T
+  (loop with surety = t
+        with not-subtype = 0
+        with not-subtype-and-not-conjoint = 0
+        for sct in (junction-ctypes ct1)
+        do (multiple-value-bind (val subsurety) (subctypep sct ct2)
+             (cond ((not subsurety) (setf surety nil))
+                   (val (return (values t t)))
+                   (t
+                    (incf not-subtype)
+                    (multiple-value-bind (val subsurety) (conjointp sct ct2)
+                      (cond ((not subsurety) (setf surety nil))
+                            ((not val) (incf not-subtype-and-not-conjoint)))))))
+        finally (return (if (and surety
+                                 (or (= not-subtype-and-not-conjoint 1)
+                                     (and (> not-subtype 0)
+                                          (= not-subtype-and-not-conjoint 0))))
+                            (values nil t)
+                            (call-next-method)))))
 (defmethod subctypep ((ct1 ctype) (ct2 conjunction))
   ;; if a ~<: z then a ~<: z ^ y, as z ^ y <: z.
   ;; if a <: z and a <: y, a ^ z = a and a ^ y = a
