@@ -246,3 +246,29 @@
                  (disjunction (fpzero k (- zero))
                               (range k low lxp zero t)
                               (range k zero t high hxp))))))))
+
+;;; This is sort of the hardest method - including both
+;;; (subtypep t ...) and (subtypep ... nil), which are hard problems in general.
+;;; If you're wondering, the (disjunction conjunction) is easy - the methods on
+;;; both (disjunction ctype) and (ctype conjunction) give comprehensive answers.
+;;; FIXME: Hard it may be, but we can improve on this.
+(defmethod subctypep ((ct1 conjunction) (ct2 disjunction))
+  (let ((cjs (junction-ctypes ct1)) (djs (junction-ctypes ct2)))
+    (cond ((null cjs) ; (subtypep 't '(or ...))
+           (case (length djs)
+             ((0) (values nil t)) ; (subtypep 't 'nil)
+             ;; degenerate; normalization ought to make this impossible
+             ((1) (subctypep ct1 (first djs)))
+             ((2)
+              ;; Special case: we can use conjointp, which will sometimes
+              ;; give definitive negative answers: e.g.
+              ;; (subtypep 't '(or cons integer)) is false.
+              (conjointp (first djs) (second djs)))
+             (t (call-next-method))))
+          ((null djs) ; (subtypep '(and ...) 'nil)
+           (case (length cjs)
+             ((1) (subctypep (first cjs) ct2)) ; degenerate
+             ((2) (disjointp (first cjs) (second cjs)))
+             (t (call-next-method))))
+          (t ; (subtypep '(and ...) '(or ...))
+           (call-next-method)))))
