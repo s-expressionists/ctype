@@ -56,6 +56,8 @@
               (or (< high2 low1) (and (= high2 low1) (or hxp2 lxp1)))))
      t)))
 
+(defmethod conjointp ((ct1 range) (ct2 range)) (values nil t))
+
 (defmethod cofinitep ((ct range)) (values nil t))
 
 (defmethod negate ((ct range))
