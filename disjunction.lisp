@@ -117,6 +117,11 @@
       (setf ups (delete 'integer ups)
             ups (delete 'ratio ups))
       (push 'rational ups))
+    ;; real (again, unbounded only)
+    (when (and (member 'float ups) (member 'rational ups))
+      (setf ups (delete 'float ups)
+            ups (delete 'rational ups))
+      (push 'real ups))
     ;; bounded rational
     (let ((integer-ranges
             (loop for up in ups
