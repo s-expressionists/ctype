@@ -97,6 +97,21 @@
       (setf ups (delete 'null ups)
             ups (delete 'cons ups))
       (push 'list ups))
+    ;; float
+    ;; only unbounded ranges; bounded ones get weird because we coerced the
+    ;; bounds into other float formats
+    (when (and (or (not (assoc 'short-float +floats+))
+                   (member 'short-float ups))
+               (member 'single-float ups)
+               (or (not (assoc 'double-float +floats+))
+                   (member 'double-float ups))
+               (or (not (assoc 'long-float +floats+))
+                   (member 'long-float ups)))
+      (setf ups (delete 'short-float ups)
+            ups (delete 'single-float ups)
+            ups (delete 'double-float ups)
+            ups (delete 'long-float ups))
+      (push 'float ups))
     ;; rational (i.e. (rational * *))
     (when (and (member 'integer ups) (member 'ratio ups))
       (setf ups (delete 'integer ups)
@@ -105,7 +120,7 @@
     ;; bounded rational
     (let ((integer-ranges
             (loop for up in ups
-                  when (and (list up) (eq (first up) 'integer))
+                  when (and (listp up) (eq (first up) 'integer))
                     collect up))
           (ratio-ranges
             ;; ratios are unparsed as (and (not integer) (rational ...))
