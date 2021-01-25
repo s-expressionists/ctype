@@ -19,8 +19,6 @@
 (defgeneric disjointp (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype))
     (cond ((or (bot-p ct1) (bot-p ct2)) (values t t))
-          ((or (subctypep ct1 ct2) (subctypep ct2 ct1))
-           (values nil t))
           (t (values nil nil)))))
 ;;; Dual to disjointp: Is the disjunction of these types top?
 (defgeneric conjointp (ctype1 ctype2)
@@ -41,12 +39,14 @@
 ;;; CONJOIN and DISJOIN will then make a conjunction/disjunction ctype.
 (defgeneric conjoin/2 (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype))
-    (cond ((subctypep ct1 ct2) ct1)
+    (cond ((disjointp ct1 ct2) (bot))
+          ((subctypep ct1 ct2) ct1)
           ((subctypep ct2 ct1) ct2)
           (t nil))))
 (defgeneric disjoin/2 (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype))
-    (cond ((subctypep ct1 ct2) ct2)
+    (cond ((conjointp ct1 ct2) (top)) ; for completeness
+          ((subctypep ct1 ct2) ct2)
           ((subctypep ct2 ct1) ct1)
           (t nil))))
 
