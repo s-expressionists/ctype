@@ -97,6 +97,47 @@
       (setf ups (delete 'null ups)
             ups (delete 'cons ups))
       (push 'list ups))
+    ;; rational (i.e. (rational * *))
+    (when (and (member 'integer ups) (member 'ratio ups))
+      (setf ups (delete 'integer ups)
+            ups (delete 'ratio ups))
+      (push 'rational ups))
+    ;; bounded rational
+    (let ((integer-ranges
+            (loop for up in ups
+                  when (and (list up) (eq (first up) 'integer))
+                    collect up))
+          (ratio-ranges
+            ;; ratios are unparsed as (and (not integer) (rational ...))
+            (loop for up in ups
+                  when (and (listp up) (= (length up) 3)
+                            (eq (first up) 'and)
+                            (equal (second up) '(not integer))
+                            (listp (third up))
+                            (eq (car (third up)) 'rational))
+                    collect up)))
+      (loop for ratio-range in ratio-ranges
+            do (destructuring-bind (_ &optional (low '*) (high '*))
+                   (third ratio-range)
+                 (declare (ignore _))
+                 (let* ((ilow (cond ((eq low '*) low)
+                                    ((listp low) (ceiling (car low)))
+                                    (t (ceiling low))))
+                        (ihigh (cond ((eq high '*) high)
+                                     ((listp high) (floor (car low)))
+                                     (t (floor high))))
+                        (tail (if (eq ihigh '*)
+                                  (list ilow)
+                                  (list ilow ihigh)))
+                        (integer-range (find tail integer-ranges
+                                             :key #'cdr :test #'equal)))
+                   (when integer-range
+                     (setf ups (delete ratio-range ups)
+                           ups (delete integer-range ups))
+                     (push (if (eq ihigh '*)
+                               `(rational ,low)
+                               `(rational ,low ,high))
+                           ups))))))
     ;; finally,
     (if (= (length ups) 1)
         (first ups)
