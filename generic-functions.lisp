@@ -15,16 +15,13 @@
   (:method ((ct1 ctype) (ct2 ctype))
     (and/tri (subctypep ct1 ct2) (subctypep ct2 ct1))))
 
+;;; Is the conjunction of these types bottom?
 ;;; Ditto the restrictions on calling negate etc.
 (defgeneric disjointp (ctype1 ctype2)
-  (:method ((ct1 ctype) (ct2 ctype))
-    (cond ((or (bot-p ct1) (bot-p ct2)) (values t t))
-          (t (values nil nil)))))
+  (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
 ;;; Dual to disjointp: Is the disjunction of these types top?
 (defgeneric conjointp (ctype1 ctype2)
-  (:method ((ct1 ctype) (ct2 ctype))
-    (cond ((or (top-p ct1) (top-p ct2)) (values t t))
-          (t (values nil nil)))))
+  (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
 
 ;;; Ditto the restrictions etc., and returns the same kinds of values.
 ;;; Determines whether the negation of a type is finite. This is used to
