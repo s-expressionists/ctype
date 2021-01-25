@@ -141,14 +141,35 @@
           (t (call-next-method)))))
 
 (defmethod subtract ((ct1 ccons) (ct2 ccons))
-  ;; similar concerns as in disjoin/2.
+  ;; as in the negate method, (not (cons a b)) =
+  ;; (or (not cons) (cons a (not b)) (cons (not a) b) (cons (not a) (not b)))
+  ;; We're conjoining this with (cons c d).
+  ;; (and (cons c d) (not cons)) is obviously nil.
+  ;; (and (cons c d) (cons a (not b))) = (cons (and c a) (and d (not b)))
+  ;; (and (cons c d) (cons (not a) b)) = (cons (and c (not a)) (and d b))
+  ;; (and (cons c d) (cons (not a) (not b)))
+  ;;  = (cons (and c (not a)) (and d (not b)))
+  ;; These types are obviously pairwise disjoint so we can just use disjunction
+  ;; directly and save a bit of time. And there are special cases:
+  ;; If (and c a) = 0, (and c (not a)) = c, so we have
+  ;; (or (cons c (and d b)) (cons c (and d (not b)))) = (cons c d)
+  ;; If c <: a, (and c a) = c and (and c (not a)) = 0, so we have
+  ;; (cons c (and d (not b))); if also d <: b this is 0.
   (let ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
         (car2 (ccons-car ct1)) (cdr2 (ccons-cdr ct2)))
-    (cond ((and (subctypep car1 car2) (subctypep car2 car1))
-           (ccons car1 (conjoin cdr1 (negate cdr2))))
-          ((and (subctypep cdr1 cdr2) (subctypep cdr2 cdr1))
+    (cond ((disjointp car1 car2) ct1)
+          ((disjointp cdr1 cdr2) ct1)
+          ((subctypep car1 car2)
+           (if (subctypep cdr1 cdr2)
+               (bot)
+               (ccons car1 (conjoin cdr1 (negate cdr2)))))
+          ((subctypep cdr1 cdr2)
            (ccons (conjoin car1 (negate car2)) cdr1))
-          (t (call-next-method)))))
+          (t (let ((car1-2 (conjoin car1 (negate car2)))
+                   (cdr1-2 (conjoin cdr1 (negate cdr2))))
+               (disjunction (ccons (conjoin car1 car2) cdr1-2)
+                            (ccons car1-2 (conjoin cdr1 cdr2))
+                            (ccons car1-2 cdr1-2)))))))
 
 (defmethod unparse ((ct ccons))
   (let ((car (ccons-car ct)) (cdr (ccons-cdr ct)))
