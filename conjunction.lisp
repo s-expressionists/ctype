@@ -17,7 +17,7 @@
         do (multiple-value-bind (val subsurety) (subctypep sct ct2)
              (cond ((not subsurety) (setf surety nil))
                    (val (return (values t t)))
-                   (t
+                   (surety
                     (incf not-subtype)
                     (multiple-value-bind (val subsurety) (conjointp sct ct2)
                       (cond ((not subsurety) (setf surety nil))

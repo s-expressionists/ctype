@@ -40,7 +40,7 @@
         do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
              (cond ((not subsurety) (setf surety nil))
                    (val (return (values t t)))
-                   (t
+                   (surety ; if we're unsure, this fancier stuff is out
                     (incf not-subtype)
                     (multiple-value-bind (val subsurety) (disjointp ct1 sct)
                       (cond ((not subsurety) (setf surety nil))
@@ -54,8 +54,6 @@
 
 (defmethod disjointp ((ct1 disjunction) (ct2 ctype))
   ;; (a v b) ^ z = 0 <=> (a ^ z) v (b ^ z) = 0
-  ;; so if any a ^ z ~= 0, (a v b) ~= 0,
-  ;; and if every (a ^ z) = 0, (a v b) ^ z = 0
   (surely (every/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
           (call-next-method)))
 (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
