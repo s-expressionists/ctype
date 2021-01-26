@@ -23,16 +23,42 @@
              nconc (loop for class2 in rest
                          collect `(defexclusive/2 ,class1 ,class2)))))
 
-(defexclusive ccons range ccomplex carray charset cfunction)
+(defexclusive range ccomplex carray charset cfunction)
 (defexclusive/2 cclass range)
 (defexclusive/2 cclass ccomplex)
 (defexclusive/2 cclass charset)
 (defexclusive/2 fpzero cmember)
-(defexclusive/2 fpzero ccons)
 (defexclusive/2 fpzero ccomplex)
 (defexclusive/2 fpzero carray)
 (defexclusive/2 fpzero charset)
 (defexclusive/2 fpzero cfunction)
+
+;;; cons types are unfortunately ambiguous: (cons (satisfies foo)) MIGHT be
+;;; bottom "in disguise", and might not be.
+;;; This is basically (subctypep ccons (bot)), but we use this in subctypep
+;;; methods themselves, so we have to reduce it to mimic the usual subctypep
+;;; method in ccons.lisp.
+;;; FIXME: Is the lack of call-next-method a problem? I don't think it is if
+;;; we only use this in subctypep/disjointp methods?
+(defun ccons-bottom-p (ccons)
+  (or/tri (subctypep (ccons-car ccons) (bot))
+          (subctypep (ccons-cdr ccons) (bot))))
+
+(macrolet ((consxclusive/1 (class)
+             `(progn
+                (defmethod subctypep ((ct1 ccons) (ct2 ,class))
+                  (surely (ccons-bottom-p ct1) (call-next-method)))
+                (defmethod subctypep ((ct1 ,class) (ct2 ccons)) (values nil t))
+                (defmethod disjointp ((ct1 ccons) (ct2 ,class)) (values t t))
+                (defmethod disjointp ((ct1 ,class) (ct2 ccons)) (values t t))
+                (defmethod conjoin/2 ((ct1 ccons) (ct2 ,class)) (bot))
+                (defmethod conjoin/2 ((ct1 ,class) (ct2 ccons)) (bot))
+                (defmethod subtract ((ct1 ccons) (ct2 ,class)) ct1)
+                (defmethod subtract ((ct2 ,class) (ct1 ccons)) ct2)))
+           (consxclusive (&rest classes)
+             `(progn ,@(loop for class in classes
+                             collect `(consxclusive/1 ,class)))))
+  (consxclusive range ccomplex carray charset cfunction fpzero))
 
 (macrolet ((defnonconjoint/2 (c1 c2)
              `(progn
@@ -51,12 +77,15 @@
 (defun sequence-cclass-p (cclass)
   (eq (class-name (cclass-class cclass)) 'sequence))
 (defmethod subctypep ((ct1 ccons) (ct2 cclass))
-  (values (sequence-cclass-p ct2) t))
+  (or/tri (ccons-bottom-p ct1)
+          (values (sequence-cclass-p ct2) t)))
 (defmethod subctypep ((ct1 cclass) (ct2 ccons)) (values nil t))
 (defmethod disjointp ((ct1 ccons) (ct2 cclass))
-  (values (not (sequence-cclass-p ct2)) t))
+  (or/tri (ccons-bottom-p ct1)
+          (values (not (sequence-cclass-p ct2)) t)))
 (defmethod disjointp ((ct1 cclass) (ct2 ccons))
-  (values (not (sequence-cclass-p ct1)) t))
+  (or/tri (ccons-bottom-p ct2)
+          (values (not (sequence-cclass-p ct1)) t)))
 (defmethod conjoin/2 ((ct1 cclass) (ct2 ccons))
   (if (sequence-cclass-p ct1) ct2 (bot)))
 (defmethod conjoin/2 ((ct1 ccons) (ct2 cclass))
@@ -148,12 +177,21 @@
            (values nil t)
            (call-next-method)))))
 (defexistential cclass)
-(defexistential ccons)
 (defexistential range)
 (defexistential ccomplex)
 (defexistential carray)
 (defexistential charset)
 (defexistential cfunction)
+
+;;; See ccons-bottom-p above
+(defmethod subctypep ((ct1 ccons) (ct2 disjunction))
+  (if (bot-p ct2)
+      (ccons-bottom-p ct1)
+      (call-next-method)))
+(defmethod subctypep ((ct1 conjunction) (ct2 ccons))
+  (if (top-p ct1)
+      (values nil t)
+      (call-next-method)))
 
 ;;; Some ctypes represent an infinite number of possible objects, so they are
 ;;; never subctypes of any member ctype.
@@ -161,12 +199,14 @@
 (defmacro definfinite (class)
   `(defmethod subctypep ((ct1 ,class) (ct2 cmember)) (values nil t)))
 
-(definfinite cclass)
 (definfinite ccons)
 (definfinite range)
 (definfinite ccomplex)
 (definfinite carray)
 (definfinite cfunction)
+
+(defmethod subctypep ((ct1 ccons) (ct2 cmember))
+  (or/tri (ccons-bottom-p ct1) (values nil t)))
 
 ;;; We normalize characters out of member types, so members never contain
 ;;; characters. charsets are not infinite, though.
