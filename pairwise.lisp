@@ -44,9 +44,19 @@
   (or/tri (subctypep (ccons-car ccons) (bot))
           (subctypep (ccons-cdr ccons) (bot))))
 
+(defmethod subctypep ((ct1 ccons) (ct2 ctype))
+  ;; If ct1 is bottom in disguise, the subctypep is true.
+  ;; If it's definitely not, just go to the next method.
+  ;; If it maybe is, try the next method, but if that says it's not, inject
+  ;; uncertainty back in.
+  (or/tri (ccons-bottom-p ct1) (call-next-method)))
+
 (macrolet ((consxclusive/1 (class)
              `(progn
                 (defmethod subctypep ((ct1 ccons) (ct2 ,class))
+                  ;; ct1 and ct2 are basically exclusive, so if ct1 is
+                  ;; definitely NOT bottom, they really are exclusive.
+                  ;; That's why this is different from the general method above.
                   (surely (ccons-bottom-p ct1) (call-next-method)))
                 (defmethod subctypep ((ct1 ,class) (ct2 ccons)) (values nil t))
                 (defmethod disjointp ((ct1 ccons) (ct2 ,class)) (values t t))
@@ -199,7 +209,6 @@
 (defmacro definfinite (class)
   `(defmethod subctypep ((ct1 ,class) (ct2 cmember)) (values nil t)))
 
-(definfinite ccons)
 (definfinite range)
 (definfinite ccomplex)
 (definfinite carray)
