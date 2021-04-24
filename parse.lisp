@@ -382,8 +382,8 @@
                                           (1- (expt 2 s)))
                                       env)))
       ((values) (parse-values-ctype rest env))
-      ((vector) (destructuring-bind (&optional (length '*)) rest
-                  (array-ctype :either '* (list length) env))))))
+      ((vector) (destructuring-bind (&optional (et '*) (length '*)) rest
+                  (array-ctype :either et (list length) env))))))
 
 (defun specifier-ctype (specifier &optional env)
   (let ((spec (typexpand specifier env)))
