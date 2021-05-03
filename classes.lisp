@@ -55,6 +55,9 @@
    ;; Other than that, it's just something equal-comparable. Also should
    ;; be what's returned by array-element-type.
    (%uaet :initarg :uaet :reader carray-uaet)
+   ;; Expressed element type. Provided for use by compilers, but does not
+   ;; affect typep, subtypep, etc.
+   (%eaet :initarg :eaet :reader carray-eaet :type ctype)
    ;; Either a list of dimensions (which are either positive integers or *)
    ;; or * indicating nothing specified.
    (%dims :initarg :dims :reader carray-dims :type (or list (eql *)))))

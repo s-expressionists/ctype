@@ -15,7 +15,8 @@
            #:fpzero #:fpzero-kind #:fpzero-zero
            #:ccomplex #:ccomplex-ucpt
            #:cmember #:cmember-members
-           #:carray #:carray-simplicity #:carray-uaet #:carray-dims
+           #:carray #:carray-simplicity
+           #:carray-uaet #:carray-eaet #:carray-dims
            #:charset #:charset-pairs
            #:cvalues #:cvalues-required #:cvalues-optional #:cvalues-rest
            #:lambda-list #:lambda-list-required #:lambda-list-optional

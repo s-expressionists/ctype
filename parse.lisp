@@ -4,6 +4,7 @@
   (let ((uaet (if (eq et '*)
                   et
                   (upgraded-array-element-type et env)))
+        (eaet (specifier-ctype et env))
         (dims (cond ((eq dims '*) dims)
                     ((and (integerp dims) (>= dims 0))
                      (make-list dims :initial-element '*))
@@ -15,9 +16,10 @@
                     (t (error "Invalid dimension specification: ~a" dims)))))
     (if +complex-arrays-exist-p+
         (if (eq simplicity :either)
-            (disjunction (carray :simple uaet dims) (carray :complex uaet dims))
-            (carray simplicity uaet dims))
-        (carray :simple uaet dims))))
+            (disjunction (carray :simple uaet eaet dims)
+                         (carray :complex uaet eaet dims))
+            (carray simplicity uaet eaet dims))
+        (carray :simple uaet eaet dims))))
 
 (defun cons-ctype (car cdr env)
   (let ((car (if (eq car '*)

@@ -51,8 +51,9 @@
       (bot)
       (make-instance 'charset :pairs pairs)))
 
-(defun carray (simplicity uaet dims)
-  (make-instance 'carray :simplicity simplicity :uaet uaet :dims dims))
+(defun carray (simplicity uaet eaet dims)
+  (make-instance 'carray
+    :simplicity simplicity :uaet uaet :eaet eaet :dims dims))
 
 (defun ccomplex (ucpt) (make-instance 'ccomplex :ucpt ucpt))
 
