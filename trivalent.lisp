@@ -1,40 +1,57 @@
 (in-package #:ctype)
 
-;;; If the predicate is true of all sequence members, returns T T.
-;;; If it is definitely false on at least one member, returns NIL T.
-;;; Otherwise returns NIL NIL.
-(defun every/tri (predicate sequence)
-  (loop with surety = t
-        for elem in sequence
-        do (multiple-value-bind (val subsurety)
-               (funcall predicate elem)
-             (cond ((not subsurety) (setf surety nil))
-                   ((not val) (return (values nil t)))))
-        finally (return (if surety (values t t) (values nil nil)))))
-
-;;; If the predicate is definitely false of all sequence members, NIL T.
-;;; If true of at least one member, T T.
-;;; Otherwise NIL NIL.
-(defun some/tri (predicate sequence)
-  (loop with surety = t
-        for elem in sequence
-        do (multiple-value-bind (val subsurety)
-               (funcall predicate elem)
-             (cond ((not subsurety) (setf surety nil))
-                   (val (return (values t t)))))
-        finally (return (values nil surety))))
-
-;;; If true of all, NIL T.
-;;; If false of at least one member, T T.
-;;; Otherwise NIL NIL.
-(defun notevery/tri (predicate sequence)
-  (loop with surety = t
-        for elem in sequence
-        do (multiple-value-bind (val subsurety)
-               (funcall predicate elem)
-             (cond ((not subsurety) (setf surety nil))
-                   ((not val) (return (values t t)))))
-        finally (return (values nil surety))))
+(flet ((expand (name invert-test-p success predicate sequences)
+         ;; In separate function to avoid double backquote.
+         (let* ((nsequences (length sequences))
+                (params (loop repeat nsequences collect (gensym "ELEM")))
+                (ssym (gensym "SURETY"))
+                (psym (gensym "PREDICATE"))
+                (msym (gensym "MAPPER")))
+           `(block ,name
+              (let ((,ssym t) (,psym ,predicate))
+                (flet ((,msym (,@params)
+                         (multiple-value-bind (val subsurety)
+                             (funcall ,psym ,@params)
+                           (cond ((not subsurety) (setf ,ssym nil))
+                                 ((,(if invert-test-p 'not 'identity) val)
+                                  (return-from ,name
+                                    (values ,(not success) t)))))))
+                  (declare (inline ,msym) (dynamic-extent (function ,msym)))
+                  (map nil (function ,msym) ,@sequences)
+                  (if ,ssym (values ,success t) (values nil nil))))))))
+  (macrolet ((defpred (name invert-test-p success)
+               `(progn
+                  (defun ,name (predicate sequence &rest sequences)
+                    (let ((surety t))
+                      (flet ((mapper (&rest elems)
+                               (multiple-value-bind (val subsurety)
+                                   (apply predicate elems)
+                                 (cond ((not subsurety) (setf surety nil))
+                                       ((,(if invert-test-p 'not 'identity) val)
+                                        (return-from ,name
+                                          (values ,(not success) t)))))))
+                        (declare (inline mapper) (dynamic-extent #'mapper))
+                        (apply #'map nil #'mapper sequence sequences)
+                        (if surety (values ,success t) (values nil nil)))))
+                  ;; Open code to avoid the apply.
+                  (define-compiler-macro ,name
+                      (predicate sequence &rest sequences)
+                    (expand ',name ',invert-test-p ',success predicate
+                            (list* sequence sequences))))))
+    ;; If the predicate is true of all sequence members, returns T T.
+    ;; If it is definitely false on at least one member, returns NIL T.
+    ;; Otherwise returns NIL NIL.
+    ;; Like the CL map functions, only checks as many elements as the shortest
+    ;; input, so make sure all inputs have the same length.
+    (defpred every/tri t t)
+    ;; If the predicate is definitely false of all sequence members, NIL T.
+    ;; If true of at least one member, T T.
+    ;; Otherwise NIL NIL.
+    (defpred some/tri nil nil)
+    ;; If true of all, NIL T.
+    ;; If false of at least one member, T T.
+    ;; Otherwise NIL NIL.
+    (defpred notevery/tri t nil)))
 
 ;;; Like AND, but returns both values.
 ;;; i.e., if a form returns false, returns those two values immediately.
