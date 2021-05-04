@@ -4,7 +4,7 @@
   (let ((uaet (if (eq et '*)
                   et
                   (upgraded-array-element-type et env)))
-        (eaet (specifier-ctype et env))
+        (eaet (if (eq et '*) (top) (specifier-ctype et env)))
         (dims (cond ((eq dims '*) dims)
                     ((and (integerp dims) (>= dims 0))
                      (make-list dims :initial-element '*))
