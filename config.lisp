@@ -15,19 +15,14 @@
 ;;;
 
 (declaim (inline ratiop))
-(defun ratiop (object)
-  #+clasp (ext::ratiop object)
-  #+sbcl (sb-int:ratiop object)
-  #-(or clasp sbcl) (error "RATIOP not defined for implementation"))
+(defun ratiop (object) (typep object 'ratio))
 
 (define-constant +floats+
-  #+clasp '((single-float . core:single-float-p)
-            (double-float . core:double-float-p))
-  #+sbcl '((single-float . sb-int:single-float-p)
-           (double-float . sb-int:double-float-p))
-  #-(or clasp sbcl) (error "FLOATS not defined for implementation")
+    '((single-float . (lambda (o) (typep o 'single-float)))
+      (double-float . (lambda (o) (typep o 'double-float))))
   :test #'equal)
 
+;;; TODO: Automate
 (define-constant +standard-charset+
   ;; In ASCII (or Unicode)
   #+(or clasp sbcl) '((10 . 10) (32 . 126))
@@ -35,11 +30,12 @@
   :test #'equal)
 
 (define-constant +base-charset+
-  #+clasp '((0 . 255))
-  #+sbcl '((0 . 127))
-  #-(or clasp sbcl) (error "BASE-CHARSET not defind for implementation")
+    (list (cons 0 (loop :for i :from 0
+                        :while (typep (code-char i) 'base-char)
+                        :finally (return (1- i)))))
   :test #'equal)
 
+;;; TODO: Automate
 (define-constant +string-uaets+
   #+clasp '(base-char character)
   #+sbcl '(nil base-char character)
@@ -52,20 +48,12 @@
 ;;; FIXME?: Right now there's no provision for partial existence of complex
 ;;; arrays - for example if they only exist for vectors.
 (define-constant +complex-arrays-exist-p+
-  #+clasp t
-  #+sbcl t
-  #-(or clasp sbcl)
-  (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
+  (not (subtypep '(and array (not simple-array)) nil)))
 
 (declaim (inline simple-array-p))
-(defun simple-array-p (object)
-  #+clasp (if (cleavir-primop:typeq object core:abstract-simple-vector) t nil)
-  #+sbcl (sb-kernel:simple-array-p object)
-  #-(or clasp sbcl)
-  (if +complex-arrays-exist-p+
-      (error "SIMPLE-ARRAY-P not defined for implementation")
-      t))
+(defun simple-array-p (object) (typep object 'simple-array))
 
+;;; TODO: Automate
 ;;; List of (classname type-specifier); specifier-ctype will resolve
 ;;; classes with the former name in the same way as it would resolve the
 ;;; specifier. CL names (e.g. FIXNUM, SIMPLE-BIT-VECTOR) are already handled
@@ -208,15 +196,16 @@
   :test #'equal)
 
 (defun subclassp (sub super)
-  #+clasp (core:subclassp sub super)
-  #+sbcl (member super (sb-mop:class-precedence-list sub))
-  #-(or clasp sbcl) (error "SUBCLASSP not defined for implementation"))
+  (and (find-class sub nil)
+       (find-class super nil)
+       (subtypep sub super)))
 
 (defun typexpand (type-specifier environment)
   #+clasp (cleavir-env:type-expand environment type-specifier)
   #+sbcl (sb-ext:typexpand type-specifier environment)
   #-(or clasp sbcl) (error "TYPEXPAND not defined for implementation"))
 
+;;; TODO: Automate
 (defmacro complex-ucptp (objectf ucpt)
   (declare (ignorable objectf))
   `(ecase ,ucpt
