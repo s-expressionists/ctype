@@ -18,32 +18,79 @@
 (defun ratiop (object)
   #+clasp (ext::ratiop object)
   #+sbcl (sb-int:ratiop object)
-  #-(or clasp sbcl) (error "RATIOP not defined for implementation"))
+  #+ccl (ccl:ratiop object)
+  #-(or clasp sbcl ccl) (error "RATIOP not defined for implementation"))
 
 (define-constant +floats+
   #+clasp '((single-float . core:single-float-p)
             (double-float . core:double-float-p))
   #+sbcl '((single-float . sb-int:single-float-p)
            (double-float . sb-int:double-float-p))
-  #-(or clasp sbcl) (error "FLOATS not defined for implementation")
+  ;; SHORT-FLOAT is a SINGLE-FLOAT on CCL
+  ;; and (apropos "float-p" :ccl) doesn't return single-float-p :
+  ;;   https://ccl.clozure.com/manual/chapter4.11.html#floating-point
+  #+ccl '((single-float . ccl::short-float-p)
+          (double-float . ccl::double-float-p))
+  #-(or clasp sbcl ccl) (error "FLOATS not defined for implementation")
   :test #'equal)
+
+#|
+
+Below +standard-charset+ and +base-charset+ are a list of conses
+and each cons represents a range of character codes.
+  ((10 . 10) (32 . 126)) means that character codes 10, 32, 33, ... 125, 126
+are the standard characters.
+
+(defun find-ranges (predicate start end)
+  (loop :with ranges := nil
+        :with inside-range-p := nil
+        :with range-start := nil
+        :with range-end := nil
+        :for i :from start :to end
+        :do (if (funcall predicate i)
+                (if inside-range-p
+                    (incf range-end)
+                    (setq range-start i
+                          range-end   i
+                          inside-range-p t))
+                (when inside-range-p
+                  (progn
+                    (push (cons range-start range-end) ranges)
+                    (setq inside-range-p nil))))
+        :finally (return (nreverse ranges))))
+
+Discover +base-charset+ via:
+
+(find-ranges (lambda (x) (typep (code-char x) 'standard-char))
+             0 (expt 2 20))
+
+|#
 
 (define-constant +standard-charset+
   ;; In ASCII (or Unicode)
-  #+(or clasp sbcl) '((10 . 10) (32 . 126))
-  #-(or clasp sbcl) (error "STANDARD-CHARSET not defined for implementation")
+  #+(or clasp sbcl ccl) '((10 . 10) (32 . 126))
+  #-(or clasp sbcl ccl) (error "STANDARD-CHARSET not defined for implementation")
   :test #'equal)
+
+#| Discover +base-charset+ via:
+
+(find-ranges (lambda (x) (typep (code-char x) 'base-char))
+             0 (expt 2 20))
+
+|#
 
 (define-constant +base-charset+
   #+clasp '((0 . 255))
   #+sbcl '((0 . 127))
-  #-(or clasp sbcl) (error "BASE-CHARSET not defind for implementation")
+  #+ccl '((0 . 55295))
+  #-(or clasp sbcl ccl) (error "BASE-CHARSET not defind for implementation")
   :test #'equal)
 
-(define-constant +string-uaets+
+(define-constant +string-uaets+ ; Upgraded Array Element Type
   #+clasp '(base-char character)
   #+sbcl '(nil base-char character)
-  #-(or clasp sbcl) (error "STRING-UAETS not defined for implementation")
+  #+ccl '(nil base-char)
+  #-(or clasp sbcl ccl) (error "STRING-UAETS not defined for implementation")
   :test #'equal)
 
 ;;; This should be T unless (and array (not simple-array)) = NIL.
@@ -54,14 +101,16 @@
 (define-constant +complex-arrays-exist-p+
   #+clasp t
   #+sbcl t
-  #-(or clasp sbcl)
+  #+ccl t
+  #-(or clasp sbcl ccl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
 (declaim (inline simple-array-p))
 (defun simple-array-p (object)
   #+clasp (if (cleavir-primop:typeq object core:abstract-simple-vector) t nil)
   #+sbcl (sb-kernel:simple-array-p object)
-  #-(or clasp sbcl)
+  #+ccl (ccl::simple-array-p object)
+  #-(or clasp sbcl ccl)
   (if +complex-arrays-exist-p+
       (error "SIMPLE-ARRAY-P not defined for implementation")
       t))
@@ -204,19 +253,24 @@
             (core:mdarray-t
              (and (not simple-array) (not vector) (array t))))
   #+sbcl ()
-  #-(or clasp sbcl) (error "CLASS-ALIASES not defined for implementation")
+  #+ccl ()
+  #-(or clasp sbcl ccl) (error "CLASS-ALIASES not defined for implementation")
   :test #'equal)
 
 (defun subclassp (sub super)
   #+clasp (core:subclassp sub super)
   #+sbcl (member super (sb-mop:class-precedence-list sub))
-  #-(or clasp sbcl) (error "SUBCLASSP not defined for implementation"))
+  #+ccl (ccl::subclassp sub super)
+  #-(or clasp sbcl ccl) (error "SUBCLASSP not defined for implementation"))
 
 (defun typexpand (type-specifier environment)
   #+clasp (cleavir-env:type-expand environment type-specifier)
   #+sbcl (sb-ext:typexpand type-specifier environment)
-  #-(or clasp sbcl) (error "TYPEXPAND not defined for implementation"))
+  #+ccl (ccl::type-expand type-specifier environment)
+  #-(or clasp sbcl ccl) (error "TYPEXPAND not defined for implementation"))
 
+;;; Below, the idea is that (typep object '(complex foo)) is equivalent to
+;;; (complex-ucptp object ufoo), where ufoo is (upgraded-complex-part-type 'foo)
 (defmacro complex-ucptp (objectf ucpt)
   (declare (ignorable objectf))
   `(ecase ,ucpt
@@ -225,7 +279,9 @@
      #+sbcl ((single-float) (sb-kernel:complex-single-float-p ,objectf))
      #+sbcl ((double-float) (sb-kernel:complex-double-float-p ,objectf))
      #+sbcl ((rational) (sb-kernel:complex-rational-p ,objectf))
-     #-(or clasp sbcl) ,(error "COMPLEX-UCPTP not defined for implementation")))
+     #+ccl ((single-float) (ccl::complex-single-float-p ,objectf))
+     #+ccl ((double-float) (ccl::complex-double-float-p ,objectf))
+     #-(or clasp sbcl ccl) ,(error "COMPLEX-UCPTP not defined for implementation")))
 
 ;;;
 
