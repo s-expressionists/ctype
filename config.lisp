@@ -267,7 +267,8 @@ Discover +base-charset+ via:
   #+clasp (core:subclassp sub super)
   #+sbcl (member super (sb-mop:class-precedence-list sub))
   #+ccl (ccl::subclassp sub super)
-  #-(or clasp sbcl ccl) (error "SUBCLASSP not defined for implementation"))
+  #+sicl (member super (sicl-clos:class-precedence-list sub))
+  #-(or clasp sbcl ccl sicl) (error "SUBCLASSP not defined for implementation"))
 
 (defun typexpand (type-specifier environment)
   #+clasp (cleavir-env:type-expand environment type-specifier)
