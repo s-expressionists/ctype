@@ -107,7 +107,8 @@ Discover +base-charset+ via:
   #+clasp t
   #+sbcl t
   #+ccl t
-  #-(or clasp sbcl ccl)
+  #+sicl nil
+  #-(or clasp sbcl ccl sicl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
 (declaim (inline simple-array-p))
