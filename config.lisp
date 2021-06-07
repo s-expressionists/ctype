@@ -32,7 +32,9 @@
   ;;   https://ccl.clozure.com/manual/chapter4.11.html#floating-point
   #+ccl '((single-float . ccl::short-float-p)
           (double-float . ccl::double-float-p))
-  #-(or clasp sbcl ccl) (error "FLOATS not defined for implementation")
+  #+sicl '((single-float . sicl-arithmetic:short-float-p)
+           (double-float . sicl-arithmetic:double-float-p))
+  #-(or clasp sbcl ccl sicl) (error "FLOATS not defined for implementation")
   :test #'equal)
 
 #|
