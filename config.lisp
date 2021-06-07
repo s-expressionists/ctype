@@ -293,7 +293,10 @@ Discover +base-charset+ via:
      #+sbcl ((rational) (sb-kernel:complex-rational-p ,objectf))
      #+ccl ((single-float) (ccl::complex-single-float-p ,objectf))
      #+ccl ((double-float) (ccl::complex-double-float-p ,objectf))
-     #-(or clasp sbcl ccl) ,(error "COMPLEX-UCPTP not defined for implementation")))
+     #+sicl ((single-float) (typep ,objectf 'sicl-arithmetic:complex-single-float))
+     #+sicl ((double-float) (typep ,objectf 'sicl-arithmetic:complex-double-float))
+     #+sicl ((rational) (typep ,objectf 'sicl-arithmetic:complex-rational))
+     #-(or clasp sbcl ccl sicl) ,(error "COMPLEX-UCPTP not defined for implementation")))
 
 ;;;
 
