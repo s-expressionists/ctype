@@ -71,8 +71,8 @@ Discover +base-charset+ via:
 
 (define-constant +standard-charset+
   ;; In ASCII (or Unicode)
-  #+(or clasp sbcl ccl) '((10 . 10) (32 . 126))
-  #-(or clasp sbcl ccl) (error "STANDARD-CHARSET not defined for implementation")
+  #+(or clasp sbcl ccl sicl) '((10 . 10) (32 . 126))
+  #-(or clasp sbcl ccl sicl) (error "STANDARD-CHARSET not defined for implementation")
   :test #'equal)
 
 #| Discover +base-charset+ via:
@@ -86,14 +86,16 @@ Discover +base-charset+ via:
   #+clasp '((0 . 255))
   #+sbcl '((0 . 127))
   #+ccl '((0 . 55295))
-  #-(or clasp sbcl ccl) (error "BASE-CHARSET not defind for implementation")
+  #+sicl '((0 . #x10FFFF))
+  #-(or clasp sbcl ccl sicl) (error "BASE-CHARSET not defind for implementation")
   :test #'equal)
 
 (define-constant +string-uaets+ ; Upgraded Array Element Type
   #+clasp '(base-char character)
   #+sbcl '(nil base-char character)
   #+ccl '(nil base-char)
-  #-(or clasp sbcl ccl) (error "STRING-UAETS not defined for implementation")
+  #+sicl '(character)
+  #-(or clasp sbcl ccl sicl) (error "STRING-UAETS not defined for implementation")
   :test #'equal)
 
 ;;; This should be T unless (and array (not simple-array)) = NIL.
