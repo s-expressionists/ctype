@@ -274,7 +274,12 @@ Discover +base-charset+ via:
   #+clasp (cleavir-env:type-expand environment type-specifier)
   #+sbcl (sb-ext:typexpand type-specifier environment)
   #+ccl (ccl::type-expand type-specifier environment)
-  #-(or clasp sbcl ccl) (error "TYPEXPAND not defined for implementation"))
+  #+sicl (funcall (sicl-environment:fdefinition
+                   (sicl-environment:client environment)
+                   environment
+                   'sicl-type:type-expander)
+                  type-specifier)
+  #-(or clasp sbcl ccl sicl) (error "TYPEXPAND not defined for implementation"))
 
 ;;; Below, the idea is that (typep object '(complex foo)) is equivalent to
 ;;; (complex-ucptp object ufoo), where ufoo is (upgraded-complex-part-type 'foo)
