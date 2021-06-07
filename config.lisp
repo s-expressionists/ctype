@@ -19,7 +19,8 @@
   #+clasp (ext::ratiop object)
   #+sbcl (sb-int:ratiop object)
   #+ccl (ccl:ratiop object)
-  #-(or clasp sbcl ccl) (error "RATIOP not defined for implementation"))
+  #+sicl (typep object 'ratio)
+  #-(or clasp sbcl ccl sicl) (error "RATIOP not defined for implementation"))
 
 (define-constant +floats+
   #+clasp '((single-float . core:single-float-p)
