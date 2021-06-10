@@ -312,80 +312,117 @@
   (declare (ignore env))
   (cclass class))
 
-(defun cons-specifier-ctype (head rest env)
-  (flet ((recur (spec) (specifier-ctype spec env)))
-    (ecase head
-      ((and) (apply #'conjoin (mapcar #'recur rest)))
-      ((array) (destructuring-bind (&optional (et '*) (dims '*)) rest
-                 (array-ctype :either et dims env)))
-      ((base-string) (destructuring-bind (&optional (length '*)) rest
-                       (array-ctype :either 'base-char (list length) env)))
-      ((bit-vector) (destructuring-bind (&optional (length '*)) rest
-                      (array-ctype :either 'bit (list length) env)))
-      ((complex) (destructuring-bind (&optional (et '*)) rest
-                   (complex-ctype et env)))
-      ((cons) (destructuring-bind (&optional (car '*) (cdr '*)) rest
-                (cons-ctype car cdr env)))
-      ((double-float) (destructuring-bind (&optional (low '*) (high '*)) rest
-                        (range-ctype 'double-float low high env)))
-      ((eql) (destructuring-bind (object) rest (member-ctype (list object))))
-      ((float) (destructuring-bind (&optional (low '*) (high '*)) rest
-                 (range-ctype 'float low high env)))
-      ((function) (destructuring-bind (&optional (ll '*) (rv '*)) rest
-                    (function-ctype ll rv env)))
-      ((integer) (destructuring-bind (&optional (low '*) (high '*)) rest
-                   (range-ctype 'integer low high env)))
-      ((long-float) (destructuring-bind (&optional (low '*) (high '*)) rest
-                      (range-ctype 'long-float low high env)))
-      ((member) (member-ctype rest))
-      ((mod) (destructuring-bind (n) rest
-               (range-ctype 'integer 0 (list n) env)))
-      ((not) (destructuring-bind (spec) rest (negate (recur spec))))
-      ((or) (apply #'disjoin (mapcar #'recur rest)))
-      ((rational) (destructuring-bind (&optional (low '*) (high '*)) rest
-                    (range-ctype 'rational low high env)))
-      ((real) (destructuring-bind (&optional (low '*) (high '*)) rest
-                (range-ctype 'real low high env)))
-      ((satisfies) (destructuring-bind (fname) rest
-                     (satisfies-ctype fname)))
-      ((short-float) (destructuring-bind (&optional (low '*) (high '*)) rest
-                       (range-ctype 'short-float low high env)))
-      ((signed-byte) (destructuring-bind (&optional (s '*)) rest
-                       (if (eq s '*)
-                           (range-ctype 'integer '* '* env)
-                           (let ((es (expt 2 (1- s))))
-                             (range-ctype 'integer (- es) (1- es) env)))))
-      ((simple-array) (destructuring-bind (&optional (et '*) (dims '*)) rest
-                        (array-ctype :simple et dims env)))
-      ((simple-base-string)
-       (destructuring-bind (&optional (length '*)) rest
-         (array-ctype :simple 'base-char (list length) env)))
-      ((simple-bit-vector) (destructuring-bind (&optional (length '*)) rest
-                             (array-ctype :simple 'bit (list length) env)))
-      ((simple-string)
-       (destructuring-bind (&optional (length '*)) rest
-         (apply #'disjunction
-                (loop with l = (list length)
-                      for uaet in +string-uaets+
-                      collect (array-ctype :simple uaet l env)))))
-      ((simple-vector) (destructuring-bind (&optional (length '*)) rest
-                         (array-ctype :simple 't (list length) env)))
-      ((single-float) (destructuring-bind (&optional (low '*) (high '*)) rest
-                        (range-ctype 'single-float low high env)))
-      ((string) (destructuring-bind (&optional (length '*)) rest
-                  (apply #'disjoin
-                         (loop with l = (list length)
-                               for uaet in +string-uaets+
-                               collect (array-ctype :either uaet l env)))))
-      ((unsigned-byte) (destructuring-bind (&optional (s '*)) rest
-                         (range-ctype 'integer 0
-                                      (if (eq s '*)
-                                          '*
-                                          (1- (expt 2 s)))
-                                      env)))
-      ((values) (parse-values-ctype rest env))
-      ((vector) (destructuring-bind (&optional (et '*) (length '*)) rest
-                  (array-ctype :either et (list length) env))))))
+(defgeneric cons-specifier-ctype (head rest env))
+
+(defun mapcar-rcurry (arguments function &rest lists)
+  (apply #'mapcar
+         (lambda (&rest args)
+           (multiple-value-call function (values-list args) (values-list arguments)))
+         lists))
+
+(macrolet ((def ((head) &body body)
+             `(defmethod cons-specifier-ctype ((head (eql ',head)) rest env)
+                (declare (ignorable head rest env))
+                ,@body)))
+
+  (def (and)
+      (apply #'conjoin (mapcar-rcurry (list env) #'specifier-ctype rest)))
+  (def (array)
+      (destructuring-bind (&optional (et '*) (dims '*)) rest
+        (array-ctype :either et dims env)))
+  (def (base-string)
+      (destructuring-bind (&optional (length '*)) rest
+        (array-ctype :either 'base-char (list length) env)))
+  (def (bit-vector)
+      (destructuring-bind (&optional (length '*)) rest
+        (array-ctype :either 'bit (list length) env)))
+  (def (complex)
+      (destructuring-bind (&optional (et '*)) rest
+        (complex-ctype et env)))
+  (def (cons)
+      (destructuring-bind (&optional (car '*) (cdr '*)) rest
+        (cons-ctype car cdr env)))
+  (def (double-float)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'double-float low high env)))
+  (def (eql)
+      (destructuring-bind (object) rest (member-ctype (list object))))
+  (def (float)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'float low high env)))
+  (def (function)
+      (destructuring-bind (&optional (ll '*) (rv '*)) rest
+        (function-ctype ll rv env)))
+  (def (integer)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'integer low high env)))
+  (def (long-float)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'long-float low high env)))
+  (def (member) (member-ctype rest))
+  (def (mod)
+      (destructuring-bind (n) rest
+        (range-ctype 'integer 0 (list n) env)))
+  (def (not)
+      (destructuring-bind (spec) rest (negate (specifier-ctype spec env))))
+  (def (or) (apply #'disjoin (mapcar-rcurry (list env) #'specifier-ctype rest)))
+  (def (rational)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'rational low high env)))
+  (def (real)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'real low high env)))
+  (def (satisfies)
+      (destructuring-bind (fname) rest
+        (satisfies-ctype fname)))
+  (def (short-float)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'short-float low high env)))
+  (def (signed-byte)
+      (destructuring-bind (&optional (s '*)) rest
+        (if (eq s '*)
+            (range-ctype 'integer '* '* env)
+            (let ((es (expt 2 (1- s))))
+              (range-ctype 'integer (- es) (1- es) env)))))
+  (def (simple-array)
+      (destructuring-bind (&optional (et '*) (dims '*)) rest
+        (array-ctype :simple et dims env)))
+  (def (simple-base-string)
+      (destructuring-bind (&optional (length '*)) rest
+        (array-ctype :simple 'base-char (list length) env)))
+  (def (simple-bit-vector)
+      (destructuring-bind (&optional (length '*)) rest
+        (array-ctype :simple 'bit (list length) env)))
+  (def (simple-string)
+      (destructuring-bind (&optional (length '*)) rest
+        (apply #'disjunction
+               (loop with l = (list length)
+                     for uaet in +string-uaets+
+                     collect (array-ctype :simple uaet l env)))))
+  (def (simple-vector)
+      (destructuring-bind (&optional (length '*)) rest
+        (array-ctype :simple 't (list length) env)))
+  (def (single-float)
+      (destructuring-bind (&optional (low '*) (high '*)) rest
+        (range-ctype 'single-float low high env)))
+  (def (string)
+      (destructuring-bind (&optional (length '*)) rest
+        (apply #'disjoin
+               (loop with l = (list length)
+                     for uaet in +string-uaets+
+                     collect (array-ctype :either uaet l env)))))
+  (def (unsigned-byte)
+      (destructuring-bind (&optional (s '*)) rest
+        (range-ctype 'integer 0
+                     (if (eq s '*)
+                         '*
+                         (1- (expt 2 s)))
+                     env)))
+  (def (values)
+      (parse-values-ctype rest env))
+  (def (vector)
+      (destructuring-bind (&optional (et '*) (length '*)) rest
+        (array-ctype :either et (list length) env))))
 
 (defun specifier-ctype (specifier &optional env)
   (let ((spec (typexpand specifier env)))
