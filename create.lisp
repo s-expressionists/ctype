@@ -63,12 +63,8 @@
       (bot)))
 
 (defun cvalues (required optional rest)
-  (if (and (null required)
-           (every #'top-p optional)
-           (top-p rest))
-      (top)
-      (make-instance 'cvalues
-        :required required :optional optional :rest rest)))
+  (make-instance 'cvalues
+    :required required :optional optional :rest rest))
 
 (defun csatisfies (fname)
   (make-instance 'csatisfies :fname fname))

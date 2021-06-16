@@ -1,5 +1,10 @@
 (in-package #:ctype)
 
+(defun top-values-p (cvalues)
+  (and (every #'top-p (cvalues-required cvalues))
+       (null (cvalues-optional cvalues))
+       (top-p (cvalues-rest cvalues))))
+
 (defmethod ctypep (object (ct cvalues))
   (declare (ignore object))
   (error "Values ctype ~a cannot be used with ~a" ct 'ctypep))

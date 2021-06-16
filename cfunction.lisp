@@ -9,7 +9,7 @@
 ;;; Does this function ctype = FUNCTION unadorned?
 (defun top-function-p (cfunction)
   (and (top-lambda-list-p (cfunction-lambda-list cfunction))
-       (top-p (cfunction-returns cfunction))))
+       (top-values-p (cfunction-returns cfunction))))
 
 (defmethod ctypep (object (ct cfunction))
   (if (functionp object)
@@ -119,7 +119,7 @@
 (defmethod unparse ((ct cfunction))
   (let ((ull (unparse-lambda-list (cfunction-lambda-list ct)))
         (rv (cfunction-returns ct)))
-    (if (top-p rv)
+    (if (top-values-p rv)
         (if (eq ull '*)
             'function
             `(function ,ull))

@@ -197,6 +197,11 @@
       :required req :optional opt :rest (or rest (bot))
       :keyp keyp :keys key :aokp aokp)))
 
+(defgeneric coerce-to-values (ctype))
+(defmethod coerce-to-values ((ctype cvalues)) ctype)
+(defmethod coerce-to-values ((ctype ctype))
+  (cvalues (list ctype) nil (top)))
+
 (defun function-ctype (ll rv env)
   (let ((ll (if (eq ll '*)
                 (make-instance 'lambda-list
@@ -204,8 +209,8 @@
                   :keyp nil :keys nil :aokp nil)
                 (parse-lambda-list ll env)))
         (rv (if (eq rv '*)
-                (top)
-                (specifier-ctype rv))))
+                (cvalues nil nil (top))
+                (coerce-to-values (specifier-ctype rv)))))
     (if (bot-p ll)
         ll
         (make-instance 'cfunction :lambda-list ll :returns rv))))
@@ -234,7 +239,8 @@
 (defun parse-values-ctype (rest env)
   (multiple-value-bind (req opt rest) (%parse-values-ctype rest env)
     ;; Maybe should warn about this stuff too.
-    (when (some #'bot-p req) (return-from parse-values-ctype (bot)))
+    (when (some #'bot-p req)
+      (return-from parse-values-ctype (cvalues (list (bot)) nil (bot))))
     (let ((m (member-if #'bot-p opt)))
       (when m
         (return-from parse-values-ctype (cvalues req (ldiff opt m) (bot)))))
