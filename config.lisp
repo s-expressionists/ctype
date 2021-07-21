@@ -19,8 +19,9 @@
   #+clasp (ext::ratiop object)
   #+sbcl (sb-int:ratiop object)
   #+ccl (ccl:ratiop object)
+  #+cmucl (ext:ratiop object)
   #+sicl (typep object 'ratio)
-  #-(or clasp sbcl ccl sicl) (error "RATIOP not defined for implementation"))
+  #-(or clasp sbcl ccl cmucl sicl) (error "RATIOP not defined for implementation"))
 
 (define-constant +floats+
   #+clasp '((single-float . core:single-float-p)
@@ -32,12 +33,15 @@
   ;;   https://ccl.clozure.com/manual/chapter4.11.html#floating-point
   #+ccl '((single-float . ccl::short-float-p)
           (double-float . ccl::double-float-p))
+  #+cmucl '((single-float . kernel:single-float-p)
+            (double-float . kernel:double-float-p))
   #+sicl '((single-float . sicl-arithmetic:single-float-p)
            (double-float . sicl-arithmetic:double-float-p))
   ;; ECL also has long floats
   #+ecl '((single-float . si:single-float-p)
           (double-float . si:double-float-p))
-  #-(or clasp sbcl ccl sicl ecl) (error "FLOATS not defined for implementation")
+  #-(or clasp sbcl ccl cmucl sicl ecl)
+  (error "FLOATS not defined for implementation")
   :test #'equal)
 
 #|
@@ -65,7 +69,7 @@ are the standard characters.
                     (setq inside-range-p nil))))
         :finally (return (nreverse ranges))))
 
-Discover +base-charset+ via:
+Discover +standard-charset+ via:
 
 (find-ranges (lambda (x) (typep (code-char x) 'standard-char))
              0 (expt 2 20))
@@ -74,8 +78,8 @@ Discover +base-charset+ via:
 
 (define-constant +standard-charset+
   ;; In ASCII (or Unicode)
-  #+(or clasp sbcl ccl sicl ecl) '((10 . 10) (32 . 126))
-  #-(or clasp sbcl ccl sicl ecl) (error "STANDARD-CHARSET not defined for implementation")
+  #+(or clasp sbcl ccl cmucl sicl ecl) '((10 . 10) (32 . 126))
+  #-(or clasp sbcl ccl cmucl sicl ecl) (error "STANDARD-CHARSET not defined for implementation")
   :test #'equal)
 
 #| Discover +base-charset+ via:
@@ -89,18 +93,22 @@ Discover +base-charset+ via:
   #+clasp '((0 . 255))
   #+sbcl '((0 . 127))
   #+ccl '((0 . 55295))
+  #+cmucl '((0 . 65535))
   #+sicl '((0 . #x10FFFF))
   #+ecl '((0 . 255))
-  #-(or clasp sbcl ccl sicl ecl) (error "BASE-CHARSET not defined for implementation")
+  #-(or clasp sbcl ccl cmucl sicl ecl)
+  (error "BASE-CHARSET not defined for implementation")
   :test #'equal)
 
 (define-constant +string-uaets+ ; Upgraded Array Element Type
   #+clasp '(base-char character)
   #+sbcl '(nil base-char character)
   #+ccl '(nil base-char)
+  #+cmucl '(base-char)
   #+sicl '(character)
   #+ecl '(base-char character)
-  #-(or clasp sbcl ccl sicl ecl) (error "STRING-UAETS not defined for implementation")
+  #-(or clasp sbcl ccl cmucl sicl ecl)
+  (error "STRING-UAETS not defined for implementation")
   :test #'equal)
 
 ;;; This should be T unless (and array (not simple-array)) = NIL.
@@ -112,9 +120,10 @@ Discover +base-charset+ via:
   #+clasp t
   #+sbcl t
   #+ccl t
+  #+cmucl t
   #+sicl nil
   #+ecl nil
-  #-(or clasp sbcl ccl sicl ecl)
+  #-(or clasp sbcl ccl cmucl sicl ecl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
 (declaim (inline simple-array-p))
@@ -123,7 +132,8 @@ Discover +base-charset+ via:
   #+sbcl (sb-kernel:simple-array-p object)
   #+ccl (ccl::simple-array-p object)
   #+ecl (si::simple-array-p object)
-  #-(or clasp sbcl ccl ecl)
+  #+cmucl (kernel:simple-array-p object)
+  #-(or clasp sbcl ccl cmucl ecl)
   (if +complex-arrays-exist-p+
       (error "SIMPLE-ARRAY-P not defined for implementation")
       t))
@@ -267,6 +277,8 @@ Discover +base-charset+ via:
              (and (not simple-array) (not vector) (array t))))
   #+sbcl ()
   #+ccl ()
+  #+cmucl ()
+
   #+sicl '((sicl-array:array-t (array t))
            (sicl-array:array-bit (array bit))
            (sicl-array:array-unsigned-byte-8 (array (unsigned-byte 8)))
@@ -285,16 +297,19 @@ Discover +base-charset+ via:
            (sicl-array:vector-unsigned-byte-64 (vector (unsigned-byte 64)))
            (sicl-array:vector-signed-byte-64 (vector (signed-byte 64))))
   #+ecl ()
-  #-(or clasp sbcl ccl sicl ecl) (error "CLASS-ALIASES not defined for implementation")
+  #-(or clasp sbcl ccl cmucl sicl ecl)
+  (error "CLASS-ALIASES not defined for implementation")
   :test #'equal)
 
 (defun subclassp (sub super)
   #+clasp (core:subclassp sub super)
   #+sbcl (member super (sb-mop:class-precedence-list sub))
   #+ccl (ccl::subclassp sub super)
+  #+cmucl (member super (kernel:std-compute-class-precedence-list sub))
   #+sicl (member super (sicl-clos:class-precedence-list sub))
   #+ecl (si::subclassp sub super)
-  #-(or clasp sbcl ccl sicl ecl) (error "SUBCLASSP not defined for implementation"))
+  #-(or clasp sbcl ccl cmucl sicl ecl)
+  (error "SUBCLASSP not defined for implementation"))
 
 ;;; This is like si::normalize-type, except we return a type specifier and
 ;;; whether it expanded, and don't signal an error if something is malformed.
@@ -319,6 +334,7 @@ Discover +base-charset+ via:
   #+clasp (cleavir-env:type-expand environment type-specifier)
   #+sbcl (sb-ext:typexpand type-specifier environment)
   #+ccl (ccl::type-expand type-specifier environment)
+  #+cmucl (kernel:type-expand type-specifier)
   #+sicl (funcall (sicl-environment:fdefinition
                    (sicl-environment:client environment)
                    environment
@@ -330,7 +346,8 @@ Discover +base-charset+ via:
                    (if expandedp
                        (setf ever-expanded t type-specifier expansion)
                        (return (values type-specifier ever-expanded)))))
-  #-(or clasp sbcl ccl sicl) (error "TYPEXPAND not defined for implementation"))
+  #-(or clasp sbcl ccl cmucl sicl ecl)
+  (error "TYPEXPAND not defined for implementation"))
 
 ;;; Below, the idea is that (typep object '(complex foo)) is equivalent to
 ;;; (complex-ucptp object ufoo), where ufoo is (upgraded-complex-part-type 'foo)
@@ -344,13 +361,16 @@ Discover +base-charset+ via:
      #+sbcl ((rational) (sb-kernel:complex-rational-p ,objectf))
      #+ccl ((single-float) (ccl::complex-single-float-p ,objectf))
      #+ccl ((double-float) (ccl::complex-double-float-p ,objectf))
+     #+cmucl ((single-float) (kernel:complex-single-float-p ,objectf))
+     #+cmucl ((double-float) (kernel:complex-double-float-p ,objectf))
+     #+cmucl ((rational) (kernel:complex-rational-p ,objectf))
      #+sicl ((single-float) (typep ,objectf 'sicl-arithmetic:complex-single-float))
      #+sicl ((double-float) (typep ,objectf 'sicl-arithmetic:complex-double-float))
      #+sicl ((rational) (typep ,objectf 'sicl-arithmetic:complex-rational))
      ;; ECL has si:complex-long-float
      #+ecl ((single-float) (typep ,objectf 'si:complex-single-float))
      #+ecl ((double-float) (typep ,objectf 'si:complex-double-float))
-     #-(or clasp sbcl ccl sicl ecl) ,(error "COMPLEX-UCPTP not defined for implementation")))
+     #-(or clasp sbcl ccl cmucl sicl ecl) ,(error "COMPLEX-UCPTP not defined for implementation")))
 
 ;;;
 
