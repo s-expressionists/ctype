@@ -34,7 +34,10 @@
           (double-float . ccl::double-float-p))
   #+sicl '((single-float . sicl-arithmetic:single-float-p)
            (double-float . sicl-arithmetic:double-float-p))
-  #-(or clasp sbcl ccl sicl) (error "FLOATS not defined for implementation")
+  ;; ECL also has long floats
+  #+ecl '((single-float . si:single-float-p)
+          (double-float . si:double-float-p))
+  #-(or clasp sbcl ccl sicl ecl) (error "FLOATS not defined for implementation")
   :test #'equal)
 
 #|
@@ -71,8 +74,8 @@ Discover +base-charset+ via:
 
 (define-constant +standard-charset+
   ;; In ASCII (or Unicode)
-  #+(or clasp sbcl ccl sicl) '((10 . 10) (32 . 126))
-  #-(or clasp sbcl ccl sicl) (error "STANDARD-CHARSET not defined for implementation")
+  #+(or clasp sbcl ccl sicl ecl) '((10 . 10) (32 . 126))
+  #-(or clasp sbcl ccl sicl ecl) (error "STANDARD-CHARSET not defined for implementation")
   :test #'equal)
 
 #| Discover +base-charset+ via:
@@ -87,7 +90,8 @@ Discover +base-charset+ via:
   #+sbcl '((0 . 127))
   #+ccl '((0 . 55295))
   #+sicl '((0 . #x10FFFF))
-  #-(or clasp sbcl ccl sicl) (error "BASE-CHARSET not defind for implementation")
+  #+ecl '((0 . 255))
+  #-(or clasp sbcl ccl sicl ecl) (error "BASE-CHARSET not defind for implementation")
   :test #'equal)
 
 (define-constant +string-uaets+ ; Upgraded Array Element Type
@@ -95,7 +99,8 @@ Discover +base-charset+ via:
   #+sbcl '(nil base-char character)
   #+ccl '(nil base-char)
   #+sicl '(character)
-  #-(or clasp sbcl ccl sicl) (error "STRING-UAETS not defined for implementation")
+  #+ecl '(base-char character)
+  #-(or clasp sbcl ccl sicl ecl) (error "STRING-UAETS not defined for implementation")
   :test #'equal)
 
 ;;; This should be T unless (and array (not simple-array)) = NIL.
@@ -108,7 +113,8 @@ Discover +base-charset+ via:
   #+sbcl t
   #+ccl t
   #+sicl nil
-  #-(or clasp sbcl ccl sicl)
+  #+ecl nil
+  #-(or clasp sbcl ccl sicl ecl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
 (declaim (inline simple-array-p))
@@ -116,7 +122,8 @@ Discover +base-charset+ via:
   #+clasp (if (cleavir-primop:typeq object core:abstract-simple-vector) t nil)
   #+sbcl (sb-kernel:simple-array-p object)
   #+ccl (ccl::simple-array-p object)
-  #-(or clasp sbcl ccl)
+  #+ecl (si::simple-array-p object)
+  #-(or clasp sbcl ccl ecl)
   (if +complex-arrays-exist-p+
       (error "SIMPLE-ARRAY-P not defined for implementation")
       t))
@@ -277,7 +284,8 @@ Discover +base-charset+ via:
            (sicl-array:vector-signed-byte-32 (vector (signed-byte 32)))
            (sicl-array:vector-unsigned-byte-64 (vector (unsigned-byte 64)))
            (sicl-array:vector-signed-byte-64 (vector (signed-byte 64))))
-  #-(or clasp sbcl ccl sicl) (error "CLASS-ALIASES not defined for implementation")
+  #+ecl ()
+  #-(or clasp sbcl ccl sicl ecl) (error "CLASS-ALIASES not defined for implementation")
   :test #'equal)
 
 (defun subclassp (sub super)
@@ -285,7 +293,8 @@ Discover +base-charset+ via:
   #+sbcl (member super (sb-mop:class-precedence-list sub))
   #+ccl (ccl::subclassp sub super)
   #+sicl (member super (sicl-clos:class-precedence-list sub))
-  #-(or clasp sbcl ccl sicl) (error "SUBCLASSP not defined for implementation"))
+  #+ecl (si::subclassp sub super)
+  #-(or clasp sbcl ccl sicl ecl) (error "SUBCLASSP not defined for implementation"))
 
 (defun typexpand (type-specifier environment)
   #+clasp (cleavir-env:type-expand environment type-specifier)
@@ -296,6 +305,7 @@ Discover +base-charset+ via:
                    environment
                    'sicl-type:type-expander)
                   type-specifier)
+  ;; FIXME: typexpand not defined for ECL; in TYPEP, it instead uses explicit recursion
   #-(or clasp sbcl ccl sicl) (error "TYPEXPAND not defined for implementation"))
 
 ;;; Below, the idea is that (typep object '(complex foo)) is equivalent to
@@ -313,7 +323,10 @@ Discover +base-charset+ via:
      #+sicl ((single-float) (typep ,objectf 'sicl-arithmetic:complex-single-float))
      #+sicl ((double-float) (typep ,objectf 'sicl-arithmetic:complex-double-float))
      #+sicl ((rational) (typep ,objectf 'sicl-arithmetic:complex-rational))
-     #-(or clasp sbcl ccl sicl) ,(error "COMPLEX-UCPTP not defined for implementation")))
+     ;; ECL has si:complex-long-float
+     #+ecl ((single-float) (typep ,objectf 'si:complex-single-float))
+     #+ecl ((double-float) (typep ,objectf 'si:complex-double-float))
+     #-(or clasp sbcl ccl sicl ecl) ,(error "COMPLEX-UCPTP not defined for implementation")))
 
 ;;;
 
