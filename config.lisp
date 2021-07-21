@@ -37,9 +37,9 @@
             (double-float . kernel:double-float-p))
   #+sicl '((single-float . sicl-arithmetic:single-float-p)
            (double-float . sicl-arithmetic:double-float-p))
-  ;; ECL also has long floats
   #+ecl '((single-float . si:single-float-p)
-          (double-float . si:double-float-p))
+          (double-float . si:double-float-p)
+          (long-float . si:long-float-p))
   #-(or clasp sbcl ccl cmucl sicl ecl)
   (error "FLOATS not defined for implementation")
   :test #'equal)
@@ -370,6 +370,7 @@ Discover +standard-charset+ via:
      ;; ECL has si:complex-long-float
      #+ecl ((single-float) (typep ,objectf 'si:complex-single-float))
      #+ecl ((double-float) (typep ,objectf 'si:complex-double-float))
+     #+ecl ((long-float) (typep ,objectf 'si:complex-long-float))
      #-(or clasp sbcl ccl cmucl sicl ecl) ,(error "COMPLEX-UCPTP not defined for implementation")))
 
 ;;;
