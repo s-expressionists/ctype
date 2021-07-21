@@ -122,7 +122,7 @@ Discover +standard-charset+ via:
   #+ccl t
   #+cmucl t
   #+sicl nil
-  #+ecl nil
+  #+ecl t
   #-(or clasp sbcl ccl cmucl sicl ecl)
   (error "COMPLEX-ARRAYS-EXIST-P not defined for implementation"))
 
