@@ -91,7 +91,7 @@ Discover +base-charset+ via:
   #+ccl '((0 . 55295))
   #+sicl '((0 . #x10FFFF))
   #+ecl '((0 . 255))
-  #-(or clasp sbcl ccl sicl ecl) (error "BASE-CHARSET not defind for implementation")
+  #-(or clasp sbcl ccl sicl ecl) (error "BASE-CHARSET not defined for implementation")
   :test #'equal)
 
 (define-constant +string-uaets+ ; Upgraded Array Element Type
@@ -296,6 +296,25 @@ Discover +base-charset+ via:
   #+ecl (si::subclassp sub super)
   #-(or clasp sbcl ccl sicl ecl) (error "SUBCLASSP not defined for implementation"))
 
+;;; This is like si::normalize-type, except we return a type specifier and
+;;; whether it expanded, and don't signal an error if something is malformed.
+;;; This obviously uses internals - fragile - but ECL doesn't export this.
+#+ecl
+(defun typexpand-1 (spec env)
+  (declare (ignore env))
+  (cond ((symbolp spec)
+         (let ((expander (si:get-sysprop spec 'si::deftype-definition)))
+           (if expander
+               (values (funcall expander nil) t)
+               (values spec nil))))
+        ((consp spec)
+         (let* ((head (car spec)) (args (cdr spec))
+                (expander (si:get-sysprop head 'si::deftype-definition)))
+           (if expander
+               (values (funcall expander args) t)
+               (values spec nil))))
+        (t (values spec nil))))
+
 (defun typexpand (type-specifier environment)
   #+clasp (cleavir-env:type-expand environment type-specifier)
   #+sbcl (sb-ext:typexpand type-specifier environment)
@@ -305,7 +324,12 @@ Discover +base-charset+ via:
                    environment
                    'sicl-type:type-expander)
                   type-specifier)
-  ;; FIXME: typexpand not defined for ECL; in TYPEP, it instead uses explicit recursion
+  #+ecl (loop with ever-expanded = nil
+              do (multiple-value-bind (expansion expandedp)
+                     (typexpand-1 type-specifier environment)
+                   (if expandedp
+                       (setf ever-expanded t type-specifier expansion)
+                       (return (values type-specifier ever-expanded)))))
   #-(or clasp sbcl ccl sicl) (error "TYPEXPAND not defined for implementation"))
 
 ;;; Below, the idea is that (typep object '(complex foo)) is equivalent to
