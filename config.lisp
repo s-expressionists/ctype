@@ -91,7 +91,7 @@ Discover +standard-charset+ via:
   #+ccl '((0 . 55295))
   #+cmucl '((0 . 65535))
   #+sicl '((0 . #x10FFFF))
-  #-(or clasp sbcl ccl cmucl sicl) (error "BASE-CHARSET not defind for implementation")
+  #-(or clasp sbcl ccl cmucl sicl) (error "BASE-CHARSET not defined for implementation")
   :test #'equal)
 
 (define-constant +string-uaets+ ; Upgraded Array Element Type
