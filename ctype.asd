@@ -3,7 +3,18 @@
   :components
   ((:file "packages")
    (:file "trivalent" :depends-on ("packages"))
-   (:file "config" :depends-on ("packages"))
+   (:module "config"
+    :serial t
+    :components ((:file "common")
+                 (:file "clasp" :if-feature :clasp)
+                 (:file "sbcl"  :if-feature :sbcl)
+                 (:file "ccl"   :if-feature :ccl)
+                 (:file "cmucl" :if-feature :cmucl)
+                 (:file "sicl"  :if-feature :sicl)
+                 (:file "ecl"   :if-feature :ecl)
+                 (:file "unsupported"
+                  :if-feature (:not (:or :clasp :sbcl :ccl :cmucl :sicl :ecl)))
+                 (:file "common-post")))
    (:file "classes" :depends-on ("packages"))
    (:file "create" :depends-on ("classes" "packages"))
    (:file "generic-functions"
