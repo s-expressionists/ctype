@@ -14,7 +14,7 @@
 (define-constant +standard-charset+ '((10 . 10) (32 . 126)) :test #'equal)
 (define-constant +base-charset+ '((0 . 55295)) :test #'equal)
 
-(define-constant +string-uaets+ '(nil base-char) :test #'equal)
+(define-constant +string-uaets+ '(base-char) :test #'equal)
 
 (define-constant +complex-arrays-exist-p+ t)
 
