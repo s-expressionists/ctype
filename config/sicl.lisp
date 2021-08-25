@@ -43,11 +43,7 @@
   (member super (sicl-clos:class-precedence-list sub)))
 
 (defun typexpand (type-specifier environment)
-  (funcall (sicl-environment:fdefinition
-            (sicl-environment:client environment)
-            environment
-            'sicl-type:type-expander)
-           type-specifier))
+  (sicl-type:typexpand type-specifier environment))
 
 (defmacro complex-ucptp (objectf ucpt)
   `(ecase ,ucpt
