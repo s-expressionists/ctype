@@ -160,7 +160,7 @@
           ((equal pairs `((0 . ,(1- char-code-limit))))
            'character)
           ((equal pairs (negate-charset-pairs +standard-charset+))
-           '(not standard-char))
+           '(and character (not standard-char)))
           ((equal pairs (negate-charset-pairs +base-charset+))
            'extended-char)
           (t ; something weird. do a member type.
