@@ -101,7 +101,7 @@
     (cond ((bot-p ll) ll)
           ((and ll rv)
            (make-instance 'cfunction :lambda-list ll :returns rv))
-          (t (call-next-method)))))
+          (t nil))))
 
 (defun unparse-lambda-list (lambda-list)
   (if (top-lambda-list-p lambda-list)

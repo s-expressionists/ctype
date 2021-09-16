@@ -27,33 +27,29 @@
                                      (and (> not-subtype 0)
                                           (= not-subtype-and-not-conjoint 0))))
                             (values nil t)
-                            (call-next-method)))))
+                            (values nil nil)))))
 (defmethod subctypep ((ct1 ctype) (ct2 conjunction))
   ;; if a ~<: z then a ~<: z ^ y, as z ^ y <: z.
   ;; if a <: z and a <: y, a ^ z = a and a ^ y = a
   ;; a <: z ^ y <=> a ^ z ^ y = a <=> (a ^ z) ^ (a ^ y) = a <=> a ^ a = a
   ;; this also covers the case of ct2 being top.
-  (surely
-   (every/tri (lambda (sct) (subctypep ct1 sct)) (junction-ctypes ct2))
-   (call-next-method)))
+  (every/tri (lambda (sct) (subctypep ct1 sct)) (junction-ctypes ct2)))
 
 (defmethod disjointp ((ct1 conjunction) (ct2 ctype))
   ;; if a ^ z = 0 then a ^ b ^ z = 0.
   ;; doesn't follow the other way, though.
   (if (some/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
       (values t t)
-      (call-next-method)))
+      (values nil nil)))
 (defmethod disjointp ((ct1 ctype) (ct2 conjunction))
   (if (some/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
       (values t t)
-      (call-next-method)))
+      (values nil nil)))
 (defmethod conjointp ((ct1 conjunction) (ct2 ctype))
   ;; (a ^ b) v z = T <=> (a v z) ^ (b v z) = T
-  (surely (every/tri (lambda (sct) (conjointp sct ct2)) (junction-ctypes ct1))
-          (call-next-method)))
+  (every/tri (lambda (sct) (conjointp sct ct2)) (junction-ctypes ct1)))
 (defmethod conjointp ((ct1 ctype) (ct2 conjunction))
-  (surely (every/tri (lambda (sct) (conjointp ct1 sct)) (junction-ctypes ct2))
-          (call-next-method)))
+  (every/tri (lambda (sct) (conjointp ct1 sct)) (junction-ctypes ct2)))
 
 (defmethod negate ((ctype conjunction))
   ;; de Morgan: ~(a & b) = ~a | ~b
@@ -89,9 +85,9 @@
                                       (apply #'conjunction uninteresting)))
                         (t nil)))))
 (defmethod disjoin/2 ((ct1 conjunction) (ct2 ctype))
-  (or (disjoin-conjunction ct1 ct2) (call-next-method)))
+  (disjoin-conjunction ct1 ct2))
 (defmethod disjoin/2 ((ct1 ctype) (ct2 conjunction))
-  (or (disjoin-conjunction ct2 ct1) (call-next-method)))
+  (disjoin-conjunction ct2 ct1))
 
 (defmethod unparse ((ct conjunction))
   (let ((ups (mapcar #'unparse (junction-ctypes ct))))

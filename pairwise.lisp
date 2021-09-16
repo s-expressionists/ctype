@@ -34,18 +34,12 @@
 ;;; This is basically (subctypep ccons (bot)), but we use this in subctypep
 ;;; methods themselves, so we have to reduce it to mimic the usual subctypep
 ;;; method in ccons.lisp.
-;;; FIXME: Is the lack of call-next-method a problem? I don't think it is if
-;;; we only use this in subctypep/disjointp methods?
 (defun ccons-bottom-p (ccons)
   (or/tri (subctypep (ccons-car ccons) (bot))
           (subctypep (ccons-cdr ccons) (bot))))
 
 (defmethod subctypep ((ct1 ccons) (ct2 ctype))
-  ;; If ct1 is bottom in disguise, the subctypep is true.
-  ;; If it's definitely not, just go to the next method.
-  ;; If it maybe is, try the next method, but if that says it's not, inject
-  ;; uncertainty back in.
-  (or/tri (ccons-bottom-p ct1) (call-next-method)))
+  (if (ccons-bottom-p ct1) (values t t) (values nil nil)))
 
 (macrolet ((consxclusive/1 (class)
              `(progn
@@ -53,7 +47,7 @@
                   ;; ct1 and ct2 are basically exclusive, so if ct1 is
                   ;; definitely NOT bottom, they really are exclusive.
                   ;; That's why this is different from the general method above.
-                  (surely (ccons-bottom-p ct1) (call-next-method)))
+                  (ccons-bottom-p ct1))
                 (defmethod subctypep ((ct1 ,class) (ct2 ccons)) (values nil t))
                 (defmethod disjointp ((ct1 ccons) (ct2 ,class)) (values t t))
                 (defmethod disjointp ((ct1 ,class) (ct2 ccons)) (values t t))))
@@ -79,15 +73,12 @@
 (defun sequence-cclass-p (cclass)
   (eq (class-name (cclass-class cclass)) 'sequence))
 (defmethod subctypep ((ct1 ccons) (ct2 cclass))
-  (or/tri (ccons-bottom-p ct1)
-          (values (sequence-cclass-p ct2) t)))
+  (or/tri (ccons-bottom-p ct1) (values (sequence-cclass-p ct2) t)))
 (defmethod subctypep ((ct1 cclass) (ct2 ccons)) (values nil t))
 (defmethod disjointp ((ct1 ccons) (ct2 cclass))
-  (or/tri (ccons-bottom-p ct1)
-          (values (not (sequence-cclass-p ct2)) t)))
+  (or/tri (ccons-bottom-p ct1) (values (not (sequence-cclass-p ct2)) t)))
 (defmethod disjointp ((ct1 cclass) (ct2 ccons))
-  (or/tri (ccons-bottom-p ct2)
-          (values (not (sequence-cclass-p ct1)) t)))
+  (or/tri (ccons-bottom-p ct2) (values (not (sequence-cclass-p ct1)) t)))
 (defmethod conjoin/2 ((ct1 cclass) (ct2 ccons))
   (if (sequence-cclass-p ct1) ct2 (bot)))
 (defmethod conjoin/2 ((ct1 ccons) (ct2 cclass))
@@ -95,7 +86,7 @@
 (defmethod subtract ((ct1 ccons) (ct2 cclass))
   (if (sequence-cclass-p ct2) (bot) ct1))
 (defmethod subtract ((ct1 cclass) (ct2 ccons))
-  (if (sequence-cclass-p ct1) (call-next-method) (bot)))
+  (if (sequence-cclass-p ct1) nil (bot)))
 ;;; NULL is (MEMBER NIL), and cmember methods should already handle things.
 (defmethod subctypep ((ct1 carray) (ct2 cclass))
   (values (and (sequence-cclass-p ct2)
@@ -131,13 +122,13 @@
   (if (sequence-cclass-p ct1)
       (let ((dims (carray-dims ct2)))
         (if (or (eq dims '*) (= (length dims) 1))
-            (call-next-method)
+            nil
             ct1))
       ct1))
 (defmethod subtract ((ct1 carray) (ct2 cclass))
   (if (sequence-cclass-p ct2)
       (let ((dims (carray-dims ct1)))
-        (cond ((eq dims '*) (call-next-method))
+        (cond ((eq dims '*) nil)
               ((= (length dims) 1) (bot))
               (t ct1)))
       ct1))
@@ -154,19 +145,19 @@
       (values nil t)))
 (defmethod conjoin/2 ((ct1 cclass) (ct2 cfunction))
   (if (subfunction-cclass-p ct1)
-      (if (top-function-p ct2) ct1 (call-next-method))
+      (if (top-function-p ct2) ct1 nil)
       (bot)))
 (defmethod conjoin/2 ((ct1 cfunction) (ct2 cclass))
   (if (subfunction-cclass-p ct2)
-      (if (top-function-p ct1) ct2 (call-next-method))
+      (if (top-function-p ct1) ct2 nil)
       (bot)))
 (defmethod subtract ((ct1 cclass) (ct2 cfunction))
   (if (subfunction-cclass-p ct1)
-      (if (top-function-p ct2) (bot) (call-next-method))
+      (if (top-function-p ct2) (bot) nil)
       ct1))
 (defmethod subtract ((ct1 cfunction) (ct2 cclass))
   (if (subfunction-cclass-p ct2)
-      (call-next-method)
+      nil
       ct1))
 
 ;;; Some ctypes are never empty and also never top. Define this explicitly.
@@ -175,11 +166,11 @@
      (defmethod subctypep ((ct1 ,class) (ct2 disjunction))
        (if (bot-p ct2)
            (values nil t)
-           (call-next-method)))
+           (values nil nil)))
      (defmethod subctypep ((ct1 conjunction) (ct2 ,class))
        (if (top-p ct1)
            (values nil t)
-           (call-next-method)))))
+           (values nil nil)))))
 (defexistential cclass)
 (defexistential range)
 (defexistential ccomplex)
@@ -191,11 +182,11 @@
 (defmethod subctypep ((ct1 ccons) (ct2 disjunction))
   (if (bot-p ct2)
       (ccons-bottom-p ct1)
-      (call-next-method)))
+      (values nil nil)))
 (defmethod subctypep ((ct1 conjunction) (ct2 ccons))
   (if (top-p ct1)
       (values nil t)
-      (call-next-method)))
+      (values nil nil)))
 
 ;;; Some ctypes represent an infinite number of possible objects, so they are
 ;;; never subctypes of any member ctype.
@@ -208,6 +199,8 @@
 (definfinite carray)
 (definfinite cfunction)
 
+;; note that e.g. (cons (eql 1) (eql 1)) is still infinite, since you can keep
+;; calling cons to get fresh conses of (1 . 1).
 (defmethod subctypep ((ct1 ccons) (ct2 cmember))
   (or/tri (ccons-bottom-p ct1) (values nil t)))
 
@@ -221,7 +214,7 @@
       (cofinitep (negation-ctype ct1))
     (if (and surety (not cofinitep))
         (values nil t)
-        (call-next-method))))
+        (values nil nil))))
 
 ;;; These methods exist so that disjoin-cmember doesn't produce nested
 ;;; disjunctions, e.g. from (or boolean list) => (or (eql t) (or cons null))
@@ -262,11 +255,11 @@
 (defmethod disjoin/2 ((ct1 fpzero) (ct2 range))
   (if (ctypep (fpzero-zero ct1) ct2)
       ct2
-      (call-next-method)))
+      nil))
 (defmethod disjoin/2 ((ct1 range) (ct2 fpzero))
   (if (ctypep (fpzero-zero ct2) ct1)
       ct1
-      (call-next-method)))
+      nil))
 
 (defmethod subtract ((ct1 fpzero) (ct2 range))
   (if (ctypep (fpzero-zero ct1) ct2)
@@ -289,7 +282,7 @@
                  (disjunction (fpzero k (- zero))
                               (range k low lxp zero t)
                               (range k zero t high hxp)))))
-        (call-next-method))))
+        nil)))
 
 ;;; This is sort of the hardest method - including both
 ;;; (subtypep t ...) and (subtypep ... nil), which are hard problems in general.
@@ -308,11 +301,11 @@
               ;; give definitive negative answers: e.g.
               ;; (subtypep 't '(or cons integer)) is false.
               (conjointp (first djs) (second djs)))
-             (t (call-next-method))))
+             (t (values nil nil))))
           ((null djs) ; (subtypep '(and ...) 'nil)
            (case (length cjs)
              ((1) (subctypep (first cjs) ct2)) ; degenerate
              ((2) (disjointp (first cjs) (second cjs)))
-             (t (call-next-method))))
+             (t (values nil nil))))
           (t ; (subtypep '(and ...) '(or ...))
-           (call-next-method)))))
+           (values nil nil)))))

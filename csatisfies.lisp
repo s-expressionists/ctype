@@ -6,11 +6,11 @@
 (defmethod subctypep ((ct1 csatisfies) (ct2 csatisfies))
   (if (equal (csatisfies-fname ct1) (csatisfies-fname ct2))
       (values t t)
-      (call-next-method)))
+      (values nil nil)))
 (defmethod ctype= ((ct1 csatisfies) (ct2 csatisfies))
   (if (equal (csatisfies-fname ct1) (csatisfies-fname ct2))
       (values t t)
-      (call-next-method)))
+      (values nil nil)))
 
 (defmethod unparse ((ct csatisfies))
   `(satisfies ,(csatisfies-fname ct)))

@@ -34,7 +34,7 @@
           (supct2 (find class2 *disjoint-classes* :test #'subclassp)))
       (if (and supct1 supct2 (not (eq supct1 supct2)))
           (values t t)
-          (call-next-method)))))
+          (values nil nil)))))
 
 (defmethod conjoin/2 ((ct1 cclass) (ct2 cclass))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
@@ -42,12 +42,12 @@
           ((disjointp ct1 ct2) (bot))
           ;; These classes may have a common subclass. Who knows?
           ;; (Strictly speaking we could check...)
-          (t (call-next-method)))))
+          (t nil))))
 
 (defmethod disjoin/2 ((ct1 cclass) (ct2 cclass))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
     (cond ((eq c1 c2) ct1)
-          (t (call-next-method)))))
+          (t nil))))
 
 (defmethod unparse ((ct cclass))
   (class-name (cclass-class ct)))

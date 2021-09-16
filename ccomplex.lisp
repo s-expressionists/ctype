@@ -31,12 +31,12 @@
     (cond ((eq ucpt1 '*) ct1)
           ((eq ucpt2 '*) ct2)
           ((equal ucpt1 ucpt2) ct1)
-          (t (call-next-method)))))
+          (t nil))))
 
 (defmethod subtract ((ct1 ccomplex) (ct2 ccomplex))
   (let ((ucpt1 (ccomplex-ucpt ct1)) (ucpt2 (ccomplex-ucpt ct2)))
     (cond ((eq ucpt2 '*) (bot))
-          ((eq ucpt1 '*) (call-next-method))
+          ((eq ucpt1 '*) nil)
           ((equal ucpt1 ucpt2) (bot))
           (t ct1))))
 

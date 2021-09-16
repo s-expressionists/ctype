@@ -15,40 +15,36 @@
 
 (defmethod subctypep ((ct1 negation) (ct2 negation))
   ;; ~a <: ~b <=> ~a ^ ~b = ~a <=> ~(a v b) = ~a <=> a v b = a <=> b <: a
-  (surely (subctypep (negation-ctype ct2) (negation-ctype ct1))
-          (call-next-method)))
+  (subctypep (negation-ctype ct2) (negation-ctype ct1)))
 (defmethod subctypep ((ct1 ctype) (ct2 negation))
   ;; a ^ b = 0 => 0 v (a ^ ~b) = a <=> a ^ ~b = a <=> a <: ~b
   ;; a <: ~b <=> a ^ ~b = a => (a ^ b) ^ a = 0 <=> a ^ b = 0
   ;; therefore, a ^ b = 0 <=> a <: ~b
-  (surely (disjointp ct1 (negation-ctype ct2)) (call-next-method)))
+  (disjointp ct1 (negation-ctype ct2)))
 (defmethod subctypep ((ct1 negation) (ct2 ctype))
   ;; ~b <: a <=> ~b v a = a => (a v b) v a = T <=> a v b = T
   ;; a v b = T => T ^ (a v ~b) = a <=> a v ~b = a <=> ~b <: a
   ;; therefore, a v b = T <=> ~b <: a
-  (surely (conjointp ct2 (negation-ctype ct1)) (call-next-method)))
+  (conjointp ct2 (negation-ctype ct1)))
 
 (defmethod ctype= ((ct1 negation) (ct2 negation))
-  (surely (ctype= (negation-ctype ct1) (negation-ctype ct2))
-          (call-next-method)))
+  (ctype= (negation-ctype ct1) (negation-ctype ct2)))
 
 (defmethod disjointp ((ct1 negation) (ct2 negation))
   ;; ~a ^ ~b = 0 <=> ~(a v b) = 0 <=> a v b = T
-  (surely (conjointp (negation-ctype ct1) (negation-ctype ct2))
-          (call-next-method)))
+  (conjointp (negation-ctype ct1) (negation-ctype ct2)))
 (defmethod disjointp ((ct1 negation) (ct2 ctype))
-  (surely (subctypep ct2 (negation-ctype ct1)) (call-next-method)))
+  (subctypep ct2 (negation-ctype ct1)))
 (defmethod disjointp ((ct1 ctype) (ct2 negation))
-  (surely (subctypep ct1 (negation-ctype ct2)) (call-next-method)))
+  (subctypep ct1 (negation-ctype ct2)))
 
 (defmethod conjointp ((ct1 negation) (ct2 negation))
   ;; ~a v ~b = T <=> ~(a ^ b) = T <=> a ^ b = 0
-  (surely (disjointp (negation-ctype ct1) (negation-ctype ct2))
-          (call-next-method)))
+  (disjointp (negation-ctype ct1) (negation-ctype ct2)))
 (defmethod conjointp ((ct1 negation) (ct2 ctype))
-  (surely (subctypep (negation-ctype ct1) ct2) (call-next-method)))
+  (subctypep (negation-ctype ct1) ct2))
 (defmethod conjointp ((ct1 ctype) (ct2 negation))
-  (surely (subctypep (negation-ctype ct2) ct1) (call-next-method)))
+  (subctypep (negation-ctype ct2) ct1))
 
 (defmethod negate ((ctype negation)) (negation-ctype ctype))
 
@@ -62,11 +58,11 @@
            (let ((p (disjoin/2 nt1 nt2)))
              (if p
                  (negate p)
-                 (call-next-method)))))))
+                 nil))))))
 (defmethod conjoin/2 ((ct1 negation) (ct2 ctype))
-  (or (subtract ct2 (negation-ctype ct1)) (call-next-method)))
+  (subtract ct2 (negation-ctype ct1)))
 (defmethod conjoin/2 ((ct1 ctype) (ct2 negation))
-  (or (subtract ct1 (negation-ctype ct2)) (call-next-method)))
+  (subtract ct1 (negation-ctype ct2)))
 
 (defmethod disjoin/2 ((ct1 negation) (ct2 negation))
   (let ((nt1 (negation-ctype ct1)) (nt2 (negation-ctype ct2)))
@@ -76,18 +72,18 @@
           (t (let ((p (conjoin/2 nt1 nt2)))
                (if p
                    (negate p)
-                   (call-next-method)))))))
+                   nil))))))
 (defmethod disjoin/2 ((ct1 negation) (ct2 ctype))
   (if (subctypep (negation-ctype ct1) ct2)
       (top)
-      (call-next-method)))
+      nil))
 (defmethod disjoin/2 ((ct1 ctype) (ct2 negation))
   (if (subctypep (negation-ctype ct2) ct1)
       (top)
-      (call-next-method)))
+      nil))
 
 (defmethod subtract ((ct1 ctype) (ct2 negation))
-  (or (conjoin/2 ct1 (negation-ctype ct2)) (call-next-method)))
+  (conjoin/2 ct1 (negation-ctype ct2)))
 
 (defmethod unparse ((ct negation))
   (let ((up (unparse (negation-ctype ct))))

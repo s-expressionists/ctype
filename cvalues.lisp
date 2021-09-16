@@ -23,7 +23,7 @@
                    (cond ((not subsurety) (setf surety nil))
                          ((not val) (return-from subctypep (values nil t)))))
               until (and (null req1) (null req2) (null opt1) (null opt2))
-              finally (return (if surety (values t t) (call-next-method)))))))
+              finally (return (if surety (values t t) (values nil nil)))))))
 
 (defmethod conjoin/2 ((ct1 cvalues) (ct2 cvalues))
   (let ((req1 (cvalues-required ct1)) (req2 (cvalues-required ct2))

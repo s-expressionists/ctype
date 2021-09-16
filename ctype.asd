@@ -3,6 +3,7 @@
   :components
   ((:file "packages")
    (:file "trivalent" :depends-on ("packages"))
+   (:file "method-combination" :depends-on ("packages"))
    (:module "config"
     :serial t
     :components ((:file "common")
@@ -18,7 +19,8 @@
    (:file "classes" :depends-on ("packages"))
    (:file "create" :depends-on ("classes" "packages"))
    (:file "generic-functions"
-    :depends-on ("trivalent" "create" "classes" "packages"))
+    :depends-on ("trivalent" "method-combination" "create" "classes"
+                             "packages"))
    (:file "cclass"
     :depends-on ("generic-functions" "classes" "config" "packages"))
    (:file "negation"

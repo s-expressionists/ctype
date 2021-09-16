@@ -6,19 +6,16 @@
 (defmethod ctypep ((object t) (ct ccons)) nil)
 
 (defmethod subctypep ((ct1 ccons) (ct2 ccons))
-  (surely (and/tri (subctypep (ccons-car ct1) (ccons-car ct2))
-                   (subctypep (ccons-cdr ct1) (ccons-cdr ct2)))
-          (call-next-method)))
+  (and/tri (subctypep (ccons-car ct1) (ccons-car ct2))
+           (subctypep (ccons-cdr ct1) (ccons-cdr ct2))))
 
 (defmethod ctype= ((ct1 ccons) (ct2 ccons))
-  (surely (and/tri (ctype= (ccons-car ct1) (ccons-car ct2))
-                   (ctype= (ccons-cdr ct1) (ccons-cdr ct2)))
-          (call-next-method)))
+  (and/tri (ctype= (ccons-car ct1) (ccons-car ct2))
+           (ctype= (ccons-cdr ct1) (ccons-cdr ct2))))
 
 (defmethod disjointp ((ct1 ccons) (ct2 ccons))
-  (surely (or/tri (disjointp (ccons-car ct1) (ccons-car ct2))
-                  (disjointp (ccons-cdr ct1) (ccons-cdr ct2)))
-          (call-next-method)))
+  (or/tri (disjointp (ccons-car ct1) (ccons-car ct2))
+          (disjointp (ccons-cdr ct1) (ccons-cdr ct2))))
 (defmethod conjointp ((ct1 ccons) (ct2 ccons)) (values nil t))
 
 (defmethod cofinitep ((ct1 ccons)) (values nil t))
@@ -125,7 +122,7 @@
                  (not surety1)
                  (multiple-value-bind (val2 surety2) (disjointp cdr1 cdr2)
                    (or val2 (not surety2)))))
-           (call-next-method))
+           nil)
           ((subctypep cdr1 cdr2)
            (let ((cdr-2-1 (conjoin cdr2 (negate cdr1)))
                  (reg (ccons (disjoin car1 car2) cdr1)))
@@ -138,7 +135,7 @@
              (if (bot-p cdr-1-2)
                  reg
                  (disjunction reg (ccons car1 cdr-1-2)))))
-          (t (call-next-method)))))
+          (t nil))))
 
 (defmethod subtract ((ct1 ccons) (ct2 ccons))
   ;; as in the negate method, (not (cons a b)) =

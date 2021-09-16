@@ -8,25 +8,30 @@
 ;;; When subctypep or disjointp call themselves or each other, it must be
 ;;; ensured that the problem is simpler, e.g. by dropping negations.
 (defgeneric subctypep (ctype1 ctype2)
+  (:method-combination basic surely)
   (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
 
 ;;; Optional wrapper to speed up subctypep and make usage clearer.
 (defgeneric ctype= (ctype1 ctype2)
+  (:method-combination basic surely)
   (:method ((ct1 ctype) (ct2 ctype))
     (and/tri (subctypep ct1 ct2) (subctypep ct2 ct1))))
 
 ;;; Is the conjunction of these types bottom?
 ;;; Ditto the restrictions on calling negate etc.
 (defgeneric disjointp (ctype1 ctype2)
+  (:method-combination basic surely)
   (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
 ;;; Dual to disjointp: Is the disjunction of these types top?
 (defgeneric conjointp (ctype1 ctype2)
+  (:method-combination basic surely)
   (:method ((ct1 ctype) (ct2 ctype)) (values nil nil)))
 
 ;;; Ditto the restrictions etc., and returns the same kinds of values.
 ;;; Determines whether the negation of a type is finite. This is used to
 ;;; resolve questions like (subtypep '(not X) '(member ...))
 (defgeneric cofinitep (ctype)
+  (:method-combination basic surely)
   (:method ((ct ctype)) (values nil nil)))
 
 (defgeneric negate (ctype)
@@ -35,12 +40,14 @@
 ;;; These two return NIL if no special simplification is possible;
 ;;; CONJOIN and DISJOIN will then make a conjunction/disjunction ctype.
 (defgeneric conjoin/2 (ctype1 ctype2)
+  (:method-combination basic or)
   (:method ((ct1 ctype) (ct2 ctype))
     (cond ((disjointp ct1 ct2) (bot))
           ((subctypep ct1 ct2) ct1)
           ((subctypep ct2 ct1) ct2)
           (t nil))))
 (defgeneric disjoin/2 (ctype1 ctype2)
+  (:method-combination basic or)
   (:method ((ct1 ctype) (ct2 ctype))
     (cond ((conjointp ct1 ct2) (top)) ; for completeness more than practicality
           ((subctypep ct1 ct2) ct2)
@@ -50,6 +57,7 @@
 ;;; Simplifier for (conjoin/2 ct1 (negate ct2)).
 ;;; Like the /2, returns NIL if no simplification is apparent.
 (defgeneric subtract (ctype1 ctype2)
+  (:method-combination basic or)
   (:argument-precedence-order ctype2 ctype1)
   (:method ((ct1 ctype) (ct2 ctype))
     (cond ((disjointp ct1 ct2) ct1)

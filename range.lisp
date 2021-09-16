@@ -106,7 +106,7 @@
         (hxp1 (range-high-exclusive-p ct1))
         (hxp2 (range-high-exclusive-p ct2)))
     ;; If the range kinds don't match, give up.
-    (unless (eq rk1 rk2) (return-from disjoin/2 (call-next-method)))
+    (unless (eq rk1 rk2) (return-from disjoin/2 nil))
     ;; If ct2 has a lesser infinum, swap.
     (when (or (not low2)
               (and low1 (< low2 low1)))
@@ -139,7 +139,7 @@
             (= (1+ high1) low2))
        (range rk1 low1 lxp1 high2 hxp2))
       (t ;; Ranges are not contiguous - give up
-       (call-next-method)))))
+       nil))))
 
 (defmethod subtract ((ct1 range) (ct2 range))
   (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))

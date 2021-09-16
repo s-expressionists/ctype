@@ -40,9 +40,9 @@
         (disjunction (apply #'cmember non) ctype)
         ctype)))
 (defmethod disjoin/2 ((ct1 cmember) (ct2 ctype))
-  (or (disjoin-cmember ct1 ct2) (call-next-method)))
+  (disjoin-cmember ct1 ct2))
 (defmethod disjoin/2 ((ct1 ctype) (ct2 cmember))
-  (or (disjoin-cmember ct2 ct1) (call-next-method)))
+  (disjoin-cmember ct2 ct1))
 
 (defmethod subtract ((ct1 cmember) (ct2 cmember))
   (apply #'cmember

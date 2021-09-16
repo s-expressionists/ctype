@@ -39,7 +39,7 @@
     (cond ((eql z1 z2) ct1)
           ;; (member -0.0 0.0): make a range
           ((eql z1 (- z2)) (range k1 z1 nil z1 nil))
-          (t (call-next-method)))))
+          (t nil))))
 
 (defmethod subtract ((ct1 fpzero) (ct2 fpzero))
   (if (eql (fpzero-zero ct1) (fpzero-zero ct2))

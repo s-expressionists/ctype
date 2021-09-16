@@ -109,7 +109,7 @@
                 (cond ((eq uaet1 '*) uaet1)
                       ((eq uaet2 '*) uaet2)
                       ((equal uaet1 uaet2) uaet1)
-                      (t (return-from disjoin/2 (call-next-method)))))
+                      (t (return-from disjoin/2 nil))))
               (new-dims
                 (cond ((eq dims2 '*) dims2)
                       ((eq dims1 '*) dims1)
@@ -119,12 +119,11 @@
                              collect (cond ((eq dim1 '*) dim1)
                                            ((eq dim2 '*) dim2)
                                            ((= dim1 dim2) dim1)
-                                           (t (return-from disjoin/2
-                                                (call-next-method))))))
-                      (t (return-from disjoin/2 (call-next-method)))))
+                                           (t (return-from disjoin/2 nil)))))
+                      (t (return-from disjoin/2 nil))))
               (new-eaet (disjoin eaet1 eaet2)))
           (carray simplicity1 new-uaet new-eaet new-dims))
-        (call-next-method))))        
+        nil)))
 
 (defmethod subtract ((ct1 carray) (ct2 carray))
   (let ((uaet1 (carray-uaet ct1)) (dims1 (carray-dims ct1))
@@ -136,7 +135,7 @@
     (cond ((not (eq simplicity1 simplicity2)) ct1)
           ((or (eq uaet2 '*) (equal uaet1 uaet2))
            (cond ((eq dims2 '*) (bot)) ; all dimension forbidden
-                 ((eq dims1 '*) (call-next-method)) ; can't remove chunks
+                 ((eq dims1 '*) nil) ; can't remove chunks
                  ((/= (length dims1) (length dims2))
                   ct1) ; different rank, dis joint
                  ((loop for dim1 in dims1
@@ -149,14 +148,14 @@
                   ;; ct2's dimensions are a superset of ct1's
                   (bot))
                  (t ; too complicated; e.g. for dims (3 *) - (* 3)
-                  (call-next-method))))
+                  nil)))
           ;; If we have (array * ...) - (array something ...), we can ignore
           ;; the subtrahend if it's of a distinct rank.
           ((eq uaet1 '*)
            (if (and (not (eq dims1 '*)) (not (eq dims2 '*))
                     (/= (length dims1) (length dims2)))
                ct1
-               (call-next-method)))
+               nil))
           ;; Distinct uaets
           (t ct1))))
 

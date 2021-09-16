@@ -9,9 +9,7 @@
   ;; if a <: z and b <: z, a v b <: z, as can be seen from a <: z <=> a ^ z = a:
   ;; a v b <: z <=> (a v b) ^ z = a v b <=> (a ^ z) v (b ^ z) = a v b
   ;; this also covers the case of ct1 being bot.
-  (surely
-   (every/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1))
-   (call-next-method)))
+  (every/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1)))
 (defmethod subctypep ((ct1 ctype) (ct2 disjunction))
   #+(or)
   (or/tri
@@ -50,23 +48,21 @@
                                      (and (> not-subtype 0)
                                           (= not-subtype-and-not-disjoint 0))))
                             (values nil t)
-                            (call-next-method)))))
+                            (values nil nil)))))
 
 (defmethod disjointp ((ct1 disjunction) (ct2 ctype))
   ;; (a v b) ^ z = 0 <=> (a ^ z) v (b ^ z) = 0
-  (surely (every/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1))
-          (call-next-method)))
+  (every/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1)))
 (defmethod disjointp ((ct1 ctype) (ct2 disjunction))
-  (surely (every/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2))
-          (call-next-method)))
+  (every/tri (lambda (sct) (disjointp ct1 sct)) (junction-ctypes ct2)))
 (defmethod conjointp ((ct1 disjunction) (ct2 ctype))
   (if (some/tri (lambda (sct) (conjointp sct ct2)) (junction-ctypes ct1))
       (values t t)
-      (call-next-method)))
+      (values nil nil)))
 (defmethod conjointp ((ct1 ctype) (ct2 disjunction))
   (if (some/tri (lambda (sct) (conjointp ct1 sct)) (junction-ctypes ct2))
       (values t t)
-      (call-next-method)))
+      (values nil nil)))
 
 (defmethod negate ((ctype disjunction))
   (apply #'conjoin (mapcar #'negate (junction-ctypes ctype))))
