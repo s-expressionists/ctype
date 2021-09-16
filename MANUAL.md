@@ -89,7 +89,6 @@ Several relations imply other relations. We have the following logical laws, giv
 * If `(ctype= c1 c2)` and `(ctype= c2 c3)` are true, `(ctype= c1 c3)` is not false.
 * If `(subctypep c1 c2)` is false or `(subctypep c2 c1)` is false, `(ctype= c1 c2)` is not true.
 * If `(ctype= c1 c2)` is false, `(subctypep c1 c2)` and `(subctypep c2 c1)` are not both true.
-* If `(disjointp c1 c2)` is true, `(conjointp c1 c2)` is not. If `(conjointp c1 c2)` is true, `(disjointp c1 c2)` is not.
 * If `(disjointp c1 c2)` is true, `(subtypep c1 c2)` and `(subtypep c2 c1)` are not, unless one or both are the bottom type.
 * If `(conjointp c1 c2)` is true, `(subtypep c1 c2)` and `(subtypep c2 c1)` are not, unless one or both are the top type.
 
