@@ -94,6 +94,8 @@
 (defmethod conjoin/2 ((ct1 cfunction) (ct2 cfunction))
   (let ((ll (lambda-list-conjoin (cfunction-lambda-list ct1)
                                  (cfunction-lambda-list ct2)))
+        ;; We use conjoin/2 rather than conjoin because we know both are values
+        ;; types, and that conjoin/2 always simplifies such types.
         (rv (conjoin/2 (cfunction-returns ct1)
                        (cfunction-returns ct2))))
     (cond ((bot-p ll) ll)
