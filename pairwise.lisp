@@ -11,11 +11,7 @@
      (defmethod subctypep ((ct1 ,class1) (ct2 ,class2)) (values nil t))
      (defmethod subctypep ((ct1 ,class2) (ct2 ,class1)) (values nil t))
      (defmethod disjointp ((ct1 ,class1) (ct2 ,class2)) (values t t))
-     (defmethod disjointp ((ct1 ,class2) (ct2 ,class1)) (values t t))
-     (defmethod conjoin/2 ((ct1 ,class1) (ct2 ,class2)) (bot))
-     (defmethod conjoin/2 ((ct1 ,class2) (ct2 ,class1)) (bot))
-     (defmethod subtract ((ct1 ,class1) (ct2 ,class2)) ct1)
-     (defmethod subtract ((ct2 ,class2) (ct1 ,class1)) ct2)))
+     (defmethod disjointp ((ct1 ,class2) (ct2 ,class1)) (values t t))))
 
 (defmacro defexclusive (&rest classes)
   `(progn
@@ -60,11 +56,7 @@
                   (surely (ccons-bottom-p ct1) (call-next-method)))
                 (defmethod subctypep ((ct1 ,class) (ct2 ccons)) (values nil t))
                 (defmethod disjointp ((ct1 ccons) (ct2 ,class)) (values t t))
-                (defmethod disjointp ((ct1 ,class) (ct2 ccons)) (values t t))
-                (defmethod conjoin/2 ((ct1 ccons) (ct2 ,class)) (bot))
-                (defmethod conjoin/2 ((ct1 ,class) (ct2 ccons)) (bot))
-                (defmethod subtract ((ct1 ccons) (ct2 ,class)) ct1)
-                (defmethod subtract ((ct2 ,class) (ct1 ccons)) ct2)))
+                (defmethod disjointp ((ct1 ,class) (ct2 ccons)) (values t t))))
            (consxclusive (&rest classes)
              `(progn ,@(loop for class in classes
                              collect `(consxclusive/1 ,class)))))
@@ -296,7 +288,8 @@
                 (t
                  (disjunction (fpzero k (- zero))
                               (range k low lxp zero t)
-                              (range k zero t high hxp))))))))
+                              (range k zero t high hxp)))))
+        (call-next-method))))
 
 ;;; This is sort of the hardest method - including both
 ;;; (subtypep t ...) and (subtypep ... nil), which are hard problems in general.

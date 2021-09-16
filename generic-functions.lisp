@@ -42,7 +42,7 @@
           (t nil))))
 (defgeneric disjoin/2 (ctype1 ctype2)
   (:method ((ct1 ctype) (ct2 ctype))
-    (cond ((conjointp ct1 ct2) (top)) ; for completeness
+    (cond ((conjointp ct1 ct2) (top)) ; for completeness more than practicality
           ((subctypep ct1 ct2) ct2)
           ((subctypep ct2 ct1) ct1)
           (t nil))))
@@ -52,7 +52,8 @@
 (defgeneric subtract (ctype1 ctype2)
   (:argument-precedence-order ctype2 ctype1)
   (:method ((ct1 ctype) (ct2 ctype))
-    (cond ((subctypep ct1 ct2) (bot))
+    (cond ((disjointp ct1 ct2) ct1)
+          ((subctypep ct1 ct2) (bot))
           (t nil))))
 
 (defgeneric unparse (ctype))
