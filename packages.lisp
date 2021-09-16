@@ -2,7 +2,8 @@
   (:use #:cl)
   (:export #:specifier-ctype)
   (:export #:ctypep #:subctypep #:ctype=)
-  (:export #:disjointp #:negate #:conjoin/2 #:disjoin/2 #:subtract #:unparse
+  (:export #:disjointp #:conjointp #:cofinitep)
+  (:export #:negate #:conjoin/2 #:disjoin/2 #:subtract #:unparse
            #:conjoin #:disjoin)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
