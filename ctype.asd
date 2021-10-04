@@ -1,4 +1,7 @@
 (defsystem :ctype
+  :description "An implementation of the Common Lisp type system."
+  :license "BSD"
+  :author "Bike <aeshtaer@gmail.com>"
   :depends-on ()
   :components
   ((:file "packages")
