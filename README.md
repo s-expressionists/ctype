@@ -21,6 +21,15 @@ The functions `top` and `bot` return the top ctype and bottom ctype (`t` and `ni
 
 This system is intended for use in an implementation of `typep` and `subtypep`, and so does not use `cl:typep` or `cl:subtypep` at all. Unfortunately, not all aspects of the type system on a given Lisp system are determinable with standard means without using `typep` and `subtypep`, and must be manually configured per implementation. See config/ for more information.
 
+Currently, the following Lisps are supported:
+
+* CCL
+* Clasp
+* CMUCL
+* ECL
+* SBCL
+* SICL
+
 # Classes
 
 Ctypes are of class `ctype`. Various subclasses of `ctype` implement kinds of types in the CL type system. The following subclasses are defined by the system:
