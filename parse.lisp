@@ -264,6 +264,7 @@
     ((bignum) (disjunction
                (range 'integer nil nil (1- most-negative-fixnum) nil)
                (range 'integer (1+ most-positive-fixnum) nil nil nil)))
+    ((bit) (range-ctype 'integer 0 1 env))
     ((bit-vector) (array-ctype :either 'bit '(*) env))
     ((boolean) (cmember nil t))
     ((character) (charset `((0 . ,(1- char-code-limit)))))
