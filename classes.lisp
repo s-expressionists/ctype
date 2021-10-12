@@ -30,6 +30,7 @@
   ((%kind :initarg :kind :reader range-kind
           :type (member integer ratio
                         short-float single-float double-float long-float))
+   ;; NIL means no bound, i.e. * in the type specifier.
    (%low :initarg :low :reader range-low :type (or real null))
    (%high :initarg :high :reader range-high :type (or real null))
    (%low-xp :initarg :lxp :reader range-low-exclusive-p :type boolean)

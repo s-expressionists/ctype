@@ -34,9 +34,15 @@
 
 (defmethod ctype= ((ct1 range) (ct2 range))
   (values (and (eq (range-kind ct1) (range-kind ct2))
-               (= (range-low ct1) (range-low ct2))
+               (let ((low1 (range-low ct1)) (low2 (range-low ct2)))
+                 (if low1
+                     (and low2 (= low1 low2))
+                     (not low2)))
                (eql (range-low-exclusive-p ct1) (range-low-exclusive-p ct2))
-               (= (range-high ct1) (range-high ct2))
+               (let ((high1 (range-high ct1)) (high2 (range-high ct2)))
+                 (if high1
+                     (and high2 (= high1 high2))
+                     (not high2)))
                (eql (range-high-exclusive-p ct1) (range-high-exclusive-p ct2)))
           t))
 
