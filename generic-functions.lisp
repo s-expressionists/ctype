@@ -67,8 +67,13 @@
 (defgeneric unparse (ctype))
 
 (defmethod print-object ((ct ctype) stream)
-  (print-unreadable-object (ct stream :type t)
-    (write (unparse ct) :stream stream)))
+  (multiple-value-bind (unparse failure)
+      (ignore-errors (unparse ct))
+    (if failure
+        (call-next-method)
+        (print-unreadable-object (ct stream :type t)
+          (write unparse :stream stream))))
+  ct)
 
 (macrolet
     ((defjoin (name simp junct)
