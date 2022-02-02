@@ -46,6 +46,12 @@
                (eql (range-high-exclusive-p ct1) (range-high-exclusive-p ct2)))
           t))
 
+(defun ranges-disjoint-p (low1 lxp1 high1 hxp1 low2 lxp2 high2 hxp2)
+  (or (and high1 low2
+           (or (< high1 low2) (and (= high1 low2) (or hxp1 lxp2))))
+      (and high2 low1
+           (or (< high2 low1) (and (= high2 low1) (or hxp2 lxp1))))))
+
 (defmethod disjointp ((ct1 range) (ct2 range))
   (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
         (low1 (range-low ct1)) (low2 (range-low ct2))
@@ -56,10 +62,7 @@
         (hxp2 (range-high-exclusive-p ct2)))
     (values
      (or (not (eq rk1 rk2))
-         (and high1 low2
-              (or (< high1 low2) (and (= high1 low2) (or hxp1 lxp2))))
-         (and high2 low1
-              (or (< high2 low1) (and (= high2 low1) (or hxp2 lxp1)))))
+         (ranges-disjoint-p low1 lxp1 high1 hxp1 low2 lxp2 high2 hxp2))
      t)))
 
 (defmethod conjointp ((ct1 range) (ct2 range)) (values nil t))
