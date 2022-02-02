@@ -140,7 +140,7 @@
                                     ((listp low) (ceiling (car low)))
                                     (t (ceiling low))))
                         (ihigh (cond ((eq high '*) high)
-                                     ((listp high) (floor (car low)))
+                                     ((listp high) (floor (car high)))
                                      (t (floor high))))
                         (tail (if (eq ihigh '*)
                                   (list ilow)
