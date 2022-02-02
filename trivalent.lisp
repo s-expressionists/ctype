@@ -51,7 +51,11 @@
     ;; If true of all, NIL T.
     ;; If false of at least one member, T T.
     ;; Otherwise NIL NIL.
-    (defpred notevery/tri t nil)))
+    (defpred notevery/tri t nil)
+    ;; If false of all, T T.
+    ;; If true of at least one member, NIL T.
+    ;; Otherwise NIL NIL.
+    (defpred notany/tri nil t)))
 
 ;;; Like AND, but returns both values.
 ;;; i.e., if a form returns false, returns those two values immediately.
