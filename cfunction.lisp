@@ -1,6 +1,6 @@
 (in-package #:ctype)
 
-(defun top-lambda-list-p (lambda-list)
+(defun lambda-list-top-p (lambda-list)
   (and (null (lambda-list-required lambda-list))
        (every #'top-p (lambda-list-optional lambda-list))
        (top-p (lambda-list-rest lambda-list))
@@ -8,8 +8,8 @@
 
 ;;; Does this function ctype = FUNCTION unadorned?
 (defun top-function-p (cfunction)
-  (and (top-lambda-list-p (cfunction-lambda-list cfunction))
-       (top-values-p (cfunction-returns cfunction))))
+  (and (lambda-list-top-p (cfunction-lambda-list cfunction))
+       (values-top-p (cfunction-returns cfunction))))
 
 (defmethod ctypep (object (ct cfunction))
   (if (functionp object)
@@ -104,7 +104,7 @@
           (t nil))))
 
 (defun unparse-lambda-list (lambda-list)
-  (if (top-lambda-list-p lambda-list)
+  (if (lambda-list-top-p lambda-list)
       '*
       `(,@(mapcar #'unparse (lambda-list-required lambda-list))
         ,@(let ((opt (lambda-list-optional lambda-list)))
@@ -121,7 +121,7 @@
 (defmethod unparse ((ct cfunction))
   (let ((ull (unparse-lambda-list (cfunction-lambda-list ct)))
         (rv (cfunction-returns ct)))
-    (if (top-values-p rv)
+    (if (values-top-p rv)
         (if (eq ull '*)
             'function
             `(function ,ull))

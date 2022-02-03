@@ -7,7 +7,10 @@
            #:conjoin #:disjoin)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
-  (:export #:cclass #:cclass-class
+  (:export #:top #:bot #:top-p #:bot-p
+           #:values-top #:values-bot #:values-top-p #:values-bot-p
+           #:function-top #:lambda-list-top
+           #:cclass #:cclass-class
            #:negation #:negation-ctype
            #:conjunction #:disjunction #:junction-ctypes
            #:ccons #:ccons-car #:ccons-cdr

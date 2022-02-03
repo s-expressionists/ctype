@@ -66,5 +66,26 @@
   (make-instance 'cvalues
     :required required :optional optional :rest rest))
 
+(defun values-top () (cvalues nil nil (top)))
+;; Note that this is NOT (values &rest nil), the type of (values).
+;; This type indicates no values are possible, as from an error.
+;; In the future, there may be a distinguished representation for this.
+(defun values-bot () (cvalues (list (bot)) nil (bot)))
+
+(defun single-value (ctype)
+  (assert (not (typep ctype 'cvalues)))
+  (cvalues (list ctype) nil (bot)))
+
 (defun csatisfies (fname)
   (make-instance 'csatisfies :fname fname))
+
+(defun cfunction (lambda-list returns)
+  (make-instance 'cfunction :lambda-list lambda-list :returns returns))
+
+(defun lambda-list-top ()
+  (make-instance 'lambda-list
+    :required nil :optional nil :rest (top)
+    :keyp nil :keys nil :aokp nil))
+
+(defun function-top ()
+  (cfunction (lambda-list-top) (values-top)))

@@ -236,16 +236,33 @@
                    (setf rest (specifier-ctype elem env))))))
           finally (return (values (nreverse req) (nreverse opt) rest)))))
 
+(defun %fuzz-values-ctype (required optional rest)
+  ;; CTYPE internally treats VALUES types with the strict semantics described
+  ;; in the entry on the VALUES type. However, these semantics are not used in
+  ;; any actual place in the language, and in particular, when used in THE
+  ;; VALUES types are considerably vaguer. This function applies that vagueness:
+  ;; (1) if &rest is not declared, &rest t is implicit
+  ;; (2) if a suffix of the "required" types includes NULL, those values are
+  ;;     not actually required.
+  ;; If you want strict semantics, just make a CVALUES directly.
+  (let* ((rest (or rest (top)))
+         (rpos (position-if-not (lambda (ct) (ctypep nil ct))
+                                required :from-end t))
+         (rrpos (if rpos (1+ rpos) 0))
+         (rreq (subseq required 0 rrpos))
+         (ropt (append (nthcdr rrpos required) optional)))
+    (values rreq ropt rest)))
+
 (defun parse-values-ctype (rest env)
   (multiple-value-bind (req opt rest) (%parse-values-ctype rest env)
-    ;; Maybe should warn about this stuff too.
-    (when (some #'bot-p req)
-      (return-from parse-values-ctype (cvalues (list (bot)) nil (bot))))
-    (let ((m (member-if #'bot-p opt)))
-      (when m
-        (return-from parse-values-ctype (cvalues req (ldiff opt m) (bot)))))
-    ;; (top) because of CL:THE fuzziness.
-    (cvalues req opt (or rest (top)))))
+    (multiple-value-bind (req opt rest) (%fuzz-values-ctype req opt rest)
+      ;; Maybe should warn about this stuff too.
+      (when (some #'bot-p req)
+        (return-from parse-values-ctype (values-bot)))
+      (let ((m (member-if #'bot-p opt)))
+        (when m
+          (return-from parse-values-ctype (cvalues req (ldiff opt m) (bot)))))
+      (cvalues req opt rest))))
 
 (defun satisfies-ctype (fname)
   (unless (symbolp fname)

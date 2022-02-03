@@ -1,9 +1,14 @@
 (in-package #:ctype)
 
-(defun top-values-p (cvalues)
-  (and (every #'top-p (cvalues-required cvalues))
-       (null (cvalues-optional cvalues))
+(defun values-top-p (cvalues)
+  ;; there can be no required values, because we use strict semantics, and
+  ;; "at least one value" is less inclusive than "any number of values".
+  (and (null (cvalues-required cvalues))
+       (every #'top-p (cvalues-optional cvalues))
        (top-p (cvalues-rest cvalues))))
+
+(defun values-bot-p (cvalues)
+  (some #'bot-p (cvalues-required cvalues)))
 
 (defmethod ctypep (object (ct cvalues))
   (declare (ignore object))
@@ -29,23 +34,27 @@
   (let ((req1 (cvalues-required ct1)) (req2 (cvalues-required ct2))
         (opt1 (cvalues-optional ct1)) (opt2 (cvalues-optional ct2))
         (rest1 (cvalues-rest ct1)) (rest2 (cvalues-rest ct2)))
-    (let* ((req (loop for sct1 = (or (pop req1) (pop opt1) rest1)
-                      for sct2 = (or (pop req2) (pop opt2) rest2)
-                      for conj = (conjoin sct1 sct2)
-                      if (bot-p conj)
-                        do (return-from conjoin/2 conj)
-                      else collect conj
-                      until (and (null req1) (null req2))))
-           (opt (loop for sct1 = (or (pop opt1) rest1)
-                      for sct2 = (or (pop opt2) rest2)
-                      for conj = (conjoin sct1 sct2)
-                      if (bot-p conj)
-                        ;; This &optional is bottom, and so neither this value
-                        ;; nor any later values can be provided.
-                        do (return-from conjoin/2 (cvalues req opts conj))
-                      else collect conj into opts
-                      until (and (null opt1) (null opt2))
-                      finally (return opts)))
+    (let* ((req (if (and (null req1) (null req2))
+                    nil
+                    (loop for sct1 = (or (pop req1) (pop opt1) rest1)
+                          for sct2 = (or (pop req2) (pop opt2) rest2)
+                          for conj = (conjoin sct1 sct2)
+                          if (bot-p conj)
+                            do (return-from conjoin/2 conj)
+                          else collect conj
+                          until (and (null req1) (null req2)))))
+           (opt (if (and (null opt1) (null opt2))
+                    nil
+                    (loop for sct1 = (or (pop opt1) rest1)
+                          for sct2 = (or (pop opt2) rest2)
+                          for conj = (conjoin sct1 sct2)
+                          if (bot-p conj)
+                            ;; This &optional is bottom, and so neither this
+                            ;; value nor any later values can be provided.
+                            do (return-from conjoin/2 (cvalues req opts conj))
+                          else collect conj into opts
+                          until (and (null opt1) (null opt2))
+                          finally (return opts))))
            (rest (conjoin rest1 rest2)))
       (cvalues req opt rest))))
 
