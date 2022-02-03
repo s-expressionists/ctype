@@ -269,69 +269,74 @@
     (error "Bad function name for ~a type: ~a" 'satisfies fname))
   (csatisfies fname))
 
-(defun symbol-specifier-ctype (sym &optional env)
-  (case sym
-    ;; We include all standard CL atomic type specifiers that either can be not
-    ;; classes (e.g. simple-bit-vector, nil), or which are or can be classes
-    ;; but which we would prefer a ctype for, like CONS.
-    ((array) (array-ctype :either '* '* env))
-    ((atom) (negate (ccons (top) (top))))
-    ((base-char) (charset +base-charset+))
-    ((base-string) (array-ctype :either 'base-char '(*) env))
-    ((bignum) (disjunction
+(defgeneric symbol-specifier-ctype (sym env))
+;;; We include all standard CL atomic type specifiers that either can be not
+;;; classes (e.g. simple-bit-vector, nil), or which are or can be classes
+;;; but which we would prefer a ctype for, like CONS.
+(macrolet ((def (sym &body body)
+             `(defmethod symbol-specifier-ctype ((sym (eql ',sym)) env)
+                (declare (ignore sym) (ignorable env))
+                ,@body)))
+  (def array (array-ctype :either '* '* env))
+  (def atom (negate (ccons (top) (top))))
+  (def base-char (charset +base-charset+))
+  (def base-string (array-ctype :either 'base-char '(*) env))
+  (def bignum (disjunction
                (range 'integer nil nil (1- most-negative-fixnum) nil)
                (range 'integer (1+ most-positive-fixnum) nil nil nil)))
-    ((bit) (range-ctype 'integer 0 1 env))
-    ((bit-vector) (array-ctype :either 'bit '(*) env))
-    ((boolean) (cmember nil t))
-    ((character) (charset `((0 . ,(1- char-code-limit)))))
-    ((compiled-function)
-     (conjunction (function-ctype '* '* env) (csatisfies 'compiled-function-p)))
-    ((complex) (complex-ctype '* env))
-    ((cons) (ccons (top) (top)))
-    ((double-float) (range-ctype 'double-float '* '* env))
-    ((extended-char) (conjoin (negate (charset +base-charset+))
+  (def bit (range-ctype 'integer 0 1 env))
+  (def bit-vector (array-ctype :either 'bit '(*) env))
+  (def boolean (cmember nil t))
+  (def character (charset `((0 . ,(1- char-code-limit)))))
+  (def compiled-function
+      (conjunction (function-top) (csatisfies 'compiled-function-p)))
+  (def complex (complex-ctype '* env))
+  (def cons (ccons (top) (top)))
+  (def double-float (range-ctype 'double-float '* '* env))
+  (def extended-char (conjoin (negate (charset +base-charset+))
                               (charset `((0 . ,(1- char-code-limit))))))
-    ((fixnum)
-     (range-ctype 'integer most-negative-fixnum most-positive-fixnum env))
-    ((float) (range-ctype 'float '* '* env))
-    ((function) (function-ctype '* '* env))
-    ((integer) (range-ctype 'integer '* '* env))
-    ((keyword) (conjunction (cclass (find-class 'symbol t env))
+  (def fixnum
+      (range-ctype 'integer most-negative-fixnum most-positive-fixnum env))
+  (def float (range-ctype 'float '* '* env))
+  (def function (function-top))
+  (def integer (range-ctype 'integer '* '* env))
+  (def keyword (conjunction (cclass (find-class 'symbol t env))
                             (csatisfies 'keywordp)))
-    ((list) (disjunction (cmember nil) (ccons (top) (top))))
-    ((long-float) (range-ctype 'long-float '* '* env))
-    ((nil) (bot))
-    ((null) (cmember nil))
-    ((number) (disjoin (range-ctype 'real '* '* env)
+  (def list (disjunction (cmember nil) (ccons (top) (top))))
+  (def long-float (range-ctype 'long-float '* '* env))
+  (def nil (bot))
+  (def null (cmember nil))
+  (def number (disjoin (range-ctype 'real '* '* env)
                        (complex-ctype '* env)))
-    ((ratio) (range 'ratio nil nil nil nil))
-    ((rational) (range-ctype 'rational '* '* env))
-    ((real) (range-ctype 'real '* '* env))
-    ;; SEQUENCE is handled specially as a cclass.
-    ((short-float) (range-ctype 'short-float '* '* env))
-    ((signed-byte) (range-ctype 'integer '* '* env))
-    ((simple-array) (array-ctype :simple '* '* env))
-    ((simple-base-string) (array-ctype :simple 'base-char '(*) env))
-    ((simple-bit-vector) (array-ctype :simple 'bit '(*) env))
-    ((simple-string)
-     (apply #'disjunction
-            (loop for uaet in +string-uaets+
-                  collect (array-ctype :simple uaet '(*) env))))
-    ((simple-vector) (array-ctype :simple 't '(*) env))
-    ((single-float) (range-ctype 'single-float '* '* env))
-    ((standard-char) (charset +standard-charset+))
-    ((string)
-     (apply #'disjoin
-            (loop for uaet in +string-uaets+
-                  collect (array-ctype :either uaet '(*) env))))
-    ((t) (top))
-    ((unsigned-byte) (range-ctype 'integer 0 '* env))
-    ((vector) (array-ctype :either '* '(*) env))
-    (otherwise
-     (let ((p (assoc sym +class-aliases+)))
-       (when p
-         (specifier-ctype (second p) env))))))
+  (def ratio (range 'ratio nil nil nil nil))
+  (def rational (range-ctype 'rational '* '* env))
+  (def real (range-ctype 'real '* '* env))
+  ;; SEQUENCE is handled specially as a cclass.
+  (def short-float (range-ctype 'short-float '* '* env))
+  (def signed-byte (range-ctype 'integer '* '* env))
+  (def simple-array (array-ctype :simple '* '* env))
+  (def simple-base-string (array-ctype :simple 'base-char '(*) env))
+  (def simple-bit-vector (array-ctype :simple 'bit '(*) env))
+  (def simple-string
+      (apply #'disjunction
+             (loop for uaet in +string-uaets+
+                   collect (array-ctype :simple uaet '(*) env))))
+  (def simple-vector (array-ctype :simple 't '(*) env))
+  (def single-float (range-ctype 'single-float '* '* env))
+  (def standard-char (charset +standard-charset+))
+  (def string
+      (apply #'disjoin
+             (loop for uaet in +string-uaets+
+                   collect (array-ctype :either uaet '(*) env))))
+  (def t (top))
+  (def unsigned-byte (range-ctype 'integer 0 '* env))
+  (def vector (array-ctype :either '* '(*) env)))
+
+(defmethod symbol-specifier-ctype ((sym symbol) env)
+  (let ((p (assoc sym +class-aliases+)))
+    (if p
+        (specifier-ctype (second p) env)
+        nil)))
 
 (defun class-specifier-ctype (class env)
   (declare (ignore env))
@@ -349,7 +354,6 @@
              `(defmethod cons-specifier-ctype ((head (eql ',head)) rest env)
                 (declare (ignorable head rest env))
                 ,@body)))
-
   (def (and)
       (apply #'conjoin (mapcar-rcurry (list env) #'specifier-ctype rest)))
   (def (array)
@@ -449,7 +453,7 @@
       (destructuring-bind (&optional (et '*) (length '*)) rest
         (array-ctype :either et (list length) env))))
 
-(defun specifier-ctype (specifier &optional env)
+(defun parse (specifier env)
   (let ((spec (typexpand specifier env)))
     (etypecase spec
       (cons (cons-specifier-ctype (car spec) (cdr spec) env))
@@ -457,3 +461,16 @@
                   (class-specifier-ctype (find-class specifier t env) env)))
       (class (or (symbol-specifier-ctype (class-name spec) env)
                  (class-specifier-ctype spec env))))))
+
+(defun specifier-ctype (specifier &optional env)
+  (let ((ct (parse specifier env)))
+    (when (typep ct 'cvalues)
+      (error "Found ~s in non-~s context" (unparse ct) 'values))
+    ct))
+
+(defun values-specifier-ctype (specifier &optional env)
+  (let ((ct (parse specifier env)))
+    (if (typep ct 'cvalues)
+        ct
+        ;; Treat X as (values X).
+        (parse-values-ctype `(,specifier) env))))
