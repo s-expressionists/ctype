@@ -63,3 +63,11 @@ The additional generic functions `disjointp`, `negate`, `conjoin/2`, `disjoin/2`
  * `negate` computes the negation of a ctype, i.e. if a ctype is specified by `x`, `(negate that-ctype)` is specified by `(not x)`. The default method makes a `negation` ctype. These ctypes do not provide enough information for all functions to work well, e.g. they may result in `nil nil` answers from `subctypep`. As such, if the negation of a type can be expressed in a better way, a specializing method on `negate` should be defined.
  * `conjoin/2` and `disjoin/2` are the two-argument functions underlying `conjoin` and `disjoin` respectively. If no special behavior is defined, `conjoin` and `disjoin` will create `conjunction` and `disjunction` types, which do not always provide enough information for precise answers from `subctypep`.
  * `subtract`, given ctypes specified by `x` and `y`, may compute the ctype specified by `(and x (not y))`. If no special behavior is defined with a method, a `conjunction` ctype will be made, which is suboptimal.
+
+# Extensions
+
+While ctype implements the Common Lisp type system, some users may be interested in defining extensions to said type system. One can do so by defining subclasses of CTYPE and defining methods on some or all of the above functions.
+
+The ext/ directory contains a few example extensions. See the README in that directory for more information.
+
+Extension mechanisms for the type specifier parser have not been solidly defined yet.
