@@ -266,17 +266,7 @@
       (range kind low lxp high hxp)))
 
 (defgeneric t+ (t1 t2))
-;; note to self: be more careful about UB. e.g, could return non-number
-;; if provided non-numbers.
-(defmethod t+ ((t1 ctype) (t2 ctype)) (specifier-ctype 'number))
-(defmethod t+ ((t1 conjunction) (t2 ctype))
-  (apply #'conjoin (mapcar (lambda (ty) (t+ ty t2)) (junction-ctypes t1))))
-(defmethod t+ ((t1 ctype) (t2 conjunction))
-  (apply #'conjoin (mapcar (lambda (ty) (t+ t1 ty)) (junction-ctypes t2))))
-(defmethod t+ ((t1 disjunction) (t2 ctype))
-  (apply #'disjoin (mapcar (lambda (ty) (t+ ty t2)) (junction-ctypes t1))))
-(defmethod t+ ((t1 ctype) (t2 disjunction))
-  (apply #'disjoin (mapcar (lambda (ty) (t+ t1 ty)) (junction-ctypes t2))))
+(defdefaults t+ (num1 num2) (specifier-ctype 'number))
 (defmethod t+ ((t1 range) (t2 range))
   (with-ranges (((low1 lxp1 high1 hxp1) t1)
                 ((low2 lxp2 high2 hxp2) t2))
@@ -337,13 +327,7 @@
 (define-tfun + (&rest tail) (single-value (ts+ tail)))
 
 (defgeneric tneg (type)) ; arithmetic negation
-(defmethod tneg ((type ctype)) (specifier-ctype 'number))
-(defmethod tneg :around ((type ctype))
-  (conjoin (call-next-method) (specifier-ctype 'number)))
-(defmethod tneg ((type conjunction))
-  (apply #'conjoin (mapcar #'tneg (junction-ctypes type))))
-(defmethod tneg ((type disjunction))
-  (apply #'disjoin (mapcar #'tneg (junction-ctypes type))))
+(defdefaults tneg (number) (specifier-ctype 'number))
 (defmethod tneg ((type negation))
   (negate (tneg (negation-ctype type))))
 (defmethod tneg ((type range))
@@ -369,9 +353,9 @@
    (range 'integer 1 nil 1 nil)
    (conjoin (call-next-method) (specifier-ctype 'number))))
 (defmethod t*exp ((type conjunction))
-  (apply #'conjoin (mapcar #'t*exp (junction-ctypes type))))
+  (apply #'conjoin (mapcar #'t+exp (junction-ctypes type))))
 (defmethod t*exp ((type disjunction))
-  (apply #'disjoin (mapcar #'t*exp (junction-ctypes type))))
+  (apply #'disjoin (mapcar #'t+exp (junction-ctypes type))))
 (defmethod t*exp ((type range))
   (let ((low (range-low type)) (high (range-high type))
         (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
@@ -393,17 +377,7 @@
           (t (range kind nil nil nil nil)))))
 
 (defgeneric t* (t1 t2))
-(defmethod t* ((t1 ctype) (t2 ctype)) (specifier-ctype 'number))
-(defmethod t* :around ((t1 ctype) (t2 ctype))
-  (conjoin (call-next-method) (specifier-ctype 'number)))
-(defmethod t* ((t1 conjunction) (t2 ctype))
-  (apply #'conjoin (mapcar (lambda (ty) (t* ty t2)) (junction-ctypes t1))))
-(defmethod t* ((t1 ctype) (t2 conjunction))
-  (apply #'conjoin (mapcar (lambda (ty) (t* t1 ty)) (junction-ctypes t2))))
-(defmethod t* ((t1 disjunction) (t2 ctype))
-  (apply #'disjoin (mapcar (lambda (ty) (t* ty t2)) (junction-ctypes t1))))
-(defmethod t* ((t1 ctype) (t2 disjunction))
-  (apply #'disjoin (mapcar (lambda (ty) (t* t1 ty)) (junction-ctypes t2))))
+(defdefaults t* (t1 t2) (specifier-ctype 'number))
 (defun multiply-bound (bound1 xp1 bound2 xp2)
   (case bound1
     ((:-infinity)
@@ -491,13 +465,7 @@
 (define-tfun * (&rest multiplicands) (single-value (ts* multiplicands)))
 
 (defgeneric tinv (type)) ; arithmetic inverse
-(defmethod tinv ((type ctype)) (specifier-ctype 'number))
-(defmethod tinv :around ((type ctype))
-  (conjoin (call-next-method) (specifier-ctype 'number)))
-(defmethod tinv ((type conjunction))
-  (apply #'conjoin (mapcar #'tinv (junction-ctypes type))))
-(defmethod tinv ((type disjunction))
-  (apply #'disjoin (mapcar #'tinv (junction-ctypes type))))
+(defdefaults tinv (number) (specifier-ctype 'number))
 (defmethod tinv ((type negation))
   (negate (tinv (negation-ctype type))))
 (defmethod tinv ((type range))
@@ -537,14 +505,8 @@
 
 ;;; exponentiation
 (defgeneric texp (type))
-(defmethod texp ((type ctype)) (specifier-ctype 'number))
-(defmethod texp :around ((type ctype))
-  (conjoin (call-next-method) (specifier-ctype 'number)))
-(defmethod texp ((type conjunction))
-  (apply #'conjoin (mapcar #'texp (junction-ctypes type))))
-(defmethod texp ((type disjunction))
-  (apply #'disjoin (mapcar #'texp (junction-ctypes type))))
-;; Due to rational/float substitutability, We can't validly do negations.
+(defdefaults texp (number) (specifier-ctype 'number))
+;; Due to rational/float substitutability, we can't validly do negations.
 ;; e.g., (texp '(integer 1 7)) is (single-float 2.71... 1096...).
 ;; but (texp '(not (integer 1 7))) also includes (single-float 2.71... 1096...)
 ;; because the argument could be a single float.
@@ -591,16 +553,7 @@
 ;;;
 
 (defgeneric tash (integer-type count-type))
-(defmethod tash ((itype ctype) (ctype ctype))
-  (range 'integer nil nil nil nil))
-(defmethod tash ((type disjunction) (ct ctype))
-  (apply #'disjoin (mapcar (lambda (ty) (tash ty ct)) (junction-ctypes type))))
-(defmethod tash ((ct ctype) (type disjunction))
-  (apply #'disjoin (mapcar (lambda (ty) (tash ct ty)) (junction-ctypes type))))
-(defmethod tash ((type conjunction) (ct ctype))
-  (apply #'conjoin (mapcar (lambda (ty) (tash ty ct)) (junction-ctypes type))))
-(defmethod tash ((ct ctype) (type conjunction))
-  (apply #'conjoin (mapcar (lambda (ty) (tash ct ty)) (junction-ctypes type))))
+(defdefaults tash (integer count) (range 'integer nil nil nil nil))
 (defmethod tash ((itype range) (ctype range))
   (unless (and (eq (range-kind itype) 'integer)
                (eq (range-kind ctype) 'integer))
@@ -630,11 +583,7 @@
 (define-tfun ash (integer count) (single-value (tash integer count)))
 
 (defgeneric tinteger-length (type))
-(defmethod tinteger-length ((type ctype)) (range 'integer 0 nil nil nil))
-(defmethod tinteger-length ((type disjunction))
-  (apply #'disjoin (mapcar #'tinteger-length (junction-ctypes type))))
-(defmethod tinteger-length ((type conjunction))
-  (apply #'conjoin (mapcar #'tinteger-length (junction-ctypes type))))
+(defdefaults tinteger-length (integer) (range 'integer 0 nil nil nil))
 (defmethod tinteger-length ((type range))
   (unless (eq (range-kind type) 'integer)
     (return-from tinteger-length (bot)))
@@ -659,11 +608,7 @@
 (define-tfun integer-length (integer) (single-value (tinteger-length integer)))
 
 (defgeneric tlogcount (type))
-(defmethod tlogcount ((type ctype)) (range 'integer 0 nil nil nil))
-(defmethod tlogcount ((type disjunction))
-  (apply #'disjoin (mapcar #'tlogcount (junction-ctypes type))))
-(defmethod tlogcount ((type conjunction))
-  (apply #'conjoin (mapcar #'tlogcount (junction-ctypes type))))
+(defdefaults tlogcount (integer) (range 'integer 0 nil nil nil))
 (defmethod tlogcount ((type range))
   (unless (eq (range-kind type) 'integer)
     (return-from tlogcount (bot)))

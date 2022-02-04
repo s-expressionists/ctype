@@ -12,11 +12,7 @@
 )
 
 (defgeneric tcar (list))
-(defmethod tcar ((list ctype)) (top))
-(defmethod tcar ((list conjunction))
-  (apply #'conjoin (mapcar #'tcar (junction-ctypes list))))
-(defmethod tcar ((list disjunction))
-  (apply #'disjoin (mapcar #'tcar (junction-ctypes list))))
+(defdefaults tcar (x))
 ;; negation is not preserved: (car (the (cons null) x)) is null,
 ;; but (car (the (not (cons null))) x) is T since null <: (not cons)
 (defmethod tcar ((list cmember))
@@ -30,11 +26,7 @@
 (defmethod tcar ((list ccons)) (ccons-car list))
 
 (defgeneric tcdr (list))
-(defmethod tcdr ((list ctype)) (top))
-(defmethod tcdr ((list conjunction))
-  (apply #'conjoin (mapcar #'tcdr (junction-ctypes list))))
-(defmethod tcdr ((list disjunction))
-  (apply #'disjoin (mapcar #'tcdr (junction-ctypes list))))
+(defdefaults tcdr (x))
 (defmethod tcdr ((list cmember))
   (let* ((members (cmember-members list))
          (ccdrs (loop for mem in members
