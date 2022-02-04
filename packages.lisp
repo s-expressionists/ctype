@@ -5,9 +5,14 @@
   (:export #:disjointp #:conjointp #:cofinitep)
   (:export #:negate #:conjoin/2 #:disjoin/2 #:subtract #:unparse
            #:conjoin #:disjoin)
+  ;; Useful for extensions.
+  (:export #:basic
+           #:every/tri #:some/tri #:notevery/tri #:notany/tri
+           #:and/tri #:or/tri #:surely)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
-  (:export #:top #:bot #:top-p #:bot-p
+  (:export #:ctype
+           #:top #:bot #:top-p #:bot-p
            #:values-top #:values-bot #:values-top-p #:values-bot-p
            #:function-top #:lambda-list-top
            #:cclass #:cclass-class
