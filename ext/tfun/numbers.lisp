@@ -503,6 +503,32 @@
          (t (disjoin (t* numerator (tinv (ts* denominators)))
                      (tinv numerator))))))
 
+(define-tfun 1+ (number)
+  (single-value (t+ number (range 'integer  1 nil  1 nil))))
+(define-tfun 1- (number)
+  (single-value (t+ number (range 'integer -1 nil -1 nil))))
+
+(defgeneric tabs (number))
+(defdefaults tabs (number) (specifier-ctype '(real 0)))
+(defmethod tabs ((type range))
+  (let* ((low (range-low type)) (high (range-high type))
+         (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
+         (kind (range-kind type)))
+    (if (or (null low) (< low 0))
+        (multiple-value-bind (high hxp)
+            (if (or (null high) (null low))
+                (values nil nil)
+                (let ((ahigh (abs high)) (alow (abs low)))
+                  (cond ((< ahigh alow) (values alow lxp))
+                        ((> ahigh alow) (values ahigh hxp))
+                        (t (values ahigh (and lxp hxp))))))
+          (case kind
+            ((ratio) (range kind 0 t high hxp))
+            (t (range kind (coerce 0 kind) nil high hxp))))
+        type)))
+
+(define-tfun abs (number) (single-value (tabs number)))
+
 ;;; exponentiation
 (defgeneric texp (type))
 (defdefaults texp (number) (specifier-ctype 'number))
@@ -546,6 +572,45 @@
               range))))))
 
 (define-tfun exp (number) (single-value (texp number)))
+
+(defgeneric trandom (real))
+(defdefaults trandom (real) (specifier-ctype '(real 0)))
+(defmethod trandom ((real range))
+  (let ((high (range-high real)) (kind (range-kind real)))
+    (when (eq kind 'ratio) (return-from trandom (bot)))
+    (when (and high (<= high 0)) (return-from trandom (bot)))
+    (range kind (coerce 0 kind) nil high (if high t nil))))
+
+(define-tfun random (real &optional random-state)
+  (single-value (trandom real)))
+
+(defun %float-proto (real protok)
+  (let ((low (range-low real)) (lxp (range-low-exclusive-p real))
+        (high (range-high real)) (hxp (range-high-exclusive-p real)))
+    (when (member protok '(integer ratio))
+      (return-from %float-proto (bot)))
+    (multiple-value-bind (low lxp)
+        (if low (values (coerce low protok) lxp) (values nil nil))
+      (multiple-value-bind (high hxp)
+          (if high (values (coerce high protok) hxp) (values nil nil))
+        (range protok low lxp high hxp)))))
+
+(defgeneric float-proto (real proto))
+(defdefaults float-proto (real proto) (specifier-ctype 'float))
+(defmethod float-proto ((real range) (proto range))
+  (%float-proto real (range-kind proto)))
+
+(defun float-noproto (real) (%float-proto real 'single-float))
+
+(define-tfun float (real &rest rest)
+  (single-value
+   (let ((req (cvalues-required rest)) (opt (cvalues-optional rest))
+         (rest (cvalues-rest rest)))
+     (cond ((> (length req) 1) (bot))
+           (req (float-proto real (first req)))
+           ((bot-p (or (first opt) rest)) (float-noproto real))
+           (t (disjoin (float-proto real (or (first req) (first opt) rest))
+                       (float-noproto real)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;

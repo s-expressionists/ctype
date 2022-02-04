@@ -37,7 +37,7 @@ As you may have gathered, tfuns are themselves ctypes. This is intended to facil
 Currently the set of standard functions with tfuns defined is quite limited, but it is intended to expand:
 
  * Data and control flow: `funcall`, `apply`, `not`, `eql`, `identity`, `values`, `values-list`
- * Numbers: `=`, `<`, `>`, `<=`, `>=`, `+`, `-`, `*`, `/`, `exp`, `ash`, `integer-length`, `logcount`
+ * Numbers: `=`, `<`, `>`, `<=`, `>=`, `+`, `-`, `*`, `/`, `abs`, `exp`, `random`, `float`, `ash`, `integer-length`, `logcount`
  * Conses: `car`, `cdr`, `caar` etc.
  * Arrays: `aref`, `row-major-aref`
 
