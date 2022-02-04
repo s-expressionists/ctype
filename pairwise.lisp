@@ -34,6 +34,9 @@
 ;;; This is basically (subctypep ccons (bot)), but we use this in subctypep
 ;;; methods themselves, so we have to reduce it to mimic the usual subctypep
 ;;; method in ccons.lisp.
+;;; To be clear, the idea here is not that a subctypep will ever return true-
+;;; thanks to normalization, it won't. But whether the cons is definitely NOT
+;;; bottom can vary.
 (defun ccons-bottom-p (ccons)
   (or/tri (subctypep (ccons-car ccons) (bot))
           (subctypep (ccons-cdr ccons) (bot))))
@@ -72,6 +75,9 @@
 ;;; Some cclass ctype relations we unfortunately have to handle specially.
 (defun sequence-cclass-p (cclass)
   (eq (class-name (cclass-class cclass)) 'sequence))
+;;; CONS is a subclass of SEQUENCE. Therefore, all CONS types are subtypes of
+;;; SEQUENCE, regardless of whether they actually describe proper sequences,
+;;; and even if they don't.
 (defmethod subctypep ((ct1 ccons) (ct2 cclass))
   (or/tri (ccons-bottom-p ct1) (values (sequence-cclass-p ct2) t)))
 (defmethod subctypep ((ct1 cclass) (ct2 ccons)) (values nil t))
@@ -83,6 +89,10 @@
   (if (sequence-cclass-p ct1) ct2 (bot)))
 (defmethod conjoin/2 ((ct1 ccons) (ct2 cclass))
   (if (sequence-cclass-p ct2) ct1 (bot)))
+(defmethod disjoin/2 ((ct1 cclass) (ct2 ccons))
+  (if (sequence-cclass-p ct1) ct1 nil))
+(defmethod disjoin/2 ((ct1 ccons) (ct2 cclass))
+  (if (sequence-cclass-p ct2) ct2 nil))
 (defmethod subtract ((ct1 ccons) (ct2 cclass))
   (if (sequence-cclass-p ct2) (bot) ct1))
 (defmethod subtract ((ct1 cclass) (ct2 ccons))
