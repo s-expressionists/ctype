@@ -254,6 +254,58 @@
        (t kind2)))
     ((long-float) kind1)))
 
+;;; MAX and MIN can return contagion'd results or the originals.
+;;; Nother implementation-defined bit.
+(defun mm-contagion (result other-kind)
+  (let* ((resultk (range-kind result))
+         (low (range-low result)) (high (range-high result))
+         (lxp (range-low-exclusive-p result))
+         (hxp (range-high-exclusive-p result))
+         (contk (contagion resultk other-kind)))
+    (if (or (member contk '(integer ratio rational))
+            (eq resultk contk))
+        result
+        (disjoin result
+                 (range contk
+                        (if low (coerce low contk) low) lxp
+                        (if high (coerce high contk) high) hxp)))))
+
+(defgeneric tmax (real1 real2))
+(defdefaults tmax (real1 real2) (specifier-ctype 'real))
+(defmethod tmax ((real1 range) (real2 range))
+  (cond ((t< real1 real2) (mm-contagion real2 (range-kind real1)))
+        ((t< real2 real1) (mm-contagion real1 (range-kind real2)))
+        (t
+         ;; FIXME: This is suboptimal.
+         ;; For example, (max (integer 0 7) (integer 4 9))
+         ;; clearly would be (integer 4 9), not (integer 0 9).
+         (disjoin (mm-contagion real2 (range-kind real1))
+                  (mm-contagion real1 (range-kind real2))))))
+
+(defun reduce-mm (function vtype initial-value)
+  (loop with base = (reduce function (cvalues-required vtype)
+                            :initial-value initial-value)
+        for opt in (cvalues-optional vtype)
+        do (setf base (disjoin base (funcall function base opt)))
+        finally (return
+                  (disjoin base
+                           (funcall function base (cvalues-rest vtype))))))
+
+(define-tfun max (real1 &rest reals)
+  (single-value (reduce-mm #'tmax reals real1)))
+
+(defgeneric tmin (real1 real2))
+(defdefaults tmin (real1 real2) (specifier-ctype 'real))
+(defmethod tmin ((real1 range) (real2 range))
+  (cond ((t> real1 real2) (mm-contagion real2 (range-kind real1)))
+        ((t> real2 real1) (mm-contagion real1 (range-kind real2)))
+        (t
+         (disjoin (mm-contagion real2 (range-kind real1))
+                  (mm-contagion real1 (range-kind real2))))))
+
+(define-tfun min (real1 &rest reals)
+  (single-value (reduce-mm #'tmin reals real1)))
+
 (defun rational-range (low lxp high hxp)
   (specifier-ctype
    `(rational ,(if (and lxp low) `(,low) low)
