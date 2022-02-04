@@ -7,13 +7,13 @@
        (not (lambda-list-keyp lambda-list))))
 
 ;;; Does this function ctype = FUNCTION unadorned?
-(defun top-function-p (cfunction)
+(defun function-top-p (cfunction)
   (and (lambda-list-top-p (cfunction-lambda-list cfunction))
        (values-top-p (cfunction-returns cfunction))))
 
 (defmethod ctypep (object (ct cfunction))
   (if (functionp object)
-      (if (top-function-p ct)
+      (if (function-top-p ct)
           t
           (error "Cannot use complex function type ~a for ~a"
                  ct 'ctypep))

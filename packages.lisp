@@ -14,7 +14,7 @@
   (:export #:ctype
            #:top #:bot #:top-p #:bot-p
            #:values-top #:values-bot #:values-top-p #:values-bot-p
-           #:function-top #:lambda-list-top
+           #:function-top #:lambda-list-top #:function-top-p
            #:cclass #:cclass-class
            #:negation #:negation-ctype
            #:conjunction #:disjunction #:junction-ctypes
