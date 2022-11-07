@@ -210,7 +210,7 @@
                 (parse-lambda-list ll env)))
         (rv (if (eq rv '*)
                 (cvalues nil nil (top))
-                (coerce-to-values (specifier-ctype rv)))))
+                (values-specifier-ctype rv))))
     (if (bot-p ll)
         ll
         (make-instance 'cfunction :lambda-list ll :returns rv))))
