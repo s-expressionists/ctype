@@ -458,7 +458,7 @@
     (etypecase spec
       (cons (cons-specifier-ctype (car spec) (cdr spec) env))
       (symbol (or (symbol-specifier-ctype spec env)
-                  (class-specifier-ctype (find-class specifier t env) env)))
+                  (class-specifier-ctype (find-class spec t env) env)))
       (class (or (symbol-specifier-ctype (class-name spec) env)
                  (class-specifier-ctype spec env))))))
 
