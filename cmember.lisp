@@ -10,6 +10,20 @@
 (defmethod subctypep ((ct1 cmember) (ct2 cmember))
   (values (subsetp (cmember-members ct1) (cmember-members ct2)) t))
 
+(declaim (inline disjoint-member))
+(defun disjoint-member (cmember ctype)
+  (values
+   (not (some (lambda (single-member)
+                (ctypep single-member ctype))
+              (cmember-members cmember)))
+   t))
+
+(defmethod disjointp ((cmember cmember) (ctype ctype))
+  (disjoint-member cmember ctype))
+
+(defmethod disjointp ((ctype ctype) (cmember cmember))
+  (disjoint-member cmember ctype))
+
 (defmethod conjointp ((ct1 cmember) (ct2 cmember)) (values nil t))
 
 (defmethod cofinitep ((ct cmember)) (values nil t))
