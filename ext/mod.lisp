@@ -155,7 +155,8 @@
           (null (range-high ct1)))
       (values nil t)
       (values nil nil)))
-(defun congrange-disjointp (range)
+
+(define-commutative-method disjointp (congruence congruence) (range range)
   ;; FIXME: Inaccurate in basically the same way.
   (if (or (not (eq (range-kind range) 'integer))
           ;; A range unbounded on one side necessarily includes all
@@ -165,28 +166,8 @@
           (null (range-high range)))
       (values t t)
       (values nil nil)))
-(defmethod disjointp ((ct1 congruence) (ct2 range))
-  (congrange-disjointp ct2))
-(defmethod disjointp ((ct1 range) (ct2 congruence))
-  (congrange-disjointp ct1))
-(defmethod conjointp ((ct1 congruence) (ct2 range)) (values nil t))
-(defmethod conjointp ((ct1 range) (ct2 congruence)) (values nil t))
 
-(macrolet ((defexclusive (class)
-             `(progn
-                (defmethod subctypep ((ct1 congruence) (ct2 ,class))
-                  (values nil t))
-                (defmethod subctypep ((ct1 ,class) (ct2 congruence))
-                  (values nil t))
-                (defmethod disjointp ((ct1 congruence) (ct2 ,class))
-                  (values t t))
-                (defmethod disjointp ((ct1 ,class) (ct2 congruence))
-                  (values t t))
-                (defmethod conjointp ((ct1 congruence) (ct2 ,class))
-                  (values nil t))
-                (defmethod conjointp ((ct1 ,class) (ct2 congruence))
-                  (values nil t))))
-           (defexclusives (&rest classes)
-             `(progn ,@(loop for class in classes
-                             collect `(defexclusive ,class)))))
-  (defexclusives cclass ccomplex carray charset cfunction fpzero))
+(define-commutative-method conjointp (ct1 congruence) (ct2 range)
+  (values nil t))
+
+(defexclusives congruence cclass ccomplex carray charset cfunction fpzero)

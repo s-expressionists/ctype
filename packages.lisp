@@ -8,7 +8,9 @@
   ;; Useful for extensions.
   (:export #:basic
            #:every/tri #:some/tri #:notevery/tri #:notany/tri
-           #:and/tri #:or/tri #:surely)
+           #:and/tri #:or/tri #:surely
+           #:defexistential #:defexclusives
+           #:define-commutative-method)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
   (:export #:ctype
