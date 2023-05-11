@@ -14,7 +14,7 @@
 ;;;; for (or (eql -0.0) (eql 0.0)).
 
 (defmethod ctypep (object (ctype fpzero))
-  (eql object (fpzero-zero object)))
+  (eql object (fpzero-zero ctype)))
 
 (defmethod subctypep ((ct1 fpzero) (ct2 fpzero))
   (values (eql (fpzero-zero ct1) (fpzero-zero ct2)) t))
