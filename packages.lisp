@@ -1,6 +1,6 @@
 (defpackage #:ctype
   (:use #:cl)
-  (:export #:specifier-ctype #:values-specifier-ctype)
+  (:export #:specifier-ctype #:extended-specifier-ctype #:values-specifier-ctype)
   (:export #:ctypep #:subctypep #:ctype=)
   (:export #:disjointp #:conjointp #:cofinitep)
   (:export #:negate #:conjoin/2 #:disjoin/2 #:subtract #:unparse
@@ -10,7 +10,8 @@
            #:every/tri #:some/tri #:notevery/tri #:notany/tri
            #:and/tri #:or/tri #:surely
            #:defexistential #:defexclusives
-           #:define-commutative-method)
+           #:define-commutative-method
+           #:define-extended-type)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
   (:export #:ctype
