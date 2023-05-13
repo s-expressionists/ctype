@@ -136,3 +136,46 @@
                                      (and (not (eq dim1 '*))
                                           (= dim1 dim2)))))))
       t))))
+
+(defmethod conjoin/2 ((array1 carray-of) (array2 carray-of))
+  (let ((uaet1 (carray-uaet array1))
+        (eaet1 (carray-eaet array1))
+        (dims1 (carray-dims array1))
+        (simplicity1 (carray-simplicity array1))
+        (uaet2 (carray-uaet array2))
+        (eaet2 (carray-eaet array2))
+        (dims2 (carray-dims array2))
+        (simplicity2 (carray-simplicity array2)))
+    (let ((new-simplicity
+            (cond ((eq simplicity1 :simple)
+                   (unless (eq simplicity2 :simple)
+                     ;; simplicity mismatch
+                     (return-from conjoin/2 (bot)))
+                   simplicity1)
+                  ((eq simplicity1 :complex)
+                   (unless (eq simplicity2 :complex)
+                     (return-from conjoin/2 (bot)))
+                   simplicity2)))
+          (new-uaet
+            (cond ((eq uaet1 '*) uaet2)
+                  ((eq uaet2 '*) uaet1)
+                  ((equal uaet1 uaet2) uaet1)
+                  ;; UAET mismatch
+                  (t (return-from conjoin/2 (bot)))))
+          (new-dims
+            (cond ((eq dims2 '*) dims1)
+                  ((eq dims1 '*) dims2)
+                  ((= (length dims1) (length dims2))
+                   (loop for dim1 in dims1
+                         for dim2 in dims2
+                         collect (cond ((eq dim1 '*) dim2)
+                                       ((eq dim2 '*) dim1)
+                                       ((= dim1 dim2) dim1)
+                                       ;; Dimension mismatch
+                                       (t (return-from conjoin/2 (bot))))))
+                  (t ;; Rank mismatch
+                   (return-from conjoin/2 (bot)))))
+          (new-eaet (conjoin eaet1 eaet2)))
+      (if (bot-p new-eaet)
+          (bot)
+          (carray-of new-eaet new-dims new-uaet new-simplicity)))))
