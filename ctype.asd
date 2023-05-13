@@ -62,10 +62,12 @@
   :license "BSD"
   :depends-on (:ctype :alexandria)
   :components
-  ((:file "packages")
-   (:module "ext/data-structures"
-    :depends-on ("packages")
+  ((:module "ext"
     :components
-    ((:file "list-of")
-     (:file "array-of")
-     (:file "hash-table-of")))))
+    ((:file "packages")
+     (:module "data-structures"
+      :depends-on ("packages")
+      :components
+      ((:file "list-of")
+       (:file "array-of")
+       (:file "hash-table-of")))))))

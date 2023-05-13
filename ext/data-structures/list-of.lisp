@@ -1,8 +1,4 @@
-(defpackage #:ctype.ext.list-of
-  (:use #:cl #:ctype)
-  (:export #:list-of))
-
-(in-package #:ctype.ext.list-of)
+(in-package #:ctype.ext.data-structures)
 
 (defclass clist-of (ctype)
   ((%etype :initarg :etype :reader element-ctype))
