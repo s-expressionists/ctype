@@ -6,9 +6,13 @@ For example, the set of all `evenp` integers is `(ctype.ext.mod:congruence 2 #b0
 
 The type of all integers that are not a multiple of three (i.e. that are 1 mod 3 or 2 mod 3) would be `(congruence 3 #b110)`. This too can be conjoined and disjoined at will, e.g. `(conjoin (congruence 3 #b110) (congruence 2 #b01))` => 2 or 4 mod 6, while `(disjoin (congruence 3 #b110) (congruence 2 #b01))` => 0, 1, 2, 4, or 5 mod 6. The conjunctions and disjunctions of congruences are always either congruences, `integer`, or `nil`.
 
-# Indefinite-length lists
+# Homogeneous Data Structures
 
-The `list-of.lisp` file is a self contained implementation of the type of lists of some element type. This type cannot be expressed in the Common Lisp type system but is sometimes desired. In a little more detail, `(list-of x)` can be expressed recursively as being the object `nil` plus all objects of type `(cons x (list-of x))`. This includes circular lists, but not dotted lists.
+They can be loaded with the `ctype/ext` ASDF system which has ctype and alexandria as dependencies.
+
+The `list-of` extended type is an implementation of the type of lists of some element type. This type cannot be expressed in the Common Lisp type system but is sometimes desired. In a little more detail, `(list-of x)` can be expressed recursively as being the object `nil` plus all objects of type `(cons x (list-of x))`. This includes circular lists, but not dotted lists.
+
+Types for arrays and hash-tables of some element type(s) have also been defined as `array-of` and `hash-table-of`.
 
 # Type-level functions
 

@@ -70,4 +70,4 @@ While ctype implements the Common Lisp type system, some users may be interested
 
 The ext/ directory contains a few example extensions. See the README in that directory for more information.
 
-Extension mechanisms for the type specifier parser have not been solidly defined yet.
+Custom ctypes can be represented as type specifiers using `define-extended-type` and accessed using `extended-specifier-ctype` . See the documentation strings for more information.

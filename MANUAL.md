@@ -21,6 +21,22 @@ Parses a type specifier to a ctype in the given environment. The default environ
 
 ---
 
+[Function]
+
+**extended-specifier-ctype** *type-specifier* `&optional` *environment* => *ctype*
+
+Parses a type specifier to a ctype in the given environment. Parts of the type-specifier might be using extended types. The default environment is `nil`, representing the current global environment. The environment is used to get information about type macros defined with `deftype`.
+
+---
+
+[Macro]
+
+**define-extended-type** *name* *lambda-list* `&key` *documentation* *simple* *extended* => *name*
+
+Defines an extended type specifier called name. If it is parsed using `specifier-ctype` or some other non-extended parsing facility, the simple forms are used to create a more primitive type specifier. If it is parsed using `extended-type-specifier`, the extended forms are used to create a ctype.  Both the simple and extended forms are required.
+
+---
+
 # Relations
 
 ## Definitions
