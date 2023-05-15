@@ -8,11 +8,11 @@
 
 (defmacro defexclusive/2 (class1 class2)
   `(progn
-     (define-commutative-method subctypep (ct1 ,class1) (ct2 ,class2)
+     (define-commutative-method subctypep ((ct1 ,class1) (ct2 ,class2))
        (values nil t))
-     (define-commutative-method disjointp (ct1 ,class1) (ct2 ,class2)
+     (define-commutative-method disjointp ((ct1 ,class1) (ct2 ,class2))
        (values t t))
-     (define-commutative-method conjointp (ct1 ,class1) (ct2 ,class2)
+     (define-commutative-method conjointp ((ct1 ,class1) (ct2 ,class2))
        (values nil t))))
 
 (defmacro defexclusive (&rest classes)
@@ -52,7 +52,7 @@
                   ;; That's why this is different from the general method above.
                   (ccons-bottom-p ct1))
                 (defmethod subctypep ((ct1 ,class) (ct2 ccons)) (values nil t))
-                (define-commutative-method disjointp (ct1 ccons) (ct2 ,class)
+                (define-commutative-method disjointp ((ct1 ccons) (ct2 ,class))
                   (values t t))))
            (consxclusive (&rest classes)
              `(progn ,@(loop for class in classes
@@ -60,7 +60,7 @@
   (consxclusive range ccomplex carray charset cfunction fpzero))
 
 (macrolet ((defnonconjoint/2 (c1 c2)
-             `(define-commutative-method conjointp (ct1 ,c1) (ct2 ,c2)
+             `(define-commutative-method conjointp ((ct1 ,c1) (ct2 ,c2))
                   (values nil t)))
            (defnonconjoint (&rest classes)
              `(progn
@@ -80,11 +80,11 @@
 (defmethod subctypep ((ct1 ccons) (ct2 cclass))
   (or/tri (ccons-bottom-p ct1) (values (sequence-cclass-p ct2) t)))
 (defmethod subctypep ((ct1 cclass) (ct2 ccons)) (values nil t))
-(define-commutative-method disjointp (ct1 ccons) (ct2 cclass)
+(define-commutative-method disjointp ((ct1 ccons) (ct2 cclass))
   (or/tri (ccons-bottom-p ct1) (values (not (sequence-cclass-p ct2)) t)))
-(define-commutative-method conjoin/2 (ct1 cclass) (ct2 ccons)
+(define-commutative-method conjoin/2 ((ct1 cclass) (ct2 ccons))
   (if (sequence-cclass-p ct1) ct2 (bot)))
-(define-commutative-method disjoin/2 (ct1 cclass) (ct2 ccons)
+(define-commutative-method disjoin/2 ((ct1 cclass) (ct2 ccons))
   (if (sequence-cclass-p ct1) ct1 nil))
 (defmethod subtract ((ct1 ccons) (ct2 cclass))
   (if (sequence-cclass-p ct2) (bot) ct1))
@@ -97,12 +97,12 @@
                  (and (listp dims) (= (length dims) 1))))
           t))
 (defmethod subctypep ((ct1 cclass) (ct2 carray)) (values nil t))
-(define-commutative-method disjointp (ct1 carray) (ct2 cclass)
+(define-commutative-method disjointp ((ct1 carray) (ct2 cclass))
   (values (not (and (sequence-cclass-p ct2)
                     (let ((dims (carray-dims ct1)))
                       (or (eq dims '*) (= (length dims) 1)))))
           t))
-(define-commutative-method conjoin/2 (cclass cclass) (carray carray)
+(define-commutative-method conjoin/2 ((cclass cclass) (carray carray))
   (if (sequence-cclass-p cclass)
       (let ((dims (carray-dims carray)))
         (cond ((eq dims '*)
@@ -137,7 +137,7 @@
   (if (subfunction-cclass-p ct1)
       (if (function-top-p ct2) (values t t) (values nil nil))
       (values nil t)))
-(define-commutative-method conjoin/2 (ct1 cclass) (ct2 cfunction)
+(define-commutative-method conjoin/2 ((ct1 cclass) (ct2 cfunction))
   (if (subfunction-cclass-p ct1)
       (if (function-top-p ct2) ct1 nil)
       (bot)))
@@ -208,7 +208,7 @@
 
 ;;; These methods exist so that disjoin-cmember doesn't produce nested
 ;;; disjunctions, e.g. from (or boolean list) => (or (eql t) (or cons null))
-(define-commutative-method disjoin/2 (cmember cmember) (disjunction disjunction)
+(define-commutative-method disjoin/2 ((cmember cmember) (disjunction disjunction))
   (let* ((scts (junction-ctypes disjunction))
          (non (loop for elem in (cmember-members cmember)
                     unless (loop for sct in scts
@@ -224,15 +224,15 @@
   (values (ctypep (fpzero-zero ct1) ct2) t))
 (defmethod subctypep ((ct1 range) (ct2 fpzero)) (values nil t))
 
-(define-commutative-method disjointp (ct1 fpzero) (ct2 range)
+(define-commutative-method disjointp ((ct1 fpzero) (ct2 range))
   (values (not (ctypep (fpzero-zero ct1) ct2)) t))
 
-(define-commutative-method conjoin/2 (ct1 fpzero) (ct2 range)
+(define-commutative-method conjoin/2 ((ct1 fpzero) (ct2 range))
   (if (ctypep (fpzero-zero ct1) ct2)
       ct1
       (bot)))
 
-(define-commutative-method disjoin/2 (ct1 fpzero) (ct2 range)
+(define-commutative-method disjoin/2 ((ct1 fpzero) (ct2 range))
   (if (ctypep (fpzero-zero ct1) ct2)
       ct2
       nil))

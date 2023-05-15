@@ -82,7 +82,7 @@
 
 (defexclusives chash-table-of range ccomplex carray charset cfunction fpzero)
 
-(define-commutative-method conjointp (ct1 cclass) (ct2 chash-table-of)
+(define-commutative-method conjointp ((ct1 cclass) (ct2 chash-table-of))
   (values nil t))
 
 (defexistential chash-table-of)

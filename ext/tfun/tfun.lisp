@@ -12,9 +12,9 @@
 (defmethod subctypep ((ct1 tfun) (ct2 cfunction))
   (if (function-top-p ct2) (values t t) (values nil nil)))
 (defmethod subctypep ((ct1 cfunction) (ct2 tfun)) (values nil t))
-(define-commutative-method disjointp (ct1 tfun) (ct2 cfunction)
+(define-commutative-method disjointp ((ct1 tfun) (ct2 cfunction))
   (if (function-top-p ct2) (values nil t) (values nil nil)))
-(define-commutative-method conjointp (ct1 tfun) (ct2 cfunction)
+(define-commutative-method conjointp ((ct1 tfun) (ct2 cfunction))
   (values nil t))
 
 (defexclusives tfun cclass ccomplex carray charset fpzero range))

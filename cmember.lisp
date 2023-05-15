@@ -10,11 +10,11 @@
 (defmethod subctypep ((ct1 cmember) (ct2 cmember))
   (values (subsetp (cmember-members ct1) (cmember-members ct2)) t))
 
-(define-commutative-method disjointp (cmember cmember) (ctype ctype)
+(define-commutative-method disjointp ((cmember cmember) (ctype ctype))
   (values
-   (not (some (lambda (single-member)
-                (ctypep single-member ctype))
-              (cmember-members cmember)))
+   (notany (lambda (single-member)
+             (ctypep single-member ctype))
+           (cmember-members cmember))
    t))
 
 (defmethod conjointp ((ct1 cmember) (ct2 cmember)) (values nil t))
@@ -25,7 +25,7 @@
   (apply #'cmember
          (intersection (cmember-members ct1) (cmember-members ct2))))
 
-(define-commutative-method conjoin/2 (cmember cmember) (ctype ctype)
+(define-commutative-method conjoin/2 ((cmember cmember) (ctype ctype))
   ;; FIXME: Could save a little consing by checking subctypep first I guess.
   (apply #'cmember
          (loop for mem in (cmember-members cmember)
@@ -34,7 +34,7 @@
 (defmethod disjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember (union (cmember-members ct1) (cmember-members ct2))))
 
-(define-commutative-method disjoin/2 (cmember cmember) (ctype ctype)
+(define-commutative-method disjoin/2 ((cmember cmember) (ctype ctype))
   (let ((non (loop with diff = nil
                    for mem in (cmember-members cmember)
                    if (ctypep mem ctype)

@@ -156,7 +156,7 @@
       (values nil t)
       (values nil nil)))
 
-(define-commutative-method disjointp (congruence congruence) (range range)
+(define-commutative-method disjointp ((congruence congruence) (range range))
   ;; FIXME: Inaccurate in basically the same way.
   (if (or (not (eq (range-kind range) 'integer))
           ;; A range unbounded on one side necessarily includes all
@@ -167,7 +167,7 @@
       (values t t)
       (values nil nil)))
 
-(define-commutative-method conjointp (ct1 congruence) (ct2 range)
+(define-commutative-method conjointp ((ct1 congruence) (ct2 range))
   (values nil t))
 
 (defexclusives congruence cclass ccomplex carray charset cfunction fpzero)

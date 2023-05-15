@@ -50,10 +50,10 @@
                             (values nil t)
                             (values nil nil)))))
 
-(define-commutative-method disjointp (ct1 disjunction) (ct2 ctype)
+(define-commutative-method disjointp ((ct1 disjunction) (ct2 ctype))
   ;; (a v b) ^ z = 0 <=> (a ^ z) v (b ^ z) = 0
   (every/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1)))
-(define-commutative-method conjointp (ct1 disjunction) (ct2 ctype)
+(define-commutative-method conjointp ((ct1 disjunction) (ct2 ctype))
   (if (some/tri (lambda (sct) (conjointp sct ct2)) (junction-ctypes ct1))
       (values t t)
       (values nil nil)))
@@ -64,10 +64,10 @@
 (defmethod disjoin/2 ((ct1 disjunction) (ct2 disjunction))
   (apply #'disjoin (append (junction-ctypes ct1)
                            (junction-ctypes ct2))))
-(define-commutative-method disjoin/2 (ct1 disjunction) (ct2 ctype)
+(define-commutative-method disjoin/2 ((ct1 disjunction) (ct2 ctype))
   (apply #'disjoin ct2 (junction-ctypes ct1)))
 
-(define-commutative-method conjoin/2 (disjunction disjunction) (ctype ctype)
+(define-commutative-method conjoin/2 ((disjunction disjunction) (ctype ctype))
   (apply #'disjoin
          (loop for sct in (junction-ctypes disjunction)
                collect (conjoin sct ctype))))

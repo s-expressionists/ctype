@@ -66,16 +66,16 @@
 (defmethod subctypep ((ct1 cmember) (ct2 clist-of))
   (values (equal (cmember-members ct1) '(nil)) t))
 
-(define-commutative-method disjointp (clist-of clist-of) (ccons ccons)
+(define-commutative-method disjointp ((clist-of clist-of) (ccons ccons))
   (or/tri (disjointp (ccons-car ccons) (element-ctype clist-of))
           (disjointp (ccons-cdr ccons) clist-of)))
 
-(define-commutative-method disjointp (clist-of clist-of) (cmember cmember)
+(define-commutative-method disjointp ((clist-of clist-of) (cmember cmember))
   (values (not (member nil (cmember-members cmember))) t))
 
 (defexclusives clist-of range ccomplex carray charset cfunction fpzero)
 
-(define-commutative-method conjointp (ct1 clist-of) (ct2 cclass)
+(define-commutative-method conjointp ((ct1 clist-of) (ct2 cclass))
   (values nil t))
 
 ;;; LIST is a subtype of SEQUENCE, so all CLIST-OF types are as well.
@@ -84,11 +84,11 @@
 (defmethod subctypep ((ct1 clist-of) (ct2 cclass))
   (values (sequence-cclass-p ct2) t))
 (defmethod subctypep ((ct1 cclass) (ct2 clist-of)) (values nil t))
-(define-commutative-method disjointp (ct1 clist-of) (ct2 cclass)
+(define-commutative-method disjointp ((ct1 clist-of) (ct2 cclass))
   (values (not (sequence-cclass-p ct2)) t))
-(define-commutative-method conjoin/2 (ct1 clist-of) (ct2 cclass)
+(define-commutative-method conjoin/2 ((ct1 clist-of) (ct2 cclass))
   (if (sequence-cclass-p ct2) ct1 (bot)))
-(define-commutative-method disjoin/2 (ct1 clist-of) (ct2 cclass)
+(define-commutative-method disjoin/2 ((ct1 clist-of) (ct2 cclass))
   (if (sequence-cclass-p ct2) ct2 nil))
 (defmethod subtract ((ct1 clist-of) (ct2 cclass))
   (if (sequence-cclass-p ct2) (bot) ct1))
