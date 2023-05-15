@@ -492,7 +492,7 @@
   EXTENDED is a list of forms that return a ctype that completely represents the
   custom type.
 
-  Both the SIMPILE and the EXTENDED forms share the parameters of LAMBDA-LIST.
+  Both the SIMPLE and the EXTENDED forms share the parameters of LAMBDA-LIST.
 
   LAMBDA-LIST is an ordinary lambda list that also allows &environment."
   (assert simple nil "simple form is required")
