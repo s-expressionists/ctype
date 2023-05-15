@@ -11,7 +11,8 @@
            #:and/tri #:or/tri #:surely
            #:defexistential #:defexclusives
            #:define-commutative-method
-           #:define-extended-type)
+           #:define-extended-type
+           #:+complex-arrays-exist-p+)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
   (:export #:ctype

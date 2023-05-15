@@ -16,4 +16,3 @@
    #:vector-of
    #:simple-vector-of
    #:hash-table-of))
-
