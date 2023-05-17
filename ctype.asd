@@ -57,3 +57,17 @@
                                      "cfunction" "packages"))
    (:file "parse"
     :depends-on ("generic-functions" "create" "classes" "config" "packages"))))
+
+(asdf:defsystem :ctype/ext
+  :license "BSD"
+  :depends-on (:ctype :alexandria)
+  :components
+  ((:module "ext"
+    :components
+    ((:file "packages")
+     (:module "data-structures"
+      :depends-on ("packages")
+      :components
+      ((:file "list-of")
+       (:file "array-of")
+       (:file "hash-table-of")))))))

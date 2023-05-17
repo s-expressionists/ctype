@@ -10,20 +10,12 @@
 (defmethod subctypep ((ct1 cmember) (ct2 cmember))
   (values (subsetp (cmember-members ct1) (cmember-members ct2)) t))
 
-(declaim (inline member-disjointp))
-(defun member-disjointp (cmember ctype)
+(define-commutative-method disjointp ((cmember cmember) (ctype ctype))
   (values
-   (notany
-    (lambda (single-member)
-      (ctypep single-member ctype))
-    (cmember-members cmember))
+   (notany (lambda (single-member)
+             (ctypep single-member ctype))
+           (cmember-members cmember))
    t))
-
-(defmethod disjointp ((cmember cmember) (ctype ctype))
-  (member-disjointp cmember ctype))
-
-(defmethod disjointp ((ctype ctype) (cmember cmember))
-  (member-disjointp cmember ctype))
 
 (defmethod conjointp ((ct1 cmember) (ct2 cmember)) (values nil t))
 
@@ -32,17 +24,17 @@
 (defmethod conjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember
          (intersection (cmember-members ct1) (cmember-members ct2))))
-(defun conjoin-cmember (cmember ctype)
+
+(define-commutative-method conjoin/2 ((cmember cmember) (ctype ctype))
   ;; FIXME: Could save a little consing by checking subctypep first I guess.
   (apply #'cmember
          (loop for mem in (cmember-members cmember)
                when (ctypep mem ctype) collect mem)))
-(defmethod conjoin/2 ((ct1 cmember) (ct2 ctype)) (conjoin-cmember ct1 ct2))
-(defmethod conjoin/2 ((ct1 ctype) (ct2 cmember)) (conjoin-cmember ct2 ct1))
 
 (defmethod disjoin/2 ((ct1 cmember) (ct2 cmember))
   (apply #'cmember (union (cmember-members ct1) (cmember-members ct2))))
-(defun disjoin-cmember (cmember ctype)
+
+(define-commutative-method disjoin/2 ((cmember cmember) (ctype ctype))
   (let ((non (loop with diff = nil
                    for mem in (cmember-members cmember)
                    if (ctypep mem ctype)
@@ -50,14 +42,10 @@
                    else
                      collect mem
                    ;; If there's no change, give up to avoid recursion
-                   finally (unless diff (return-from disjoin-cmember nil)))))
+                   finally (unless diff (return-from disjoin/2 nil)))))
     (if non
         (disjunction (apply #'cmember non) ctype)
         ctype)))
-(defmethod disjoin/2 ((ct1 cmember) (ct2 ctype))
-  (disjoin-cmember ct1 ct2))
-(defmethod disjoin/2 ((ct1 ctype) (ct2 cmember))
-  (disjoin-cmember ct2 ct1))
 
 (defmethod subtract ((ct1 cmember) (ct2 cmember))
   (apply #'cmember

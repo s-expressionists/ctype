@@ -1,5 +1,10 @@
 (in-package #:ctype)
 
+(defmacro define-commutative-method (name (arg1 arg2) &body body)
+  `(progn
+     (defmethod ,name (,arg1 ,arg2) ,@body)
+     (defmethod ,name (,arg2 ,arg1) ,@body)))
+
 (defgeneric ctypep (object ctype)
   (:argument-precedence-order ctype object))
 

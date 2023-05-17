@@ -453,14 +453,91 @@
       (destructuring-bind (&optional (et '*) (length '*)) rest
         (array-ctype :either et (list length) env))))
 
+(defvar *parse-extended-types* nil
+  "When `t', `specifier-ctype' will parse extended types. Use
+  `extended-specifier-ctype' instead of using this variable directly.")
+
+(defvar *env* nil
+  "This variable is for `specifier-ctype' to indirectly pass its environment to
+  extended type parsers. Ordinary lambda lists do not allow &environment, but
+  `specifier-ctype' should take an environment. Many functions get around this
+  by using &optional, but this does not work for `define-extended-type' since
+  extended types might already have &optional and may have &rest and &key as
+  well. It is not necessary to use this variable directly because &environment
+  is allowed in `define-extended-type'.")
+
+(defun remove-environment (lambda-list)
+  "Return(0) a new lambda list like LAMBDA-LIST but without the &environment
+  parameter. Return(1) the name of the removed &environment parameter."
+  (let (environment)
+    (values
+     (loop for keys on lambda-list
+           for key = (first keys)
+           if (eq key '&environment) do
+             (setq environment (second keys)
+                   keys (rest keys))
+           else collect key)
+     environment)))
+
+(defmacro define-extended-type (name lambda-list &key (documentation "") simple extended)
+  "Define a type NAME that can be used as a type specifier and as a constructor
+  for a custom ctype. The :simple expander is used by programs that only work
+  with type specifiers like `specifier-ctype'. The :extended expander is used by
+  programs that can take advantage of ctype extensions like
+  `extended-specifier-ctype'.
+
+  SIMPLE is a list of forms that return a type specifier that might not
+  completely represent the custom type.
+
+  EXTENDED is a list of forms that return a ctype that completely represents the
+  custom type.
+
+  Both the SIMPLE and the EXTENDED forms share the parameters of LAMBDA-LIST.
+
+  LAMBDA-LIST is an ordinary lambda list that also allows &environment."
+  (assert simple nil "simple form is required")
+  (assert extended nil "extended form is required")
+  `(progn
+     (deftype ,name ,lambda-list
+       ,documentation
+       ,@simple)
+     (setf (get ',name 'extended-type-parser)
+           ,(multiple-value-bind
+                  (clean-lambda-list env-name) (remove-environment lambda-list)
+              `(lambda ,clean-lambda-list
+                 ,documentation
+                 ,(if env-name
+                      `(symbol-macrolet ((,env-name *env*))
+                         ,@extended)
+                      `(progn ,@extended)))))
+     ',name))
+
 (defun parse (specifier env)
-  (let ((spec (typexpand specifier env)))
-    (etypecase spec
-      (cons (cons-specifier-ctype (car spec) (cdr spec) env))
-      (symbol (or (symbol-specifier-ctype spec env)
-                  (class-specifier-ctype (find-class spec t env) env)))
-      (class (or (symbol-specifier-ctype (class-name spec) env)
-                 (class-specifier-ctype spec env))))))
+  (flet ((parse-symbol (spec)
+           (or (symbol-specifier-ctype spec env)
+               (class-specifier-ctype (find-class spec t env) env)))
+         (parse-class (spec)
+           (or (symbol-specifier-ctype (class-name spec) env))))
+    (if *parse-extended-types*
+        (etypecase specifier
+          (cons (let* ((name (car specifier))
+                       (args (cdr specifier))
+                       (parser (get name 'extended-type-parser)))
+                  (if parser
+                      (let ((*env* env))
+                        (apply parser args))
+                      (cons-specifier-ctype name args env))))
+          (symbol (let ((parser (get specifier 'extended-type-parser)))
+                    (if parser
+                        (let ((*env* env))
+                          (funcall parser))
+                        (parse-symbol specifier))))
+          (class (parse-class specifier)))
+        (let ((spec (typexpand specifier env)))
+          (etypecase spec
+            (cons (cons-specifier-ctype (car spec) (cdr spec) env))
+            (symbol (parse-symbol spec))
+            (class (parse-class spec)))))))
 
 (defun specifier-ctype (specifier &optional env)
   (let ((ct (parse specifier env)))
@@ -474,3 +551,9 @@
         ct
         ;; Treat X as (values X).
         (parse-values-ctype `(,specifier) env))))
+
+(defun extended-specifier-ctype (specifier &optional env)
+  "Return the ctype specified by the possibly extended SPECIFIER."
+  (let ((*parse-extended-types* t))
+    (specifier-ctype specifier env)))
+

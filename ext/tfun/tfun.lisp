@@ -12,25 +12,12 @@
 (defmethod subctypep ((ct1 tfun) (ct2 cfunction))
   (if (function-top-p ct2) (values t t) (values nil nil)))
 (defmethod subctypep ((ct1 cfunction) (ct2 tfun)) (values nil t))
-(defmethod disjointp ((ct1 tfun) (ct2 cfunction))
+(define-commutative-method disjointp ((ct1 tfun) (ct2 cfunction))
   (if (function-top-p ct2) (values nil t) (values nil nil)))
-(defmethod disjointp ((ct1 cfunction) (ct2 tfun))
-  (if (function-top-p ct1) (values nil t) (values nil nil)))
-(defmethod conjointp ((ct1 tfun) (ct2 cfunction)) (values nil t))
-(defmethod conjointp ((ct1 cfunction) (ct2 tfun)) (values nil t))
+(define-commutative-method conjointp ((ct1 tfun) (ct2 cfunction))
+  (values nil t))
 
-(macrolet ((defexclusive (class)
-             `(progn
-                (defmethod subctypep ((ct1 tfun) (ct2 ,class)) (values nil t))
-                (defmethod subctypep ((ct1 ,class) (ct2 tfun)) (values nil t))
-                (defmethod disjointp ((ct1 tfun) (ct2 ,class)) (values t t))
-                (defmethod disjointp ((ct1 ,class) (ct2 tfun)) (values t t))
-                (defmethod conjointp ((ct1 tfun) (ct2 ,class)) (values nil t))
-                (defmethod conjointp ((ct1 ,class) (ct2 tfun)) (values nil t))))
-           (defexclusives (&rest classes)
-             `(progn ,@(loop for class in classes
-                             collect `(defexclusive ,class)))))
-  (defexclusives cclass ccomplex carray charset fpzero range))
+(defexclusives tfun cclass ccomplex carray charset fpzero range))
 
 ;;;
 

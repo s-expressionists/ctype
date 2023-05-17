@@ -33,18 +33,14 @@
 (defmethod disjointp ((ct1 negation) (ct2 negation))
   ;; ~a ^ ~b = 0 <=> ~(a v b) = 0 <=> a v b = T
   (conjointp (negation-ctype ct1) (negation-ctype ct2)))
-(defmethod disjointp ((ct1 negation) (ct2 ctype))
+(define-commutative-method disjointp ((ct1 negation) (ct2 ctype))
   (subctypep ct2 (negation-ctype ct1)))
-(defmethod disjointp ((ct1 ctype) (ct2 negation))
-  (subctypep ct1 (negation-ctype ct2)))
 
 (defmethod conjointp ((ct1 negation) (ct2 negation))
   ;; ~a v ~b = T <=> ~(a ^ b) = T <=> a ^ b = 0
   (disjointp (negation-ctype ct1) (negation-ctype ct2)))
-(defmethod conjointp ((ct1 negation) (ct2 ctype))
+(define-commutative-method conjointp ((ct1 negation) (ct2 ctype))
   (subctypep (negation-ctype ct1) ct2))
-(defmethod conjointp ((ct1 ctype) (ct2 negation))
-  (subctypep (negation-ctype ct2) ct1))
 
 (defmethod negate ((ctype negation)) (negation-ctype ctype))
 
@@ -59,10 +55,8 @@
              (if p
                  (negate p)
                  nil))))))
-(defmethod conjoin/2 ((ct1 negation) (ct2 ctype))
+(define-commutative-method conjoin/2 ((ct1 negation) (ct2 ctype))
   (subtract ct2 (negation-ctype ct1)))
-(defmethod conjoin/2 ((ct1 ctype) (ct2 negation))
-  (subtract ct1 (negation-ctype ct2)))
 
 (defmethod disjoin/2 ((ct1 negation) (ct2 negation))
   (let ((nt1 (negation-ctype ct1)) (nt2 (negation-ctype ct2)))
@@ -73,12 +67,8 @@
                (if p
                    (negate p)
                    nil))))))
-(defmethod disjoin/2 ((ct1 negation) (ct2 ctype))
+(define-commutative-method disjoin/2 ((ct1 negation) (ct2 ctype))
   (if (subctypep (negation-ctype ct1) ct2)
-      (top)
-      nil))
-(defmethod disjoin/2 ((ct1 ctype) (ct2 negation))
-  (if (subctypep (negation-ctype ct2) ct1)
       (top)
       nil))
 
