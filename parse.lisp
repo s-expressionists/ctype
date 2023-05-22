@@ -457,15 +457,6 @@
   "When `t', `specifier-ctype' will parse extended types. Use
   `extended-specifier-ctype' instead of using this variable directly.")
 
-(defvar *env* nil
-  "This variable is for `specifier-ctype' to indirectly pass its environment to
-  extended type parsers. Ordinary lambda lists do not allow &environment, but
-  `specifier-ctype' should take an environment. Many functions get around this
-  by using &optional, but this does not work for `define-extended-type' since
-  extended types might already have &optional and may have &rest and &key as
-  well. It is not necessary to use this variable directly because &environment
-  is allowed in `define-extended-type'.")
-
 (defun remove-environment (lambda-list)
   "Return(0) a new lambda list like LAMBDA-LIST but without the &environment
   parameter. Return(1) the name of the removed &environment parameter."
@@ -494,7 +485,7 @@
 
   Both the SIMPLE and the EXTENDED forms share the parameters of LAMBDA-LIST.
 
-  LAMBDA-LIST is an ordinary lambda list that also allows &environment."
+  LAMBDA-LIST is a macro lambda list."
   (assert simple nil "simple form is required")
   (assert extended nil "extended form is required")
   `(progn
@@ -504,12 +495,16 @@
      (setf (get ',name 'extended-type-parser)
            ,(multiple-value-bind
                   (clean-lambda-list env-name) (remove-environment lambda-list)
-              `(lambda ,clean-lambda-list
-                 ,documentation
-                 ,(if env-name
-                      `(symbol-macrolet ((,env-name *env*))
-                         ,@extended)
-                      `(progn ,@extended)))))
+              (let* ((args (gensym)) (env (gensym))
+                     (body `(destructuring-bind ,clean-lambda-list ,args
+                              ,@extended)))
+                `(lambda (,args ,env)
+                   ,documentation
+                   ,@(if env-name
+                         `((let ((,env-name ,env))
+                            ,body))
+                         `((declare (ignore ,env))
+                           ,body))))))
      ',name))
 
 (defun parse (specifier env)
