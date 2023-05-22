@@ -40,7 +40,7 @@
         (value2 (value-ctype ctype2)))
     (multiple-value-bind (key-comparison key-valid) (funcall predicate key1 key2)
       (multiple-value-bind (value-comparison value-valid) (funcall predicate value1 value2)
-        (values (funcall combiner (list key-comparison value-comparison))
+        (values (funcall combiner #'identity (list key-comparison value-comparison))
                 (funcall combiner #'identity (list key-valid value-valid)))))))
 
 (defmethod subctypep ((ctype1 chash-table-of) (ctype2 cclass))
