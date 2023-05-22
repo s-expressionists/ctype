@@ -557,3 +557,7 @@
   (let ((*parse-extended-types* t))
     (specifier-ctype specifier env)))
 
+(defun extended-values-specifier-ctype (specifier &optional env)
+  "Return the ctype specified by the possibly extended values SPECIFIER."
+  (let ((*parse-extended-types* t))
+    (values-specifier-ctype specifier env)))

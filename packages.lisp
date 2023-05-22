@@ -1,6 +1,8 @@
 (defpackage #:ctype
   (:use #:cl)
-  (:export #:specifier-ctype #:extended-specifier-ctype #:values-specifier-ctype)
+  (:export #:specifier-ctype #:values-specifier-ctype
+           #:extended-specifier-ctype
+           #:extended-values-specifier-ctype)
   (:export #:ctypep #:subctypep #:ctype=)
   (:export #:disjointp #:conjointp #:cofinitep)
   (:export #:negate #:conjoin/2 #:disjoin/2 #:subtract #:unparse
