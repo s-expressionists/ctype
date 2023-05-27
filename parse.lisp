@@ -470,6 +470,48 @@
            else collect key)
      environment)))
 
+(defun declare-p (form)
+  (and (consp form)
+       (eq 'declare (first form))))
+
+(defun declaration-abouts (declaration)
+  (case (first declaration)
+    ((type ftype) (rest (rest declaration)))
+    (otherwise (rest declaration))))
+
+(defun declaration-specifier (declaration)
+  (case (first declaration)
+    ((type ftype) (subseq declaration 0 2))
+    (otherwise (subseq declaration 0 1))))
+
+(defun declarations-by (filter forms)
+  (let (result)
+    (dolist (form forms result)
+      (if (not (declare-p form))
+          (push form result)
+          (dolist (declaration (rest form))
+            (let ((vars (funcall filter (declaration-abouts declaration))))
+              (when vars
+                (push (list 'declare
+                            (append (declaration-specifier declaration)
+                                    vars))
+                      result))))))
+    (nreverse result)))
+
+(defun remove-declarations-for (var-name forms)
+  (declarations-by
+   (lambda (abouts)
+     (remove var-name abouts))
+   forms))
+
+(defun declarations-for (var-name forms)
+  (remove-if-not
+   #'declare-p
+   (declarations-by
+    (lambda (abouts)
+      (remove var-name abouts :test-not #'eql))
+    forms)))
+
 (defmacro define-extended-type (name lambda-list &key (documentation "") simple extended)
   "Define a type NAME that can be used as a type specifier and as a constructor
   for a custom ctype. The :simple expander is used by programs that only work
@@ -497,11 +539,14 @@
                   (clean-lambda-list env-name) (remove-environment lambda-list)
               (let* ((args (gensym)) (env (gensym))
                      (body `(destructuring-bind ,clean-lambda-list ,args
-                              ,@extended)))
+                              ,@(if env-name
+                                    (remove-declarations-for env-name extended)
+                                    extended))))
                 `(lambda (,args ,env)
                    ,documentation
                    ,@(if env-name
                          `((let ((,env-name ,env))
+                             ,@(declarations-for env-name extended)
                             ,body))
                          `((declare (ignore ,env))
                            ,body))))))
