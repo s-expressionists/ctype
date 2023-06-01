@@ -6,8 +6,15 @@
   ;; ctypes
   (:export
    #:clist-of
+   #:element-ctype
    #:carray-of
-   #:chash-table-of)
+   #:carray-simplicity
+   #:carray-uaet
+   #:carray-eaet
+   #:carray-dims
+   #:chash-table-of
+   #:key-ctype
+   #:value-ctype)
   ;; extended types
   (:export
    #:list-of

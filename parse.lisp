@@ -457,15 +457,6 @@
   "When `t', `specifier-ctype' will parse extended types. Use
   `extended-specifier-ctype' instead of using this variable directly.")
 
-(defvar *env* nil
-  "This variable is for `specifier-ctype' to indirectly pass its environment to
-  extended type parsers. Ordinary lambda lists do not allow &environment, but
-  `specifier-ctype' should take an environment. Many functions get around this
-  by using &optional, but this does not work for `define-extended-type' since
-  extended types might already have &optional and may have &rest and &key as
-  well. It is not necessary to use this variable directly because &environment
-  is allowed in `define-extended-type'.")
-
 (defun remove-environment (lambda-list)
   "Return(0) a new lambda list like LAMBDA-LIST but without the &environment
   parameter. Return(1) the name of the removed &environment parameter."
@@ -478,6 +469,48 @@
                    keys (rest keys))
            else collect key)
      environment)))
+
+(defun declare-p (form)
+  (and (consp form)
+       (eq 'declare (first form))))
+
+(defun declaration-abouts (declaration)
+  (case (first declaration)
+    ((type ftype) (rest (rest declaration)))
+    (otherwise (rest declaration))))
+
+(defun declaration-specifier (declaration)
+  (case (first declaration)
+    ((type ftype) (subseq declaration 0 2))
+    (otherwise (subseq declaration 0 1))))
+
+(defun declarations-by (filter forms)
+  (let (result)
+    (dolist (form forms result)
+      (if (not (declare-p form))
+          (push form result)
+          (dolist (declaration (rest form))
+            (let ((vars (funcall filter (declaration-abouts declaration))))
+              (when vars
+                (push (list 'declare
+                            (append (declaration-specifier declaration)
+                                    vars))
+                      result))))))
+    (nreverse result)))
+
+(defun remove-declarations-for (var-name forms)
+  (declarations-by
+   (lambda (abouts)
+     (remove var-name abouts))
+   forms))
+
+(defun declarations-for (var-name forms)
+  (remove-if-not
+   #'declare-p
+   (declarations-by
+    (lambda (abouts)
+      (remove var-name abouts :test-not #'eql))
+    forms)))
 
 (defmacro define-extended-type (name lambda-list &key (documentation "") simple extended)
   "Define a type NAME that can be used as a type specifier and as a constructor
@@ -494,7 +527,7 @@
 
   Both the SIMPLE and the EXTENDED forms share the parameters of LAMBDA-LIST.
 
-  LAMBDA-LIST is an ordinary lambda list that also allows &environment."
+  LAMBDA-LIST is a macro lambda list."
   (assert simple nil "simple form is required")
   (assert extended nil "extended form is required")
   `(progn
@@ -504,40 +537,43 @@
      (setf (get ',name 'extended-type-parser)
            ,(multiple-value-bind
                   (clean-lambda-list env-name) (remove-environment lambda-list)
-              `(lambda ,clean-lambda-list
-                 ,documentation
-                 ,(if env-name
-                      `(symbol-macrolet ((,env-name *env*))
-                         ,@extended)
-                      `(progn ,@extended)))))
+              (let* ((args (gensym)) (env (gensym))
+                     (body `(destructuring-bind ,clean-lambda-list ,args
+                              ,@(if env-name
+                                    (remove-declarations-for env-name extended)
+                                    extended))))
+                `(lambda (,args ,env)
+                   ,documentation
+                   ,@(if env-name
+                         `((let ((,env-name ,env))
+                             ,@(declarations-for env-name extended)
+                            ,body))
+                         `((declare (ignore ,env))
+                           ,body))))))
      ',name))
 
 (defun parse (specifier env)
-  (flet ((parse-symbol (spec)
-           (or (symbol-specifier-ctype spec env)
-               (class-specifier-ctype (find-class spec t env) env)))
-         (parse-class (spec)
-           (or (symbol-specifier-ctype (class-name spec) env))))
+  (flet ((regular-parse ()
+           (let ((spec (typexpand specifier env)))
+             (etypecase spec
+               (cons (cons-specifier-ctype (car spec) (cdr spec) env))
+               (symbol (or (symbol-specifier-ctype spec env)
+                           (class-specifier-ctype (find-class spec t env) env)))
+               (class (symbol-specifier-ctype (class-name spec) env))))))
     (if *parse-extended-types*
-        (etypecase specifier
+        (typecase specifier
           (cons (let* ((name (car specifier))
                        (args (cdr specifier))
                        (parser (get name 'extended-type-parser)))
                   (if parser
-                      (let ((*env* env))
-                        (apply parser args))
-                      (cons-specifier-ctype name args env))))
+                      (funcall parser args env)
+                      (regular-parse))))
           (symbol (let ((parser (get specifier 'extended-type-parser)))
                     (if parser
-                        (let ((*env* env))
-                          (funcall parser))
-                        (parse-symbol specifier))))
-          (class (parse-class specifier)))
-        (let ((spec (typexpand specifier env)))
-          (etypecase spec
-            (cons (cons-specifier-ctype (car spec) (cdr spec) env))
-            (symbol (parse-symbol spec))
-            (class (parse-class spec)))))))
+                        (funcall parser nil env)
+                        (regular-parse))))
+          (otherwise (regular-parse)))
+        (regular-parse))))
 
 (defun specifier-ctype (specifier &optional env)
   (let ((ct (parse specifier env)))
@@ -557,3 +593,7 @@
   (let ((*parse-extended-types* t))
     (specifier-ctype specifier env)))
 
+(defun extended-values-specifier-ctype (specifier &optional env)
+  "Return the ctype specified by the possibly extended values SPECIFIER."
+  (let ((*parse-extended-types* t))
+    (values-specifier-ctype specifier env)))

@@ -7,17 +7,17 @@
   (if simplicity
       (make-instance
        'carray-of
-       :simplicity simplicity :uaet upgraded-element-type :eaet element-ctype :dims dims))
-  (let ((simple
-          (make-instance
-           'carray-of
-           :simplicity :simple :uaet upgraded-element-type :eaet element-ctype :dims dims)))
-    (if ctype:+complex-arrays-exist-p+
-        (disjoin simple
-                 (make-instance
-                  'carray-of
-                  :simplicity :complex :uaet upgraded-element-type :eaet element-ctype :dims dims))
-        simple)))
+       :simplicity simplicity :uaet upgraded-element-type :eaet element-ctype :dims dims)
+      (let ((simple
+              (make-instance
+               'carray-of
+               :simplicity :simple :uaet upgraded-element-type :eaet element-ctype :dims dims)))
+        (if ctype:+complex-arrays-exist-p+
+            (disjoin simple
+                     (make-instance
+                      'carray-of
+                      :simplicity :complex :uaet upgraded-element-type :eaet element-ctype :dims dims))
+            simple))))
 
 (define-extended-type array-of (element-type &optional (dims '*) (upgraded-element-type '*) &environment env)
   :documentation "An array whose elements are of type ELEMENT-TYPE."
