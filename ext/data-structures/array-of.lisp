@@ -69,10 +69,7 @@
   ((simple-cvector-of (extended-specifier-ctype element-type env) length upgraded-element-type)))
 
 (defun unparse-vector-simple (type length)
-  (let* ((front (case type
-                  ((bit) '(simple-bit-vector))
-                  ((base-char) '(simple-base-string))
-                  (otherwise '(simple-vector type))))
+  (let* ((front `(simple-vector-of ,type))
          (back (if (eq length '*)
                    nil
                    (list length)))
@@ -94,7 +91,7 @@
               ((and (not (eq dims '*))
                     (= (length dims) 1)
                     (unparse-vector-simple element-type (first dims))))
-              (t `(simple-array ,@tail)))
+              (t `(simple-array-of ,@tail)))
         (if (null tail)
             '(and array (not simple-array))
             `(and (array ,@tail) (not simple-array))))))
@@ -182,3 +179,15 @@
       (if (bot-p new-eaet)
           (bot)
           (carray-of new-eaet new-dims new-uaet new-simplicity)))))
+
+(define-commutative-method conjoin/2 ((cclass cclass) (carray carray-of))
+  (if (sequence-cclass-p cclass)
+      (let ((dims (carray-dims carray)))
+        (cond ((eq dims '*)
+               (carray-of (carray-eaet carray)
+                          '(*)
+                          (carray-uaet carray)
+                          (carray-simplicity carray)))
+              ((= (length dims) 1) carray)
+              (t (bot))))
+      (bot)))
