@@ -17,7 +17,7 @@
 (define-commutative-method conjointp ((ct1 tfun) (ct2 cfunction))
   (values nil t))
 
-(defexclusives tfun cclass ccomplex carray charset fpzero range))
+(defexclusives tfun cclass ccomplex carray charset fpzero range)
 
 ;;;
 
