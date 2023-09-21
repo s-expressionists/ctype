@@ -10,6 +10,7 @@
    (:module "config"
     :serial t
     :components ((:file "common")
+                 (:file "abcl"  :if-feature :abcl)
                  (:file "clasp" :if-feature :clasp)
                  (:file "sbcl"  :if-feature :sbcl)
                  (:file "ccl"   :if-feature :ccl)
@@ -17,7 +18,7 @@
                  (:file "sicl"  :if-feature :sicl)
                  (:file "ecl"   :if-feature :ecl)
                  (:file "unsupported"
-                  :if-feature (:not (:or :clasp :sbcl :ccl :cmucl :sicl :ecl)))
+                  :if-feature (:not (:or :abcl :clasp :sbcl :ccl :cmucl :sicl :ecl)))
                  (:file "common-post")))
    (:file "classes" :depends-on ("packages"))
    (:file "create" :depends-on ("classes" "packages"))
