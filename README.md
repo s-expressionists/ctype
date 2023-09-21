@@ -23,6 +23,7 @@ This system is intended for use in an implementation of `typep` and `subtypep`, 
 
 Currently, the following Lisps are supported:
 
+* ABCL (preliminary)
 * CCL
 * Clasp
 * CMUCL
