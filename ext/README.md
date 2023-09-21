@@ -18,7 +18,7 @@ Types for arrays and hash-tables of some element type(s) have also been defined 
 
 The largest extension so far is for tfuns, short for "type-level functions". This system can determine upper bounds for the result type of function calls, given knowledge of the function being called and upper bounds on the types of its arguments.
 
-It can be loaded as the `ctype-tfun` ASDF system. This system has ctype proper as well as alexandria as dependencies.
+It can be loaded as the `ctype/tfun` ASDF system. This system has ctype proper as well as alexandria as dependencies.
 
 The primary entry points are `derive-call` and `derive-multiple-value-call`. `derive-call` accepts a tfun (or other ctypes, but this will be less useful) as well as single value ctypes for the arguments to the call. For example, in order to approximate the type of `(+ (the (single-float 3.9 48.2) x) (the (rational 8 32) y))`, you would do
 
