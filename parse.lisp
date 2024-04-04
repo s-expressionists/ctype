@@ -552,28 +552,35 @@
                            ,body))))))
      ',name))
 
+(defgeneric parse-expanded (specifier environment))
+(defmethod parse-expanded ((spec cons) env)
+  (cons-specifier-ctype (car spec) (cdr spec) env))
+(defmethod parse-expanded ((spec symbol) env)
+  (or (symbol-specifier-ctype spec env)
+      (class-specifier-ctype (find-class spec t env) env)))
+(defmethod parse-expanded ((spec class) env)
+  (symbol-specifier-ctype (class-name spec) env))
+
+(defgeneric parse-extended (specifier environment))
+(defmethod parse-extended ((specifier cons) env)
+  (let* ((name (car specifier))
+         (args (cdr specifier))
+         (parser (get name 'extended-type-parser)))
+    (if parser
+        (funcall parser args env)
+        (parse-expanded (typexpand specifier env) env))))
+(defmethod parse-extended ((specifier symbol) env)
+  (let ((parser (get specifier 'extended-type-parser)))
+    (if parser
+        (funcall parser nil env)
+        (parse-expanded (typexpand specifier env) env))))
+(defmethod parse-extended (specifier env)
+  (parse-expanded (typexpand specifier env) env))
+
 (defun parse (specifier env)
-  (flet ((regular-parse ()
-           (let ((spec (typexpand specifier env)))
-             (etypecase spec
-               (cons (cons-specifier-ctype (car spec) (cdr spec) env))
-               (symbol (or (symbol-specifier-ctype spec env)
-                           (class-specifier-ctype (find-class spec t env) env)))
-               (class (symbol-specifier-ctype (class-name spec) env))))))
-    (if *parse-extended-types*
-        (typecase specifier
-          (cons (let* ((name (car specifier))
-                       (args (cdr specifier))
-                       (parser (get name 'extended-type-parser)))
-                  (if parser
-                      (funcall parser args env)
-                      (regular-parse))))
-          (symbol (let ((parser (get specifier 'extended-type-parser)))
-                    (if parser
-                        (funcall parser nil env)
-                        (regular-parse))))
-          (otherwise (regular-parse)))
-        (regular-parse))))
+  (if *parse-extended-types*
+      (parse-extended specifier env)
+      (parse-expanded (typexpand specifier env) env)))
 
 (defun specifier-ctype (specifier &optional env)
   (let ((ct (parse specifier env)))
