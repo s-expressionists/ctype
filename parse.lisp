@@ -584,13 +584,13 @@
 
 (defun specifier-ctype (specifier &optional env)
   (let ((ct (parse specifier env)))
-    (when (typep ct 'cvalues)
+    (when (cvalues-p ct)
       (error "Found ~s in non-~s context" (unparse ct) 'values))
     ct))
 
 (defun values-specifier-ctype (specifier &optional env)
   (let ((ct (parse specifier env)))
-    (if (typep ct 'cvalues)
+    (if (cvalues-p ct)
         ct
         ;; Treat X as (values X).
         (parse-values-ctype `(,specifier) env))))

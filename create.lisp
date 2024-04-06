@@ -73,7 +73,7 @@
 (defun values-bot () (cvalues (list (bot)) nil (bot)))
 
 (defun single-value (ctype)
-  (assert (not (typep ctype 'cvalues)))
+  (assert (not (cvalues-p ctype)))
   (cvalues (list ctype) nil (bot)))
 
 (defun csatisfies (fname)

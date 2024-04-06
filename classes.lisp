@@ -78,6 +78,12 @@
               :type list)
    (%rest :initarg :rest :reader cvalues-rest :type ctype)))
 
+;;; Used to avoid (typep foo 'cvalues) in a few places in this library,
+;;; which is important to avoid infinite regress.
+(defgeneric cvalues-p (ctype)
+  (:method ((ctype cvalues)) t)
+  (:method ((ctype ctype)) nil))
+
 (defclass lambda-list (ctype)
   ((%required :initarg :required :reader lambda-list-required
               ;; A proper list of ctypes.
