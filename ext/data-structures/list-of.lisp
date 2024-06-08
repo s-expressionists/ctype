@@ -56,12 +56,13 @@
   ;; clist-of includes nil, a non-cons
   (values nil t))
 (defmethod subctypep ((ct1 ccons) (ct2 clist-of))
-  ;; cons types are never recursive, so they can't be subtype of clist-of
-  ;; except in the degenerate cons type case.
-  ;; (Note that we don't need to worry about degenerate clist-of,
-  ;;  since (clist-of nil) is not nil, it's null.)
-  (or/tri (subctypep (ccons-car ct1) (bot))
-          (subctypep (ccons-cdr ct1) (bot))))
+  (let ((element-type (element-ctype ct2)))
+    (do ((ct1 ct1 (ccons-cdr ct1)))
+        ((ctype= (cmember nil) ct1)
+         (values t t))
+      (let ((type (ccons-car ct1)))
+        (unless (subctypep type element-type)
+          (return-from subctypep (values nil t)))))))
 
 (defmethod subctypep ((ct1 cmember) (ct2 clist-of))
   (values (equal (cmember-members ct1) '(nil)) t))
