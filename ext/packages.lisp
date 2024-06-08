@@ -14,7 +14,11 @@
    #:carray-dims
    #:chash-table-of
    #:key-ctype
-   #:value-ctype)
+   #:value-ctype
+   #:cproperty-list
+   #:key-ctypes
+   #:keys
+   #:property-ctype)
   ;; extended types
   (:export
    #:list-of
@@ -22,4 +26,5 @@
    #:simple-array-of
    #:vector-of
    #:simple-vector-of
-   #:hash-table-of))
+   #:hash-table-of
+   #:plist))

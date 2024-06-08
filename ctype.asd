@@ -70,6 +70,7 @@
       :depends-on ("packages")
       :components
       ((:file "list-of")
+       (:file "plist" :depends-on ("list-of"))
        (:file "array-of")
        (:file "hash-table-of")))))))
 
