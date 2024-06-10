@@ -21,19 +21,20 @@
             (carray simplicity uaet eaet dims))
         (carray :simple uaet eaet dims))))
 
-(defun cons-ctype (car cdr env)
+(defun cons-ctype (client car cdr env)
   (let ((car (if (eq car '*)
                  (top)
-                 (specifier-ctype car env)))
+                 (specifier-ctype client car env)))
         (cdr (if (eq cdr '*)
                  (top)
-                 (specifier-ctype cdr env))))
+                 (specifier-ctype client cdr env))))
     (ccons car cdr)))
 
-(defun member-ctype (elements)
+(defun member-ctype (client elements)
   ;; Cut out real ranges, floating point zeroes, and character sets.
   (apply
    #'disjoin
+   client
    (loop with shortp = (cdr (assoc 'short-float +floats+))
          with singlep = (cdr (assoc 'single-float +floats+))
          with doublep = (cdr (assoc 'double-float +floats+))
@@ -74,7 +75,7 @@
          (values (car designator) t))
         (t (error-interval-designator designator))))
 
-(defun rational-range (low lxp high hxp)
+(defun rational-range (client low lxp high hxp)
   ;; Check if this is a ratio-only range like (rational (0) (1))
   (if (and low high
            (or (< high (ceiling low))
@@ -91,17 +92,18 @@
             (ihigh (cond ((null high) high)
                          ((integerp high) (if hxp (1- high) high))
                          (t (floor high)))))
-        (disjoin (range 'integer ilow nil ihigh nil)
+        (disjoin client
+                 (range 'integer ilow nil ihigh nil)
                  (range 'ratio low lxp high hxp)))))
 
-(defun float-range (low lxp high hxp)
+(defun float-range (client low lxp high hxp)
   (let ((lj (loop for (ty) in +floats+
                   for nl = (if low (coerce low ty) low)
                   for nh = (if high (coerce high ty) high)
                   collect (range ty nl lxp nh hxp))))
-    (apply #'disjoin lj)))
+    (apply #'disjoin client lj)))
 
-(defun range-ctype (kind low high env)
+(defun range-ctype (client kind low high env)
   (declare (ignore env))
   (let ((test (ecase kind
                 ((integer) #'integerp)
@@ -127,8 +129,8 @@
           (error-interval-designator high kind))
         (ecase kind
           ((integer) (range 'integer nlow lxp nhigh hxp))
-          ((rational) (rational-range nlow lxp nhigh hxp))
-          ((float) (float-range nlow lxp nhigh hxp))
+          ((rational) (rational-range client nlow lxp nhigh hxp))
+          ((float) (float-range client nlow lxp nhigh hxp))
           ((short-float) (range (if (assoc 'short-float +floats+)
                                     'short-float
                                     'single-float)
@@ -143,8 +145,9 @@
                         ((assoc 'double-float +floats+) 'double-float)
                         (t 'single-float))
                   nlow lxp nhigh hxp))
-          ((real) (disjoin (float-range nlow lxp nhigh hxp)
-                           (rational-range nlow lxp nhigh hxp))))))))
+          ((real) (disjoin client
+                           (float-range client nlow lxp nhigh hxp)
+                           (rational-range client nlow lxp nhigh hxp))))))))
 
 (defun complex-ctype (element-type env)
   (ccomplex (if (eq element-type '*)
@@ -202,7 +205,7 @@
 (defmethod coerce-to-values ((ctype ctype))
   (cvalues (list ctype) nil (top)))
 
-(defun function-ctype (ll rv env)
+(defun function-ctype (client ll rv env)
   (let ((ll (if (eq ll '*)
                 (make-instance 'lambda-list
                   :required nil :optional nil :rest (top)
@@ -210,7 +213,7 @@
                 (parse-lambda-list ll env)))
         (rv (if (eq rv '*)
                 (cvalues nil nil (top))
-                (values-specifier-ctype rv))))
+                (values-specifier-ctype client rv env))))
     (if (bot-p ll)
         ll
         (make-instance 'cfunction :lambda-list ll :returns rv))))
@@ -236,7 +239,7 @@
                    (setf rest (specifier-ctype elem env))))))
           finally (return (values (nreverse req) (nreverse opt) rest)))))
 
-(defun %fuzz-values-ctype (required optional rest)
+(defun %fuzz-values-ctype (client required optional rest)
   ;; CTYPE internally treats VALUES types with the strict semantics described
   ;; in the entry on the VALUES type. However, these semantics are not used in
   ;; any actual place in the language, and in particular, when used in THE
@@ -246,16 +249,16 @@
   ;;     not actually required.
   ;; If you want strict semantics, just make a CVALUES directly.
   (let* ((rest (or rest (top)))
-         (rpos (position-if-not (lambda (ct) (ctypep nil ct))
+         (rpos (position-if-not (lambda (ct) (ctypep client nil ct))
                                 required :from-end t))
          (rrpos (if rpos (1+ rpos) 0))
          (rreq (subseq required 0 rrpos))
          (ropt (append (nthcdr rrpos required) optional)))
     (values rreq ropt rest)))
 
-(defun parse-values-ctype (rest env)
+(defun parse-values-ctype (client rest env)
   (multiple-value-bind (req opt rest) (%parse-values-ctype rest env)
-    (multiple-value-bind (req opt rest) (%fuzz-values-ctype req opt rest)
+    (multiple-value-bind (req opt rest) (%fuzz-values-ctype client req opt rest)
       ;; Maybe should warn about this stuff too.
       (when (some #'bot-p req)
         (return-from parse-values-ctype (values-bot)))
@@ -269,22 +272,22 @@
     (error "Bad function name for ~a type: ~a" 'satisfies fname))
   (csatisfies fname))
 
-(defgeneric symbol-specifier-ctype (sym env))
+(defgeneric symbol-specifier-ctype (client sym env))
 ;;; We include all standard CL atomic type specifiers that either can be not
 ;;; classes (e.g. simple-bit-vector, nil), or which are or can be classes
 ;;; but which we would prefer a ctype for, like CONS.
 (macrolet ((def (sym &body body)
-             `(defmethod symbol-specifier-ctype ((sym (eql ',sym)) env)
-                (declare (ignore sym) (ignorable env))
+             `(defmethod symbol-specifier-ctype (client (sym (eql ',sym)) env)
+                (declare (ignore sym) (ignorable client env))
                 ,@body)))
   (def array (array-ctype :either '* '* env))
-  (def atom (negate (ccons (top) (top))))
+  (def atom (negate client (ccons (top) (top))))
   (def base-char (charset +base-charset+))
   (def base-string (array-ctype :either 'base-char '(*) env))
   (def bignum (disjunction
                (range 'integer nil nil (1- most-negative-fixnum) nil)
                (range 'integer (1+ most-positive-fixnum) nil nil nil)))
-  (def bit (range-ctype 'integer 0 1 env))
+  (def bit (range-ctype client 'integer 0 1 env))
   (def bit-vector (array-ctype :either 'bit '(*) env))
   (def boolean (cmember nil t))
   (def character (charset `((0 . ,(1- char-code-limit)))))
@@ -292,28 +295,30 @@
       (conjunction (function-top) (csatisfies 'compiled-function-p)))
   (def complex (complex-ctype '* env))
   (def cons (ccons (top) (top)))
-  (def double-float (range-ctype 'double-float '* '* env))
-  (def extended-char (conjoin (negate (charset +base-charset+))
+  (def double-float (range-ctype client 'double-float '* '* env))
+  (def extended-char (conjoin client
+                              (negate client (charset +base-charset+))
                               (charset `((0 . ,(1- char-code-limit))))))
   (def fixnum
-      (range-ctype 'integer most-negative-fixnum most-positive-fixnum env))
-  (def float (range-ctype 'float '* '* env))
+      (range-ctype client 'integer most-negative-fixnum most-positive-fixnum env))
+  (def float (range-ctype client 'float '* '* env))
   (def function (function-top))
-  (def integer (range-ctype 'integer '* '* env))
+  (def integer (range-ctype client 'integer '* '* env))
   (def keyword (conjunction (cclass (find-class 'symbol t env))
                             (csatisfies 'keywordp)))
   (def list (disjunction (cmember nil) (ccons (top) (top))))
-  (def long-float (range-ctype 'long-float '* '* env))
+  (def long-float (range-ctype client 'long-float '* '* env))
   (def nil (bot))
   (def null (cmember nil))
-  (def number (disjoin (range-ctype 'real '* '* env)
+  (def number (disjoin client
+                       (range-ctype client 'real '* '* env)
                        (complex-ctype '* env)))
   (def ratio (range 'ratio nil nil nil nil))
-  (def rational (range-ctype 'rational '* '* env))
-  (def real (range-ctype 'real '* '* env))
+  (def rational (range-ctype client 'rational '* '* env))
+  (def real (range-ctype client 'real '* '* env))
   ;; SEQUENCE is handled specially as a cclass.
-  (def short-float (range-ctype 'short-float '* '* env))
-  (def signed-byte (range-ctype 'integer '* '* env))
+  (def short-float (range-ctype client 'short-float '* '* env))
+  (def signed-byte (range-ctype client 'integer '* '* env))
   (def simple-array (array-ctype :simple '* '* env))
   (def simple-base-string (array-ctype :simple 'base-char '(*) env))
   (def simple-bit-vector (array-ctype :simple 'bit '(*) env))
@@ -322,40 +327,35 @@
              (loop for uaet in +string-uaets+
                    collect (array-ctype :simple uaet '(*) env))))
   (def simple-vector (array-ctype :simple 't '(*) env))
-  (def single-float (range-ctype 'single-float '* '* env))
+  (def single-float (range-ctype client 'single-float '* '* env))
   (def standard-char (charset +standard-charset+))
   (def string
       (apply #'disjoin
              (loop for uaet in +string-uaets+
                    collect (array-ctype :either uaet '(*) env))))
   (def t (top))
-  (def unsigned-byte (range-ctype 'integer 0 '* env))
+  (def unsigned-byte (range-ctype client 'integer 0 '* env))
   (def vector (array-ctype :either '* '(*) env)))
 
-(defmethod symbol-specifier-ctype ((sym symbol) env)
+(defmethod symbol-specifier-ctype (client (sym symbol) env)
   (let ((p (assoc sym +class-aliases+)))
     (if p
-        (specifier-ctype (second p) env)
+        (specifier-ctype client (second p) env)
         nil)))
 
 (defun class-specifier-ctype (class env)
   (declare (ignore env))
   (cclass class))
 
-(defgeneric cons-specifier-ctype (head rest env))
-
-(defun mapcar-rcurry (arguments function &rest lists)
-  (apply #'mapcar
-         (lambda (&rest args)
-           (multiple-value-call function (values-list args) (values-list arguments)))
-         lists))
+(defgeneric cons-specifier-ctype (client head rest env))
 
 (macrolet ((def ((head) &body body)
-             `(defmethod cons-specifier-ctype ((head (eql ',head)) rest env)
-                (declare (ignorable head rest env))
+             `(defmethod cons-specifier-ctype (client (head (eql ',head)) rest env)
+                (declare (ignorable head client rest env))
                 ,@body)))
   (def (and)
-      (apply #'conjoin (mapcar-rcurry (list env) #'specifier-ctype rest)))
+      (apply #'conjoin client
+             (mapcar (lambda (spec) (specifier-ctype client spec env)) rest)))
   (def (array)
       (destructuring-bind (&optional (et '*) (dims '*)) rest
         (array-ctype :either et dims env)))
@@ -370,49 +370,52 @@
         (complex-ctype et env)))
   (def (cons)
       (destructuring-bind (&optional (car '*) (cdr '*)) rest
-        (cons-ctype car cdr env)))
+        (cons-ctype client car cdr env)))
   (def (double-float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'double-float low high env)))
+        (range-ctype client 'double-float low high env)))
   (def (eql)
-      (destructuring-bind (object) rest (member-ctype (list object))))
+      (destructuring-bind (object) rest (member-ctype client (list object))))
   (def (float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'float low high env)))
+        (range-ctype client 'float low high env)))
   (def (function)
       (destructuring-bind (&optional (ll '*) (rv '*)) rest
-        (function-ctype ll rv env)))
+        (function-ctype client ll rv env)))
   (def (integer)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'integer low high env)))
+        (range-ctype client 'integer low high env)))
   (def (long-float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'long-float low high env)))
-  (def (member) (member-ctype rest))
+        (range-ctype client 'long-float low high env)))
+  (def (member) (member-ctype client rest))
   (def (mod)
       (destructuring-bind (n) rest
-        (range-ctype 'integer 0 (list n) env)))
+        (range-ctype client 'integer 0 (list n) env)))
   (def (not)
-      (destructuring-bind (spec) rest (negate (specifier-ctype spec env))))
-  (def (or) (apply #'disjoin (mapcar-rcurry (list env) #'specifier-ctype rest)))
+      (destructuring-bind (spec) rest
+        (negate client (specifier-ctype client spec env))))
+  (def (or)
+      (apply #'disjoin client
+             (mapcar (lambda (spec) (specifier-ctype client spec env)) rest)))
   (def (rational)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'rational low high env)))
+        (range-ctype client 'rational low high env)))
   (def (real)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'real low high env)))
+        (range-ctype client 'real low high env)))
   (def (satisfies)
       (destructuring-bind (fname) rest
         (satisfies-ctype fname)))
   (def (short-float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'short-float low high env)))
+        (range-ctype client 'short-float low high env)))
   (def (signed-byte)
       (destructuring-bind (&optional (s '*)) rest
         (if (eq s '*)
-            (range-ctype 'integer '* '* env)
+            (range-ctype client 'integer '* '* env)
             (let ((es (expt 2 (1- s))))
-              (range-ctype 'integer (- es) (1- es) env)))))
+              (range-ctype client 'integer (- es) (1- es) env)))))
   (def (simple-array)
       (destructuring-bind (&optional (et '*) (dims '*)) rest
         (array-ctype :simple et dims env)))
@@ -433,22 +436,22 @@
         (array-ctype :simple 't (list length) env)))
   (def (single-float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
-        (range-ctype 'single-float low high env)))
+        (range-ctype client 'single-float low high env)))
   (def (string)
       (destructuring-bind (&optional (length '*)) rest
-        (apply #'disjoin
+        (apply #'disjoin client
                (loop with l = (list length)
                      for uaet in +string-uaets+
                      collect (array-ctype :either uaet l env)))))
   (def (unsigned-byte)
       (destructuring-bind (&optional (s '*)) rest
-        (range-ctype 'integer 0
+        (range-ctype client 'integer 0
                      (if (eq s '*)
                          '*
                          (1- (expt 2 s)))
                      env)))
   (def (values)
-      (parse-values-ctype rest env))
+      (parse-values-ctype client rest env))
   (def (vector)
       (destructuring-bind (&optional (et '*) (length '*)) rest
         (array-ctype :either et (list length) env))))
@@ -552,14 +555,14 @@
                            ,body))))))
      ',name))
 
-(defun parse (specifier env)
+(defun parse (client specifier env)
   (flet ((regular-parse ()
            (let ((spec (typexpand specifier env)))
              (etypecase spec
-               (cons (cons-specifier-ctype (car spec) (cdr spec) env))
-               (symbol (or (symbol-specifier-ctype spec env)
+               (cons (cons-specifier-ctype client (car spec) (cdr spec) env))
+               (symbol (or (symbol-specifier-ctype client spec env)
                            (class-specifier-ctype (find-class spec t env) env)))
-               (class (symbol-specifier-ctype (class-name spec) env))))))
+               (class (symbol-specifier-ctype client (class-name spec) env))))))
     (if *parse-extended-types*
         (typecase specifier
           (cons (let* ((name (car specifier))
@@ -575,25 +578,25 @@
           (otherwise (regular-parse)))
         (regular-parse))))
 
-(defun specifier-ctype (specifier &optional env)
-  (let ((ct (parse specifier env)))
+(defun specifier-ctype (client specifier &optional env)
+  (let ((ct (parse client specifier env)))
     (when (typep ct 'cvalues)
       (error "Found ~s in non-~s context" (unparse ct) 'values))
     ct))
 
-(defun values-specifier-ctype (specifier &optional env)
-  (let ((ct (parse specifier env)))
+(defun values-specifier-ctype (client specifier &optional env)
+  (let ((ct (parse client specifier env)))
     (if (typep ct 'cvalues)
         ct
         ;; Treat X as (values X).
-        (parse-values-ctype `(,specifier) env))))
+        (parse-values-ctype client `(,specifier) env))))
 
-(defun extended-specifier-ctype (specifier &optional env)
+(defun extended-specifier-ctype (client specifier &optional env)
   "Return the ctype specified by the possibly extended SPECIFIER."
   (let ((*parse-extended-types* t))
-    (specifier-ctype specifier env)))
+    (specifier-ctype client specifier env)))
 
-(defun extended-values-specifier-ctype (specifier &optional env)
+(defun extended-values-specifier-ctype (client specifier &optional env)
   "Return the ctype specified by the possibly extended values SPECIFIER."
   (let ((*parse-extended-types* t))
-    (values-specifier-ctype specifier env)))
+    (values-specifier-ctype client specifier env)))

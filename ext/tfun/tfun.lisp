@@ -6,15 +6,24 @@
 (defun tfun (deriver)
   (make-instance 'tfun :deriver deriver))
 
-(defmethod conjointp ((ct1 tfun) (ct2 tfun)) (values nil t))
-(defmethod cofinitep ((ct tfun)) (values nil t))
+(defmethod conjointp (client (ct1 tfun) (ct2 tfun))
+  (declare (ignore client))
+  (values nil t))
+(defmethod cofinitep (client (ct tfun))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod subctypep ((ct1 tfun) (ct2 cfunction))
+(defmethod subctypep (client (ct1 tfun) (ct2 cfunction))
+  (declare (ignore client))
   (if (function-top-p ct2) (values t t) (values nil nil)))
-(defmethod subctypep ((ct1 cfunction) (ct2 tfun)) (values nil t))
-(define-commutative-method disjointp ((ct1 tfun) (ct2 cfunction))
+(defmethod subctypep (client (ct1 cfunction) (ct2 tfun))
+  (declare (ignore client))
+  (values nil t))
+(define-commutative-method disjointp (client (ct1 tfun) (ct2 cfunction))
+  (declare (ignore client))
   (if (function-top-p ct2) (values nil t) (values nil nil)))
-(define-commutative-method conjointp ((ct1 tfun) (ct2 cfunction))
+(define-commutative-method conjointp (client (ct1 tfun) (ct2 cfunction))
+  (declare (ignore client))
   (values nil t))
 
 (defexclusives tfun cclass ccomplex carray charset fpzero range)
@@ -68,16 +77,18 @@ Variables in the lambda list are bound to the values. For example, with a lambda
                  ;; specific code
                  (t ,@body)))))))
 
-(defmacro tlambda (name (&rest lambda-list) &body body)
+(defmacro tlambda (name (client &rest lambda-list) &body body)
   (let ((vtype (gensym "VALUES-TYPE")))
-    `(lambda (,vtype)
+    `(lambda (,client ,vtype)
+       (declare (ignorable ,client)) ; FIXME lazy
        (block ,name
          (destructure-tfunbind (,@lambda-list) ,vtype ,@body)))))
 
 (defparameter *tfuns* (make-hash-table :test #'equal))
 
-(defmacro define-tfun (name (&rest lambda-list) &body body)
-  `(setf (gethash ',name *tfuns*) (tfun (tlambda ,name ,lambda-list ,@body))))
+(defmacro define-tfun (name (client &rest lambda-list) &body body)
+  `(setf (gethash ',name *tfuns*)
+         (tfun (tlambda ,name (,client ,@lambda-list) ,@body))))
 
 (defun find-tfun (name &optional errorp)
   (cond ((gethash name *tfuns*))

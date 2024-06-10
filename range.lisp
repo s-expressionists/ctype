@@ -1,6 +1,7 @@
 (in-package #:ctype)
 
-(defmethod ctypep (object (ct range))
+(defmethod ctypep (client object (ct range))
+  (declare (ignore client))
   (and (range-kindp object (range-kind ct))
        (let ((low (range-low ct)))
          (or (not low)
@@ -13,7 +14,8 @@
                  (< object high)
                  (<= object high))))))
 
-(defmethod subctypep ((ct1 range) (ct2 range))
+(defmethod subctypep (client (ct1 range) (ct2 range))
+  (declare (ignore client))
   (values
    (and (eq (range-kind ct1) (range-kind ct2))
         (let ((low1 (range-low ct1)) (low2 (range-low ct2)))
@@ -32,7 +34,8 @@
                                 (not (range-high-exclusive-p ct2)))))))))
    t))
 
-(defmethod ctype= ((ct1 range) (ct2 range))
+(defmethod ctype= (client (ct1 range) (ct2 range))
+  (declare (ignore client))
   (values (and (eq (range-kind ct1) (range-kind ct2))
                (let ((low1 (range-low ct1)) (low2 (range-low ct2)))
                  (if low1
@@ -52,7 +55,8 @@
       (and high2 low1
            (or (< high2 low1) (and (= high2 low1) (or hxp2 lxp1))))))
 
-(defmethod disjointp ((ct1 range) (ct2 range))
+(defmethod disjointp (client (ct1 range) (ct2 range))
+  (declare (ignore client))
   (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
         (low1 (range-low ct1)) (low2 (range-low ct2))
         (lxp1 (range-low-exclusive-p ct1))
@@ -65,11 +69,16 @@
          (ranges-disjoint-p low1 lxp1 high1 hxp1 low2 lxp2 high2 hxp2))
      t)))
 
-(defmethod conjointp ((ct1 range) (ct2 range)) (values nil t))
+(defmethod conjointp (client (ct1 range) (ct2 range))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod cofinitep ((ct range)) (values nil t))
+(defmethod cofinitep (client (ct range))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod negate ((ct range))
+(defmethod negate (client (ct range))
+  (declare (ignore client))
   ;; (not (real x (y))) = (or (not real) (real * (x)) (real y *))
   (let* ((kind (range-kind ct))
          (negk (negation (range kind nil nil nil nil)))
@@ -82,7 +91,8 @@
           (high (disjunction negk (range kind high (not hxp) nil nil)))
           (t negk))))
 
-(defmethod conjoin/2 ((ct1 range) (ct2 range))
+(defmethod conjoin/2 (client (ct1 range) (ct2 range))
+  (declare (ignore client))
   (if (eq (range-kind ct1) (range-kind ct2))
       (multiple-value-bind (low lxp)
           (let ((low1 (range-low ct1)) (low2 (range-low ct2))
@@ -106,7 +116,8 @@
       ;; Different kinds of range - conjunction is empty
       (bot)))
 
-(defmethod disjoin/2 ((ct1 range) (ct2 range))
+(defmethod disjoin/2 (client (ct1 range) (ct2 range))
+  (declare (ignore client))
   (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
         (low1 (range-low ct1)) (low2 (range-low ct2))
         (lxp1 (range-low-exclusive-p ct1))
@@ -150,7 +161,8 @@
       (t ;; Ranges are not contiguous - give up
        nil))))
 
-(defmethod subtract ((ct1 range) (ct2 range))
+(defmethod subtract (client (ct1 range) (ct2 range))
+  (declare (ignore client))
   (let ((rk1 (range-kind ct1)) (rk2 (range-kind ct2))
         (low1 (range-low ct1)) (low2 (range-low ct2))
         (lxp1 (range-low-exclusive-p ct1))

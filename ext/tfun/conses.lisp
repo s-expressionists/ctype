@@ -42,7 +42,7 @@
                         (if ops
                             `(,(first ops) ,(rec (rest ops)))
                             'x)))
-               `(define-tfun ,name (x)
+               `(define-tfun ,name (c x)
                   (single-value ,(rec ops))))))
   (defcr car tcar)
   (defcr cdr tcdr)

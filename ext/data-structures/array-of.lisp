@@ -99,7 +99,7 @@
             '(and array (not simple-array))
             `(and (array ,@tail) (not simple-array))))))
 
-(defmethod ctypep ((object array) (ct carray-of))
+(defmethod ctypep (client (object array) (ct carray-of))
   (let ((element-ctype (carray-eaet ct))
         (dims (carray-dims ct)))
     (and (or (eq dims '*)
@@ -113,13 +113,15 @@
            (block check-elements-types
              (apply #'map-product
                     (lambda (&rest indexes)
-                      (unless (ctypep (apply #'aref object indexes) element-ctype)
+                      (unless (ctypep client (apply #'aref object indexes) element-ctype)
                         (return-from check-elements-types nil)))
                     all-indexes)
              t)))))
-(defmethod ctypep ((object t) (ct carray-of)) nil)
+(defmethod ctypep (client (object t) (ct carray-of))
+  (declare (ignore client))
+  nil)
 
-(defmethod subctypep ((ct1 carray-of) (ct2 carray-of))
+(defmethod subctypep (client (ct1 carray-of) (ct2 carray-of))
   (let ((element-ctype1 (carray-eaet ct1))
         (dims1 (carray-dims ct1))
         (simplicity1 (carray-simplicity ct1))
@@ -127,7 +129,7 @@
         (dims2 (carray-dims ct2))
         (simplicity2 (carray-simplicity ct2)))
     (and/tri
-     (subctypep element-ctype1 element-ctype2)
+     (subctypep client element-ctype1 element-ctype2)
      (values
       (and (eq simplicity1 simplicity2)
            (or (eq dims2 '*)
@@ -140,7 +142,7 @@
                                           (= dim1 dim2)))))))
       t))))
 
-(defmethod conjoin/2 ((array1 carray-of) (array2 carray-of))
+(defmethod conjoin/2 (client (array1 carray-of) (array2 carray-of))
   (let ((uaet1 (carray-uaet array1))
         (eaet1 (carray-eaet array1))
         (dims1 (carray-dims array1))
@@ -178,7 +180,7 @@
                                        (t (return-from conjoin/2 (bot))))))
                   (t ;; Rank mismatch
                    (return-from conjoin/2 (bot)))))
-          (new-eaet (conjoin eaet1 eaet2)))
+          (new-eaet (conjoin client eaet1 eaet2)))
       (if (bot-p new-eaet)
           (bot)
           (carray-of new-eaet new-dims new-uaet new-simplicity)))))

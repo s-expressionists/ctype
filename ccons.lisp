@@ -1,31 +1,37 @@
 (in-package #:ctype)
 
-(defmethod ctypep ((object cons) (ct ccons))
-  (and (ctypep (car object) (ccons-car ct))
-       (ctypep (cdr object) (ccons-cdr ct))))
-(defmethod ctypep ((object t) (ct ccons)) nil)
+(defmethod ctypep (client (object cons) (ct ccons))
+  (and (ctypep client (car object) (ccons-car ct))
+       (ctypep client (cdr object) (ccons-cdr ct))))
+(defmethod ctypep (client (object t) (ct ccons))
+  (declare (ignore client))
+  nil)
 
-(defmethod subctypep ((ct1 ccons) (ct2 ccons))
-  (and/tri (subctypep (ccons-car ct1) (ccons-car ct2))
-           (subctypep (ccons-cdr ct1) (ccons-cdr ct2))))
+(defmethod subctypep (client (ct1 ccons) (ct2 ccons))
+  (and/tri (subctypep client (ccons-car ct1) (ccons-car ct2))
+           (subctypep client (ccons-cdr ct1) (ccons-cdr ct2))))
 
-(defmethod ctype= ((ct1 ccons) (ct2 ccons))
-  (and/tri (ctype= (ccons-car ct1) (ccons-car ct2))
-           (ctype= (ccons-cdr ct1) (ccons-cdr ct2))))
+(defmethod ctype= (client (ct1 ccons) (ct2 ccons))
+  (and/tri (ctype= client (ccons-car ct1) (ccons-car ct2))
+           (ctype= client (ccons-cdr ct1) (ccons-cdr ct2))))
 
-(defmethod disjointp ((ct1 ccons) (ct2 ccons))
-  (or/tri (disjointp (ccons-car ct1) (ccons-car ct2))
-          (disjointp (ccons-cdr ct1) (ccons-cdr ct2))))
-(defmethod conjointp ((ct1 ccons) (ct2 ccons)) (values nil t))
+(defmethod disjointp (client (ct1 ccons) (ct2 ccons))
+  (or/tri (disjointp client (ccons-car ct1) (ccons-car ct2))
+          (disjointp client (ccons-cdr ct1) (ccons-cdr ct2))))
+(defmethod conjointp (client (ct1 ccons) (ct2 ccons))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod cofinitep ((ct1 ccons)) (values nil t))
+(defmethod cofinitep (client (ct1 ccons))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod negate ((ctype ccons))
+(defmethod negate (client (ctype ccons))
   ;; (not (cons a b))
   ;; = (or (not cons) (cons a (not b)) (cons (not a) b) (cons (not a) (not b)))
   ;; Or if A or B is the top type, some of these are eliminated.
   (let* ((car (ccons-car ctype)) (cdr (ccons-cdr ctype))
-         (ncar (negate car)) (ncdr (negate cdr)))
+         (ncar (negate client car)) (ncdr (negate client cdr)))
     (if (bot-p ncar)
         (if (bot-p ncdr)
             ;; (not cons)
@@ -47,11 +53,11 @@
                (ccons car ncdr)
                (ccons ncar top)))))))
 
-(defmethod conjoin/2 ((ct1 ccons) (ct2 ccons))
-  (ccons (conjoin (ccons-car ct1) (ccons-car ct2))
-         (conjoin (ccons-cdr ct1) (ccons-cdr ct2))))
+(defmethod conjoin/2 (client (ct1 ccons) (ct2 ccons))
+  (ccons (conjoin client (ccons-car ct1) (ccons-car ct2))
+         (conjoin client (ccons-cdr ct1) (ccons-cdr ct2))))
 
-(defmethod disjoin/2 ((ct1 ccons) (ct2 ccons))
+(defmethod disjoin/2 (client (ct1 ccons) (ct2 ccons))
   ;; (or (cons a b) (cons c d)) is in general a strict subtype of
   ;; (cons (or a b) (or c d)), which includes (cons a d) etc.
   ;; It can be written out more explicitly as
@@ -98,46 +104,46 @@
   ;; cons types are not disjoint.
   (let* ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
          (car2 (ccons-car ct2)) (cdr2 (ccons-cdr ct2)))
-    (cond ((ctype= car1 car2) (ccons car1 (disjoin cdr1 cdr2)))
-          ((ctype= cdr1 cdr2) (ccons (disjoin car1 car2) cdr1))
+    (cond ((ctype= client car1 car2) (ccons car1 (disjoin client cdr1 cdr2)))
+          ((ctype= client cdr1 cdr2) (ccons (disjoin client car1 car2) cdr1))
           ;; In the following, the subtractions should really never be bottom,
           ;; because one is a strict subtype of the other. If one is bottom it
           ;; would indicate that the simplifier (like conjoin/2) is smarter
           ;; than subctypep, which is unfortunate.
-          ((subctypep car1 car2)
-           (let ((car-2-1 (conjoin car2 (negate car1)))
-                 (reg (ccons car1 (disjoin cdr1 cdr2))))
+          ((subctypep client car1 car2)
+           (let ((car-2-1 (conjoin client car2 (negate client car1)))
+                 (reg (ccons car1 (disjoin client cdr1 cdr2))))
              (if (bot-p car-2-1)
                  reg
                  (disjunction reg (ccons car-2-1 cdr2)))))
-          ((subctypep car2 car1)
-           (let ((car-1-2 (conjoin car1 (negate car2)))
-                 (reg (ccons car2 (disjoin cdr1 cdr2))))
+          ((subctypep client car2 car1)
+           (let ((car-1-2 (conjoin client car1 (negate client car2)))
+                 (reg (ccons car2 (disjoin client cdr1 cdr2))))
              (if (bot-p car-1-2)
                  reg
                  (disjunction reg (ccons car-1-2 cdr1)))))
           ;; Give up unless we can prove nondisjointness.
-          ((multiple-value-bind (val1 surety1) (disjointp car1 car2)
+          ((multiple-value-bind (val1 surety1) (disjointp client car1 car2)
              (or val1
                  (not surety1)
-                 (multiple-value-bind (val2 surety2) (disjointp cdr1 cdr2)
+                 (multiple-value-bind (val2 surety2) (disjointp client cdr1 cdr2)
                    (or val2 (not surety2)))))
            nil)
-          ((subctypep cdr1 cdr2)
-           (let ((cdr-2-1 (conjoin cdr2 (negate cdr1)))
-                 (reg (ccons (disjoin car1 car2) cdr1)))
+          ((subctypep client cdr1 cdr2)
+           (let ((cdr-2-1 (conjoin client cdr2 (negate client cdr1)))
+                 (reg (ccons (disjoin client car1 car2) cdr1)))
              (if (bot-p cdr-2-1)
                  reg
                  (disjunction reg (ccons car2 cdr-2-1)))))
-          ((subctypep cdr2 cdr1)
-           (let ((cdr-1-2 (conjoin cdr1 (negate cdr2)))
-                 (reg (ccons (disjoin car1 car2) cdr2)))
+          ((subctypep client cdr2 cdr1)
+           (let ((cdr-1-2 (conjoin client cdr1 (negate client cdr2)))
+                 (reg (ccons (disjoin client car1 car2) cdr2)))
              (if (bot-p cdr-1-2)
                  reg
                  (disjunction reg (ccons car1 cdr-1-2)))))
           (t nil))))
 
-(defmethod subtract ((ct1 ccons) (ct2 ccons))
+(defmethod subtract (client (ct1 ccons) (ct2 ccons))
   ;; as in the negate method, (not (cons a b)) =
   ;; (or (not cons) (cons a (not b)) (cons (not a) b) (cons (not a) (not b)))
   ;; We're conjoining this with (cons c d).
@@ -154,18 +160,18 @@
   ;; (cons c (and d (not b))); if also d <: b this is 0.
   (let ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
         (car2 (ccons-car ct1)) (cdr2 (ccons-cdr ct2)))
-    (cond ((disjointp car1 car2) ct1)
-          ((disjointp cdr1 cdr2) ct1)
-          ((subctypep car1 car2)
-           (if (subctypep cdr1 cdr2)
+    (cond ((disjointp client car1 car2) ct1)
+          ((disjointp client cdr1 cdr2) ct1)
+          ((subctypep client car1 car2)
+           (if (subctypep client cdr1 cdr2)
                (bot)
-               (ccons car1 (conjoin cdr1 (negate cdr2)))))
+               (ccons car1 (conjoin client cdr1 (negate client cdr2)))))
           ((subctypep cdr1 cdr2)
-           (ccons (conjoin car1 (negate car2)) cdr1))
-          (t (let ((car1-2 (conjoin car1 (negate car2)))
-                   (cdr1-2 (conjoin cdr1 (negate cdr2))))
-               (disjunction (ccons (conjoin car1 car2) cdr1-2)
-                            (ccons car1-2 (conjoin cdr1 cdr2))
+           (ccons (conjoin client car1 (negate client car2)) cdr1))
+          (t (let ((car1-2 (conjoin client car1 (negate client car2)))
+                   (cdr1-2 (conjoin client cdr1 (negate client cdr2))))
+               (disjunction (ccons (conjoin client car1 car2) cdr1-2)
+                            (ccons car1-2 (conjoin client cdr1 cdr2))
                             (ccons car1-2 cdr1-2)))))))
 
 (defmethod unparse ((ct ccons))

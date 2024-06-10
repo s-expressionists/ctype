@@ -1,17 +1,21 @@
 (in-package #:ctype)
 
-(defmethod ctypep (object (ct cclass))
+(defmethod ctypep (client object (ct cclass))
+  (declare (ignore client))
   (subclassp (class-of object) (cclass-class ct)))
 
-(defmethod subctypep ((ct1 cclass) (ct2 cclass))
+(defmethod subctypep (client (ct1 cclass) (ct2 cclass))
   ;; NOTE: If ctypes are supposed to work in the face of future redefinitions,
   ;; this should return NIL NIL except with unredefinable classes.
-  (values (subclassp (cclass-class ct1) (cclass-class ct2)) t))
+  (values (subclassp client (cclass-class ct1) (cclass-class ct2)) t))
 
-(defmethod ctype= ((ct1 cclass) (ct2 cclass))
+(defmethod ctype= (client (ct1 cclass) (ct2 cclass))
+  (declare (ignore client))
   (values (eql (cclass-class ct1) (cclass-class ct2)) t))
 
-(defmethod cofinitep ((ct cclass)) (values nil t))
+(defmethod cofinitep (client (ct cclass))
+  (declare (ignore client))
+  (values nil t))
 
 ;;; These classes are defined as disjoint in CLHS 4.2.2.
 ;;; cons, array, number, and character are not handled as cclasses
@@ -27,7 +31,8 @@
         ;; be understood to be disjoint from user classes.
         (find-class 'structure-object) (find-class 'standard-object)))
 
-(defmethod disjointp ((ct1 cclass) (ct2 cclass))
+(defmethod disjointp (client (ct1 cclass) (ct2 cclass))
+  (declare (ignore client))
   ;; Pick off cases defined by 4.2.2.
   (let ((class1 (cclass-class ct1)) (class2 (cclass-class ct2)))
     (let ((supct1 (find class1 *disjoint-classes* :test #'subclassp))
@@ -36,15 +41,16 @@
           (values t t)
           (values nil nil)))))
 
-(defmethod conjoin/2 ((ct1 cclass) (ct2 cclass))
+(defmethod conjoin/2 (client (ct1 cclass) (ct2 cclass))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
     (cond ((eq c1 c2) ct1)
-          ((disjointp ct1 ct2) (bot))
+          ((disjointp client ct1 ct2) (bot))
           ;; These classes may have a common subclass. Who knows?
           ;; (Strictly speaking we could check...)
           (t nil))))
 
-(defmethod disjoin/2 ((ct1 cclass) (ct2 cclass))
+(defmethod disjoin/2 (client (ct1 cclass) (ct2 cclass))
+  (declare (ignore client))
   (let ((c1 (cclass-class ct1)) (c2 (cclass-class ct2)))
     (cond ((eq c1 c2) ct1)
           (t nil))))

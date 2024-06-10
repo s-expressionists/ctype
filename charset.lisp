@@ -2,7 +2,8 @@
 
 ;;;; a lot of the code in this file is cribbed from sbcl's character-set types.
 
-(defmethod ctypep (object (ct charset))
+(defmethod ctypep (client object (ct charset))
+  (declare (ignore client))
   (and (characterp object)
        (loop with code = (char-code object)
              for (begin . end) in (charset-pairs ct)
@@ -10,7 +11,8 @@
                return t
              finally (return nil))))
 
-(defmethod subctypep ((ct1 charset) (ct2 charset))
+(defmethod subctypep (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
   (values
    (flet ((subrangep (pair1 pair2)
             (let ((low1 (car pair1)) (high1 (cdr pair1))
@@ -21,10 +23,12 @@
            always (position pair1 pairs2 :test #'subrangep)))
    t))
 
-(defmethod ctype= ((ct1 charset) (ct2 charset))
+(defmethod ctype= (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
   (values (equal (charset-pairs ct1) (charset-pairs ct2)) t))
 
-(defmethod disjointp ((ct1 charset) (ct2 charset))
+(defmethod disjointp (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
   (values
    (flet ((overlap-p (pair1 pair2)
             (let ((low1 (car pair1)) (high1 (cdr pair1))
@@ -34,9 +38,13 @@
            for pair1 in (charset-pairs ct1)
            never (position pair1 pairs2 :test #'overlap-p)))
    t))
-(defmethod conjointp ((ct1 charset) (ct2 charset)) (values nil t))
+(defmethod conjointp (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod cofinitep ((ct charset)) (values nil t))
+(defmethod cofinitep (client (ct charset))
+  (declare (ignore client))
+  (values nil t))
 
 (defun negate-charset-pairs (pairs)
   (if (null pairs)
@@ -54,7 +62,8 @@
                               not-pairs))
                       (return (nreverse not-pairs))))))
 
-(defmethod negate ((ct charset))
+(defmethod negate (client (ct charset))
+  (declare (ignore client))
   (let ((pairs (charset-pairs ct)))
     (if (equal pairs `((0 . ,(1- char-code-limit))))
         (call-next-method)
@@ -117,7 +126,8 @@
       ;; which ought to have been normalized away, but as long as we're here
       nil))
 
-(defmethod conjoin/2 ((ct1 charset) (ct2 charset))
+(defmethod conjoin/2 (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
   (charset (conjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
 
 (defun disjoin-charset-pairs (pairs1 pairs2)
@@ -143,10 +153,12 @@
                (unless (or pairs1 pairs2)
                  (return (nreverse res)))))))))
 
-(defmethod disjoin/2 ((ct1 charset) (ct2 charset))
+(defmethod disjoin/2 (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
   (charset (disjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
 
-(defmethod subtract ((ct1 charset) (ct2 charset))
+(defmethod subtract (client (ct1 charset) (ct2 charset))
+  (declare (ignore client))
   ;; lazy
   (charset (conjoin-charset-pairs (charset-pairs ct1)
                                   (negate-charset-pairs (charset-pairs ct2)))))

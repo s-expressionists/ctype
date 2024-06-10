@@ -1,19 +1,19 @@
 (in-package #:ctype)
 
-(defmethod ctypep (object (ct disjunction))
+(defmethod ctypep (client object (ct disjunction))
   (loop for sct in (junction-ctypes ct)
-          thereis (ctypep object sct)))
+          thereis (ctypep client object sct)))
 
-(defmethod subctypep ((ct1 disjunction) (ct2 ctype))
+(defmethod subctypep (client (ct1 disjunction) (ct2 ctype))
   ;; if a ~<: z then a v b ~<: z as a <: a v b.
   ;; if a <: z and b <: z, a v b <: z, as can be seen from a <: z <=> a ^ z = a:
   ;; a v b <: z <=> (a v b) ^ z = a v b <=> (a ^ z) v (b ^ z) = a v b
   ;; this also covers the case of ct1 being bot.
-  (every/tri (lambda (sct) (subctypep sct ct2)) (junction-ctypes ct1)))
-(defmethod subctypep ((ct1 ctype) (ct2 disjunction))
+  (every/tri (lambda (sct) (subctypep client sct ct2)) (junction-ctypes ct1)))
+(defmethod subctypep (client (ct1 ctype) (ct2 disjunction))
   #+(or)
   (or/tri
-   (some/tri (lambda (sct) (subctypep ct1 sct)) (junction-ctypes ct2))
+   (some/tri (lambda (sct) (subctypep client ct1 sct)) (junction-ctypes ct2))
    (call-next-method))
   ;; a <: (z v y) <=> a ^ (z v y) = a <=> (a ^ z) v (a ^ y) = a
   ;; Obviously if a <: z this reduces to a v (a ^ y) = a which is true. Ditto y.
@@ -35,12 +35,13 @@
         with not-subtype = 0
         with not-subtype-and-not-disjoint = 0
         for sct in (junction-ctypes ct2)
-        do (multiple-value-bind (val subsurety) (subctypep ct1 sct)
+        do (multiple-value-bind (val subsurety) (subctypep client ct1 sct)
              (cond ((not subsurety) (setf surety nil))
                    (val (return (values t t)))
                    (surety ; if we're unsure, this fancier stuff is out
                     (incf not-subtype)
-                    (multiple-value-bind (val subsurety) (disjointp ct1 sct)
+                    (multiple-value-bind (val subsurety)
+                        (disjointp client ct1 sct)
                       (cond ((not subsurety) (setf surety nil))
                             ((not val) (incf not-subtype-and-not-disjoint)))))))
         finally (return (if (and surety
@@ -50,27 +51,30 @@
                             (values nil t)
                             (values nil nil)))))
 
-(define-commutative-method disjointp ((ct1 disjunction) (ct2 ctype))
+(define-commutative-method disjointp (client (ct1 disjunction) (ct2 ctype))
   ;; (a v b) ^ z = 0 <=> (a ^ z) v (b ^ z) = 0
-  (every/tri (lambda (sct) (disjointp sct ct2)) (junction-ctypes ct1)))
-(define-commutative-method conjointp ((ct1 disjunction) (ct2 ctype))
-  (if (some/tri (lambda (sct) (conjointp sct ct2)) (junction-ctypes ct1))
+  (every/tri (lambda (sct) (disjointp client sct ct2)) (junction-ctypes ct1)))
+(define-commutative-method conjointp (client (ct1 disjunction) (ct2 ctype))
+  (if (some/tri (lambda (sct) (conjointp client sct ct2)) (junction-ctypes ct1))
       (values t t)
       (values nil nil)))
 
-(defmethod negate ((ctype disjunction))
-  (apply #'conjoin (mapcar #'negate (junction-ctypes ctype))))
+(defmethod negate (client (ctype disjunction))
+  (apply #'conjoin
+         client
+         (mapcar (lambda (ct) (negate client ct)) (junction-ctypes ctype))))
 
-(defmethod disjoin/2 ((ct1 disjunction) (ct2 disjunction))
-  (apply #'disjoin (append (junction-ctypes ct1)
-                           (junction-ctypes ct2))))
-(define-commutative-method disjoin/2 ((ct1 disjunction) (ct2 ctype))
-  (apply #'disjoin ct2 (junction-ctypes ct1)))
+(defmethod disjoin/2 (client (ct1 disjunction) (ct2 disjunction))
+  (apply #'disjoin client (append (junction-ctypes ct1)
+                                  (junction-ctypes ct2))))
+(define-commutative-method disjoin/2 (client (ct1 disjunction) (ct2 ctype))
+  (apply #'disjoin client ct2 (junction-ctypes ct1)))
 
-(define-commutative-method conjoin/2 ((disjunction disjunction) (ctype ctype))
-  (apply #'disjoin
+(define-commutative-method conjoin/2
+    (client (disjunction disjunction) (ctype ctype))
+  (apply #'disjoin client
          (loop for sct in (junction-ctypes disjunction)
-               collect (conjoin sct ctype))))
+               collect (conjoin client sct ctype))))
 
 (defmethod unparse ((ct disjunction))
   (let ((ups (mapcar #'unparse (junction-ctypes ct))))

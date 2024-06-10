@@ -16,7 +16,8 @@
 ;;; preserved by all (or indeed most, far as I can tell) functions.
 
 (defun cjaux (fname params jclass funform)
-  (let ((type (gensym "TYPE")))
+  (let ((type (gensym "TYPE"))
+        (client (gensym "CLIENT")))
     `(progn
        ,@(loop with gclasses = (make-list (length params)
                                           :initial-element 'ctype)
@@ -28,8 +29,9 @@
                for args = (let ((g (copy-list params)))
                             (setf (nth i g) type)
                             g)
-               collect `(defmethod ,fname (,@(mapcar #'list params classes))
-                          (apply ,funform
+               collect `(defmethod ,fname (,client
+                                           ,@(mapcar #'list params classes))
+                          (apply ,funform ,client
                                  (mapcar (lambda (,type) (,fname ,@args))
                                          (junction-ctypes ,param))))))))
 
@@ -38,15 +40,17 @@
 (defmacro defdisjunctions (fname (&rest params))
   (cjaux fname params 'disjunction '#'disjoin))
 
-(defmacro defdefaults (fname (&rest params)
+(defmacro defdefaults (fname (client &rest params)
                        &optional (max-result '(top) mrp))
   `(progn
-     (defmethod ,fname (,@(loop for param in params
-                                collect `(,param ctype)))
+     (defmethod ,fname (,client ,@(loop for param in params
+                                       collect `(,param ctype)))
+       (declare (ignorable ,client))
        ,max-result)
      ,@(when mrp
-         `((defmethod ,fname :around (,@(loop for param in params
+         `((defmethod ,fname :around (,client
+                                      ,@(loop for param in params
                                               collect `(,param ctype)))
-             (conjoin (call-next-method) ,max-result))))
+             (conjoin ,client (call-next-method) ,max-result))))
      (defconjunctions ,fname (,@params))
      (defdisjunctions ,fname (,@params))))
