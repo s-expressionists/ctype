@@ -57,7 +57,9 @@
     :depends-on ("generic-functions" "trivalent" "create" "classes"
                                      "cfunction" "packages"))
    (:file "parse"
-    :depends-on ("generic-functions" "create" "classes" "config" "packages"))))
+    :depends-on ("generic-functions" "create" "classes" "config" "packages"))
+   (:file "interface"
+    :depends-on ("generic-functions" "parse" "packages"))))
 
 (asdf:defsystem :ctype/ext
   :license "BSD"

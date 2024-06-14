@@ -39,3 +39,9 @@
            #:lambda-list-aokp
            #:cfunction #:cfunction-lambda-list #:cfunction-returns
            #:csatisfies #:csatisfies-fname))
+
+(defpackage #:ctype-extrinsic
+  (:use #:cl)
+  (:shadow #:typep #:subtypep)
+  (:export #:*client*)
+  (:export #:typep #:subtypep #:specifier-ctype))
