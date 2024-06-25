@@ -4,7 +4,7 @@
   (let ((uaet (if (eq et '*)
                   et
                   (upgraded-array-element-type et env)))
-        (eaet (if (eq et '*) (top) (specifier-ctype et env)))
+        (eaet (if (eq et '*) (top) (specifier-ctype client et env)))
         (dims (cond ((eq dims '*) dims)
                     ((and (integerp dims) (>= dims 0))
                      (make-list dims :initial-element '*))
@@ -154,7 +154,7 @@
                 element-type
                 (upgraded-complex-part-type element-type env))))
 
-(defun %parse-lambda-list (ll env)
+(defun %parse-lambda-list (client ll env)
   (loop with state = :required
         with req with opt with rest with keyp with key with aokp
         for elem in ll
@@ -176,24 +176,24 @@
                 (error "Bad syntax in lambda-list ~a" ll))
               (setf state elem))
              (t (ecase state
-                  ((:required) (push (specifier-ctype elem env) req))
-                  ((&optional) (push (specifier-ctype elem env) opt))
+                  ((:required) (push (specifier-ctype client elem env) req))
+                  ((&optional) (push (specifier-ctype client elem env) opt))
                   ((&rest)
                    (when rest (error "Bad syntax in lambda-list ~a" ll))
-                   (setf rest (specifier-ctype elem env)))
+                   (setf rest (specifier-ctype client elem env)))
                   ((&key)
                    (destructuring-bind (keyword spec) elem
                      (unless (symbolp keyword)
                        (error "Bad syntax in lambda-list ~a" ll))
-                     (push (cons keyword (specifier-ctype spec env)) key)))
+                     (push (cons keyword (specifier-ctype client spec env)) key)))
                   ((&allow-other-keys)
                    (error "Bad syntax in lambda-list ~a" ll)))))
         finally (return (values (nreverse req) (nreverse opt)
                                 rest keyp key aokp))))
 
-(defun parse-lambda-list (ll env)
+(defun parse-lambda-list (client ll env)
   (multiple-value-bind (req opt rest keyp key aokp)
-      (%parse-lambda-list ll env)
+      (%parse-lambda-list client ll env)
     ;; I was going to have some checks of whether any of the types are bot,
     ;; but probably that merits a warning... or osmething... instead?
     (make-instance 'lambda-list
@@ -210,7 +210,7 @@
                 (make-instance 'lambda-list
                   :required nil :optional nil :rest (top)
                   :keyp nil :keys nil :aokp nil)
-                (parse-lambda-list ll env)))
+                (parse-lambda-list client ll env)))
         (rv (if (eq rv '*)
                 (cvalues nil nil (top))
                 (values-specifier-ctype client rv env))))
@@ -218,7 +218,7 @@
         ll
         (make-instance 'cfunction :lambda-list ll :returns rv))))
 
-(defun %parse-values-ctype (vest env)
+(defun %parse-values-ctype (client vest env)
   (flet ((fail () (error "Bad syntax in values type: ~a" vest)))
     (loop with state = :required
           with req with opt with rest
@@ -232,11 +232,11 @@
                 (setf state elem))
                (otherwise
                 (ecase state
-                  ((:required) (push (specifier-ctype elem env) req))
-                  ((&optional) (push (specifier-ctype elem env) opt))
+                  ((:required) (push (specifier-ctype client elem env) req))
+                  ((&optional) (push (specifier-ctype client elem env) opt))
                   ((&rest)
                    (when rest (fail))
-                   (setf rest (specifier-ctype elem env))))))
+                   (setf rest (specifier-ctype client elem env))))))
           finally (return (values (nreverse req) (nreverse opt) rest)))))
 
 (defun %fuzz-values-ctype (client required optional rest)
@@ -257,7 +257,7 @@
     (values rreq ropt rest)))
 
 (defun parse-values-ctype (client rest env)
-  (multiple-value-bind (req opt rest) (%parse-values-ctype rest env)
+  (multiple-value-bind (req opt rest) (%parse-values-ctype client rest env)
     (multiple-value-bind (req opt rest) (%fuzz-values-ctype client req opt rest)
       ;; Maybe should warn about this stuff too.
       (when (some #'bot-p req)
