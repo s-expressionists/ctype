@@ -43,10 +43,9 @@
   (apply #'cmember (union (cmember-members ct1) (cmember-members ct2))))
 
 (define-commutative-method disjoin/2 (client (cmember cmember) (ctype ctype))
-  (declare (ignore client))
   (let ((non (loop with diff = nil
                    for mem in (cmember-members cmember)
-                   if (ctypep mem ctype)
+                   if (ctypep client mem ctype)
                      do (setf diff t)
                    else
                      collect mem

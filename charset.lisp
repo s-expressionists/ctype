@@ -157,10 +157,9 @@
   (charset (disjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
 
 (defmethod subtract (client (ct1 charset) (ct2 charset))
-  (declare (ignore client))
   ;; lazy
   (charset (conjoin-charset-pairs (charset-pairs ct1)
-                                  (negate-charset-pairs (charset-pairs ct2)))))
+                                  (negate-charset-pairs client (charset-pairs ct2)))))
 
 (defmethod unparse ((ct charset))
   (let ((pairs (charset-pairs ct)))
