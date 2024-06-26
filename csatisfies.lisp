@@ -1,8 +1,7 @@
 (in-package #:ctype)
 
 (defmethod ctypep (client object (ct csatisfies))
-  (declare (ignore client))
-  (funcall (fdefinition (csatisfies-fname ct)) object))
+  (funcall (sfdefinition client (csatisfies-fname ct)) object))
 
 (defmethod subctypep (client (ct1 csatisfies) (ct2 csatisfies))
   (declare (ignore client))

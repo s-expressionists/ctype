@@ -1,9 +1,9 @@
 (in-package #:ctype)
 
-(defun array-ctype (simplicity et dims env)
+(defun array-ctype (client simplicity et dims env)
   (let ((uaet (if (eq et '*)
                   et
-                  (upgraded-array-element-type et env)))
+                  (upgraded-array-element-type client et env)))
         (eaet (if (eq et '*) (top) (specifier-ctype client et env)))
         (dims (cond ((eq dims '*) dims)
                     ((and (integerp dims) (>= dims 0))
@@ -14,7 +14,7 @@
                                  dims))
                      dims)
                     (t (error "Invalid dimension specification: ~a" dims)))))
-    (if +complex-arrays-exist-p+
+    (if (complex-arrays-distinct-p client)
         (if (eq simplicity :either)
             (disjunction (carray :simple uaet eaet dims)
                          (carray :complex uaet eaet dims))
@@ -35,32 +35,21 @@
   (apply
    #'disjoin
    client
-   (loop with shortp = (cdr (assoc 'short-float +floats+))
-         with singlep = (cdr (assoc 'single-float +floats+))
-         with doublep = (cdr (assoc 'double-float +floats+))
-         with longp = (cdr (assoc 'long-float +floats+))
-         for elem in elements
+   (loop for elem in elements
          collect (cond ((integerp elem) (range 'integer elem nil elem nil))
-                       ((ratiop elem) (range 'ratio elem nil elem nil))
+                       ((range-kindp client elem 'ratio)
+                        (range 'ratio elem nil elem nil))
                        ((characterp elem)
                         (let ((code (char-code elem)))
                           (charset (list (cons code code)))))
-                       ((and shortp (funcall shortp elem))
-                        (if (and +distinct-short-float-zeroes-p+ (zerop elem))
-                            (fpzero 'short-float elem)
-                            (range 'short-float elem nil elem nil)))
-                       ((and singlep (funcall singlep elem))
-                        (if (and +distinct-single-float-zeroes-p+ (zerop elem))
-                            (fpzero 'single-float elem)
-                            (range 'single-float elem nil elem nil)))
-                       ((and doublep (funcall doublep elem))
-                        (if (and +distinct-double-float-zeroes-p+ (zerop elem))
-                            (fpzero 'double-float elem)
-                            (range 'double-float elem nil elem nil)))
-                       ((and longp (funcall longp elem))
-                        (if (and +distinct-long-float-zeroes-p+ (zerop elem))
-                            (fpzero 'long-float elem)
-                            (range 'long-float elem nil elem nil)))
+                       ((floatp elem)
+                        (loop for type in (distinct-float-types client)
+                              when (range-kindp client elem type)
+                                return (if (and (zerop elem)
+                                                (distinct-zeroes-p client type))
+                                           (fpzero type elem)
+                                           (range type elem nil elem nil))
+                              finally (error "BUG in float type specialization")))
                        (t (cmember elem))))))
 
 (defun error-interval-designator (nondesignator &optional kind)
@@ -97,7 +86,7 @@
                  (range 'ratio low lxp high hxp)))))
 
 (defun float-range (client low lxp high hxp)
-  (let ((lj (loop for (ty) in +floats+
+  (let ((lj (loop for (ty) in (distinct-float-types client)
                   for nl = (if low (coerce low ty) low)
                   for nh = (if high (coerce high ty) high)
                   collect (range ty nl lxp nh hxp))))
@@ -105,54 +94,37 @@
 
 (defun range-ctype (client kind low high env)
   (declare (ignore env))
-  (let ((test (ecase kind
-                ((integer) #'integerp)
-                ((rational) #'rationalp)
-                ((float) #'floatp)
-                ((short-float)
-                 (or (cdr (assoc 'short-float +floats+))
-                     (cdr (assoc 'single-float +floats+))))
-                ((single-float) (cdr (assoc 'single-float +floats+)))
-                ((double-float)
-                 (or (cdr (assoc 'double-float +floats+))
-                     (cdr (assoc 'single-float +floats+))))
-                ((long-float)
-                 (or (cdr (assoc 'long-float +floats+))
-                     (cdr (assoc 'double-float +floats+))
-                     (cdr (assoc 'single-float +floats+))))
-                ((real) #'realp))))
+  (let* ((rkind (if (member kind
+                            '(short-float single-float double-float long-float))
+                    (reduce-float-type client kind)
+                    kind))
+         (test (ecase rkind
+                 ((integer) #'integerp)
+                 ((rational) #'rationalp)
+                 ((float) #'floatp)
+                 ((real) #'realp)
+                 ((ratio short-float single-float double-float long-float)
+                  (lambda (o) (range-kindp client o kind))))))
     (multiple-value-bind (nlow lxp) (parse-interval-designator low)
       (multiple-value-bind (nhigh hxp) (parse-interval-designator high)
         (unless (or (not nlow) (funcall test nlow))
           (error-interval-designator low kind))
         (unless (or (not nhigh) (funcall test nhigh))
           (error-interval-designator high kind))
-        (ecase kind
+        (ecase rkind
           ((integer) (range 'integer nlow lxp nhigh hxp))
           ((rational) (rational-range client nlow lxp nhigh hxp))
           ((float) (float-range client nlow lxp nhigh hxp))
-          ((short-float) (range (if (assoc 'short-float +floats+)
-                                    'short-float
-                                    'single-float)
-                                nlow lxp nhigh hxp))
-          ((single-float) (range 'single-float nlow lxp nhigh hxp))
-          ((double-float) (range (if (assoc 'double-float +floats+)
-                                     'double-float
-                                     'single-float)
-                                 nlow lxp nhigh hxp))
-          ((long-float)
-           (range (cond ((assoc 'long-float +floats+) 'long-float)
-                        ((assoc 'double-float +floats+) 'double-float)
-                        (t 'single-float))
-                  nlow lxp nhigh hxp))
           ((real) (disjoin client
                            (float-range client nlow lxp nhigh hxp)
-                           (rational-range client nlow lxp nhigh hxp))))))))
+                           (rational-range client nlow lxp nhigh hxp)))
+          ((short-float single-float double-float long-float)
+           (range rkind nlow lxp nhigh hxp)))))))
 
-(defun complex-ctype (element-type env)
+(defun complex-ctype (client element-type env)
   (ccomplex (if (eq element-type '*)
                 element-type
-                (upgraded-complex-part-type element-type env))))
+                (upgraded-complex-part-type client element-type env))))
 
 (defun %parse-lambda-list (client ll env)
   (loop with state = :required
@@ -280,31 +252,31 @@
              `(defmethod symbol-specifier-ctype (client (sym (eql ',sym)) env)
                 (declare (ignore sym) (ignorable client env))
                 ,@body)))
-  (def array (array-ctype :either '* '* env))
+  (def array (array-ctype client :either '* '* env))
   (def atom (negate client (ccons (top) (top))))
-  (def base-char (charset +base-charset+))
-  (def base-string (array-ctype :either 'base-char '(*) env))
+  (def base-char (charset (base-charset-pairs client)))
+  (def base-string (array-ctype client :either 'base-char '(*) env))
   (def bignum (disjunction
-               (range 'integer nil nil (1- most-negative-fixnum) nil)
-               (range 'integer (1+ most-positive-fixnum) nil nil nil)))
+               (range 'integer nil nil (1- (most-negative-fixnum client)) nil)
+               (range 'integer (1+ (most-positive-fixnum client)) nil nil nil)))
   (def bit (range-ctype client 'integer 0 1 env))
-  (def bit-vector (array-ctype :either 'bit '(*) env))
+  (def bit-vector (array-ctype client :either 'bit '(*) env))
   (def boolean (cmember nil t))
-  (def character (charset `((0 . ,(1- char-code-limit)))))
+  (def character (charset `((0 . ,(1- (char-code-limit client))))))
   (def compiled-function
       (conjunction (function-top) (csatisfies 'compiled-function-p)))
-  (def complex (complex-ctype '* env))
+  (def complex (complex-ctype client '* env))
   (def cons (ccons (top) (top)))
   (def double-float (range-ctype client 'double-float '* '* env))
   (def extended-char (conjoin client
-                              (negate client (charset +base-charset+))
-                              (charset `((0 . ,(1- char-code-limit))))))
-  (def fixnum
-      (range-ctype client 'integer most-negative-fixnum most-positive-fixnum env))
+                              (negate client (charset (base-charset-pairs client)))
+                              (charset `((0 . ,(1- (char-code-limit client)))))))
+  (def fixnum (range 'integer (most-negative-fixnum client) nil
+                     (most-positive-fixnum client) nil))
   (def float (range-ctype client 'float '* '* env))
   (def function (function-top))
   (def integer (range-ctype client 'integer '* '* env))
-  (def keyword (conjunction (cclass (find-class 'symbol t env))
+  (def keyword (conjunction (cclass (find-class client 'symbol t env))
                             (csatisfies 'keywordp)))
   (def list (disjunction (cmember nil) (ccons (top) (top))))
   (def long-float (range-ctype client 'long-float '* '* env))
@@ -312,35 +284,35 @@
   (def null (cmember nil))
   (def number (disjoin client
                        (range-ctype client 'real '* '* env)
-                       (complex-ctype '* env)))
+                       (complex-ctype client '* env)))
   (def ratio (range 'ratio nil nil nil nil))
   (def rational (range-ctype client 'rational '* '* env))
   (def real (range-ctype client 'real '* '* env))
   ;; SEQUENCE is handled specially as a cclass.
   (def short-float (range-ctype client 'short-float '* '* env))
   (def signed-byte (range-ctype client 'integer '* '* env))
-  (def simple-array (array-ctype :simple '* '* env))
-  (def simple-base-string (array-ctype :simple 'base-char '(*) env))
-  (def simple-bit-vector (array-ctype :simple 'bit '(*) env))
+  (def simple-array (array-ctype client :simple '* '* env))
+  (def simple-base-string (array-ctype client :simple 'base-char '(*) env))
+  (def simple-bit-vector (array-ctype client :simple 'bit '(*) env))
   (def simple-string
       (apply #'disjunction
-             (loop for uaet in +string-uaets+
-                   collect (array-ctype :simple uaet '(*) env))))
-  (def simple-vector (array-ctype :simple 't '(*) env))
+             (loop for uaet in (string-uaets client)
+                   collect (array-ctype client :simple uaet '(*) env))))
+  (def simple-vector (array-ctype client :simple 't '(*) env))
   (def single-float (range-ctype client 'single-float '* '* env))
-  (def standard-char (charset +standard-charset+))
+  (def standard-char (charset (standard-charset-pairs client)))
   (def string
       (apply #'disjoin
-             (loop for uaet in +string-uaets+
-                   collect (array-ctype :either uaet '(*) env))))
+             (loop for uaet in (string-uaets client)
+                   collect (array-ctype client :either uaet '(*) env))))
   (def t (top))
   (def unsigned-byte (range-ctype client 'integer 0 '* env))
-  (def vector (array-ctype :either '* '(*) env)))
+  (def vector (array-ctype client :either '* '(*) env)))
 
 (defmethod symbol-specifier-ctype (client (sym symbol) env)
-  (let ((p (assoc sym +class-aliases+)))
+  (let ((p (class-alias client sym)))
     (if p
-        (specifier-ctype client (second p) env)
+        (specifier-ctype client p env)
         nil)))
 
 (defun class-specifier-ctype (class env)
@@ -358,16 +330,16 @@
              (mapcar (lambda (spec) (specifier-ctype client spec env)) rest)))
   (def (array)
       (destructuring-bind (&optional (et '*) (dims '*)) rest
-        (array-ctype :either et dims env)))
+        (array-ctype client :either et dims env)))
   (def (base-string)
       (destructuring-bind (&optional (length '*)) rest
-        (array-ctype :either 'base-char (list length) env)))
+        (array-ctype client :either 'base-char (list length) env)))
   (def (bit-vector)
       (destructuring-bind (&optional (length '*)) rest
-        (array-ctype :either 'bit (list length) env)))
+        (array-ctype client :either 'bit (list length) env)))
   (def (complex)
       (destructuring-bind (&optional (et '*)) rest
-        (complex-ctype et env)))
+        (complex-ctype client et env)))
   (def (cons)
       (destructuring-bind (&optional (car '*) (cdr '*)) rest
         (cons-ctype client car cdr env)))
@@ -418,22 +390,22 @@
               (range-ctype client 'integer (- es) (1- es) env)))))
   (def (simple-array)
       (destructuring-bind (&optional (et '*) (dims '*)) rest
-        (array-ctype :simple et dims env)))
+        (array-ctype client :simple et dims env)))
   (def (simple-base-string)
       (destructuring-bind (&optional (length '*)) rest
-        (array-ctype :simple 'base-char (list length) env)))
+        (array-ctype client :simple 'base-char (list length) env)))
   (def (simple-bit-vector)
       (destructuring-bind (&optional (length '*)) rest
-        (array-ctype :simple 'bit (list length) env)))
+        (array-ctype client :simple 'bit (list length) env)))
   (def (simple-string)
       (destructuring-bind (&optional (length '*)) rest
         (apply #'disjunction
                (loop with l = (list length)
-                     for uaet in +string-uaets+
-                     collect (array-ctype :simple uaet l env)))))
+                     for uaet in (string-uaets client)
+                     collect (array-ctype client :simple uaet l env)))))
   (def (simple-vector)
       (destructuring-bind (&optional (length '*)) rest
-        (array-ctype :simple 't (list length) env)))
+        (array-ctype client :simple 't (list length) env)))
   (def (single-float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
         (range-ctype client 'single-float low high env)))
@@ -441,8 +413,8 @@
       (destructuring-bind (&optional (length '*)) rest
         (apply #'disjoin client
                (loop with l = (list length)
-                     for uaet in +string-uaets+
-                     collect (array-ctype :either uaet l env)))))
+                     for uaet in (string-uaets client)
+                     collect (array-ctype client :either uaet l env)))))
   (def (unsigned-byte)
       (destructuring-bind (&optional (s '*)) rest
         (range-ctype client 'integer 0
@@ -454,7 +426,7 @@
       (parse-values-ctype client rest env))
   (def (vector)
       (destructuring-bind (&optional (et '*) (length '*)) rest
-        (array-ctype :either et (list length) env))))
+        (array-ctype client :either et (list length) env))))
 
 (defvar *parse-extended-types* nil
   "When `t', `specifier-ctype' will parse extended types. Use
@@ -557,11 +529,12 @@
 
 (defun parse (client specifier env)
   (flet ((regular-parse ()
-           (let ((spec (typexpand specifier env)))
+           (let ((spec (typexpand client specifier env)))
              (etypecase spec
                (cons (cons-specifier-ctype client (car spec) (cdr spec) env))
                (symbol (or (symbol-specifier-ctype client spec env)
-                           (class-specifier-ctype (find-class spec t env) env)))
+                           (class-specifier-ctype
+                            (find-class client spec t env) env)))
                (class (symbol-specifier-ctype client (class-name spec) env))))))
     (if *parse-extended-types*
         (typecase specifier

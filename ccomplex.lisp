@@ -1,8 +1,7 @@
 (in-package #:ctype)
 
 (defmethod ctypep (client (object complex) (ct ccomplex))
-  (declare (ignore client))
-  (complex-ucptp object (ccomplex-ucpt ct)))
+  (complex-ucptp client object (ccomplex-ucpt ct)))
 (defmethod ctypep (client (object t) (ct ccomplex))
   (declare (ignore client))
   nil)

@@ -46,9 +46,9 @@
   (declare (ignore client))
   (values nil t))
 
-(defun negate-charset-pairs (pairs)
+(defun negate-charset-pairs (client pairs)
   (if (null pairs)
-      `((0 . ,(1- char-code-limit)))
+      `((0 . ,(1- (char-code-limit client))))
       (let ((not-pairs nil))
         (when (plusp (caar pairs))
           (push (cons 0 (1- (caar pairs))) not-pairs))
@@ -57,22 +57,21 @@
               for low2 = (caadr tail)
               until (null (rest tail))
               do (push (cons (1+ high1) (1- low2)) not-pairs)
-              finally (when (< (cdar tail) (1- char-code-limit))
-                        (push (cons (1+ (cdar tail)) (1- char-code-limit))
+              finally (when (< (cdar tail) (1- (char-code-limit client)))
+                        (push (cons (1+ (cdar tail)) (1- (char-code-limit client)))
                               not-pairs))
                       (return (nreverse not-pairs))))))
 
 (defmethod negate (client (ct charset))
-  (declare (ignore client))
   (let ((pairs (charset-pairs ct)))
-    (if (equal pairs `((0 . ,(1- char-code-limit))))
+    (if (equal pairs `((0 . ,(1- (char-code-limit client)))))
         (call-next-method)
         (let ((not-character
                 (negation
-                 (charset `((0 . ,(1- char-code-limit)))))))
+                 (charset `((0 . ,(1- (char-code-limit client))))))))
           (disjunction
            not-character
-           (charset (negate-charset-pairs pairs)))))))
+           (charset (negate-charset-pairs client pairs)))))))
 
 (defun conjoin-charset-pairs (pairs1 pairs2)
   (if (and pairs1 pairs2)
@@ -165,15 +164,17 @@
 
 (defmethod unparse ((ct charset))
   (let ((pairs (charset-pairs ct)))
-    (cond ((equal pairs +standard-charset+)
+    ;; Using a nil client is wrong, but I don't know about giving unparse
+    ;; a client parameter just for this.
+    (cond ((equal pairs (standard-charset-pairs nil))
            'standard-char)
-          ((equal pairs +base-charset+)
+          ((equal pairs (base-charset-pairs nil))
            'base-char)
-          ((equal pairs `((0 . ,(1- char-code-limit))))
+          ((equal pairs `((0 . ,(1- (char-code-limit nil)))))
            'character)
-          ((equal pairs (negate-charset-pairs +standard-charset+))
+          ((equal pairs (negate-charset-pairs (standard-charset-pairs nil)))
            '(and character (not standard-char)))
-          ((equal pairs (negate-charset-pairs +base-charset+))
+          ((equal pairs (negate-charset-pairs (base-charset-pairs nil)))
            'extended-char)
           (t ; something weird. do a member type.
            `(member

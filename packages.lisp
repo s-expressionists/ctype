@@ -15,6 +15,18 @@
            #:define-commutative-method
            #:define-extended-type
            #:+complex-arrays-exist-p+)
+  ;; Client customization
+  (:shadow #:most-positive-fixnum #:most-negative-fixnum
+           #:upgraded-complex-part-type #:upgraded-array-element-type
+           #:find-class #:char-code-limit)
+  (:export #:most-positive-fixnum #:most-negative-fixnum
+           #:upgraded-complex-part-type #:upgraded-array-element-type
+           #:find-class #:subclassp #:class-alias #:sfdefinition
+           #:reduce-float-type #:distinct-float-types #:distinct-zeroes-p
+           #:range-kindp #:complex-ucptp
+           #:simple-array-p #:complex-arrays-distinct-p #:string-uaets
+           #:standard-charset-pairs #:base-charset-pairs #:char-code-limit
+           #:typexpand)
   ;; Interface to interrogate information about types.
   ;; EXPERIMENTAL, SUBJECT TO CHANGE.
   (:export #:ctype
