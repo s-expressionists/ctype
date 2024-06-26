@@ -7,7 +7,7 @@
 (defmethod subctypep (client (ct1 conjunction) (ct2 ctype))
   ;; This is dual to the (ctype disjunction) method in disjunction.lisp.
   ;; Check that comment if you want to see how this works.
-  ;; Knowing conjointness is much rarer than knowing conjointness, but does
+  ;; Knowing conjointness is much rarer than knowing disjointness, but does
   ;; happen occasionally; an example is that we can know that
   ;; (subtypep '(and (not integer) (not cons)) 'integer) => NIL, T
   (loop with surety = t
