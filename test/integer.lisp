@@ -2,6 +2,7 @@
 ;;;; Author:   Paul Dietz
 ;;;; Created:  Sat Feb 15 11:54:05 2003
 ;;;; Contains: Tests for subtype relationships on integer types
+;;;; Adapted from ANSI tests' subtypep-integer.lsp.
 
 (in-package #:ctype.test)
 

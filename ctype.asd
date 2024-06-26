@@ -91,4 +91,5 @@
   ((:module "test"
     :components ((:file "packages")
                  (:file "framework" :depends-on ("packages"))
-                 (:file "integer" :depends-on ("framework" "packages"))))))
+                 (:file "integer" :depends-on ("framework" "packages"))
+                 (:file "member" :depends-on ("framework" "packages"))))))

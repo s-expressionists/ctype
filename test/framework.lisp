@@ -24,7 +24,7 @@
 
 (defmacro is-type= (s1 s2)
   `(let ((s1 ,s1) (s2 ,s2))
-     (let ((t1 (specifier-ctype ,s1)) (t2 (specifier-ctype ,s2)))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
        (5am:is (equal '(t t) (multiple-value-list (ctype= t1 t2)))
                "~s is not equal to ~s" s1 s2)
        (5am:is (equal '(t t) (multiple-value-list (subctypep t1 t2)))
@@ -32,9 +32,26 @@
        (5am:is (equal '(t t) (multiple-value-list (subctypep t2 t1)))
                "~s is not a subtype of ~s" s2 s1))))
 
+(defmacro is-subtype (s1 s2)
+  `(let ((s1 ,s1) (s2 ,s2))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
+       (5am:is (equal '(t t) (multiple-value-list (subctypep t1 t2)))
+               "~s is not a subtype of ~s" s1 s2))))
+
+;;; Like IS-SUBTYPEP but allows NIL NIL.
+(defmacro is-maybe-subtype (s1 s2)
+  `(let ((s1 ,s1) (s2 ,s2))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
+       (5am:is (not (equal '(nil t) (multiple-value-list (subctypep t1 t2))))))))
+
+(defmacro is-maybe-not-subtype (s1 s2)
+  `(let ((s1 ,s1) (s2 ,s2))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
+       (5am:is (not (equal '(t t) (multiple-value-list (subctypep t1 t2))))))))
+
 (defmacro is-strict-subtype (s1 s2)
   `(let ((s1 ,s1) (s2 ,s2))
-     (let ((t1 (specifier-ctype ,s1)) (t2 (specifier-ctype ,s2)))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
        (5am:is (equal '(t t) (multiple-value-list (subctypep t1 t2)))
                "~s is not a subtype of ~s" s1 s2)
        (5am:is (equal '(nil t) (multiple-value-list (subctypep t2 t1)))
@@ -58,7 +75,7 @@
 
 (defmacro is-disjoint (s1 s2)
   `(let ((s1 ,s1) (s2 ,s2))
-     (let ((t1 (specifier-ctype ,s1)) (t2 (specifier-ctype ,s2)))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
        (5am:is (equal '(nil t) (multiple-value-list (subctypep t1 t2)))
                "~s is a subtype of ~s" s1 s2)
        (5am:is (equal '(nil t) (multiple-value-list (subctypep t2 t1)))
