@@ -22,7 +22,7 @@
 
 (5am:def-test integer.subtype.simple () ; originally 1-24
   (is-strict-subtype '(integer 0 10) '(integer 0 20)) ; 1
-  (is-strict-subtype '(integer 0 10) '(integer 0 (10)))
+  (is-strict-subtype '(integer 0 (10)) '(integer 0 10))
   (is-strict-subtype '(integer 10 100) 'integer)
   (is-strict-subtype '(integer 10 100) '(integer))
   (is-strict-subtype '(integer 10 100) '(integer *))
