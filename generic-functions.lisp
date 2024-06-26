@@ -81,13 +81,18 @@
 
 (defgeneric unparse (ctype))
 
+(defun specifier (ctype)
+  ;; If we've saved the original specifier use that.
+  ;; Otherwise try to compute a reasonable unparse.
+  (or (%specifier ctype) (unparse ctype)))
+
 (defmethod print-object ((ct ctype) stream)
-  (multiple-value-bind (unparse failure)
-      (ignore-errors (unparse ct))
+  (multiple-value-bind (specifier failure)
+      (ignore-errors (specifier ct))
     (if failure
         (call-next-method)
         (print-unreadable-object (ct stream :type t)
-          (write unparse :stream stream))))
+          (write specifier :stream stream))))
   ct)
 
 (macrolet

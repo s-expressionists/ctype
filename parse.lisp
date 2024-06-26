@@ -555,10 +555,12 @@
   (let ((ct (parse client specifier env)))
     (when (typep ct 'cvalues)
       (error "Found ~s in non-~s context" (unparse ct) 'values))
+    (setf (%specifier ct) specifier)
     ct))
 
 (defun values-specifier-ctype (client specifier &optional env)
   (let ((ct (parse client specifier env)))
+    (setf (%specifier ct) specifier)
     (if (typep ct 'cvalues)
         ct
         ;; Treat X as (values X).

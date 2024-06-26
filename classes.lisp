@@ -1,6 +1,7 @@
 (in-package #:ctype)
 
-(defclass ctype () ())
+(defclass ctype ()
+  ((%specifier :accessor %specifier :initform nil)))
 (defmethod make-load-form ((obj ctype) &optional env)
   (make-load-form-saving-slots obj :environment env))
 
