@@ -82,3 +82,13 @@
        (:file "numbers" :depends-on ("util" "tfun" "packages"))
        (:file "conses" :depends-on ("util" "tfun" "packages"))
        (:file "arrays" :depends-on ("util" "tfun" "packages"))))))))
+
+(defsystem :ctype/test
+  :author "Bike <aesthaer@gmail.com>"
+  :maintainer "Bike <aeshtaer@gmail.com>"
+  :depends-on (:ctype :fiveam)
+  :components
+  ((:module "test"
+    :components ((:file "packages")
+                 (:file "framework" :depends-on ("packages"))
+                 (:file "integer" :depends-on ("framework" "packages"))))))
