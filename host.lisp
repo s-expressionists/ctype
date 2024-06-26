@@ -54,6 +54,10 @@
   (declare (ignore client))
   (cl:upgraded-complex-part-type specifier env))
 
+(defmethod upgraded-array-element-type (client specifier &optional env)
+  (declare (ignore client))
+  (cl:upgraded-array-element-type specifier env))
+
 (let ((complex-arrays-distinct-p (not (cl:subtypep 'array 'simple-array))))
   (defmethod complex-arrays-distinct-p (client)
     (declare (ignore client))
