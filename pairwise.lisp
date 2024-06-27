@@ -214,6 +214,11 @@
 (definfinite ccomplex)
 (definfinite carray)
 (definfinite cfunction)
+;;; User classes can always have more instances and so are always infinite.
+;;; A few standard classes have a finite number of elements, such as
+;;; NULL, various character types, and real ranges, but we canonicalize these
+;;; as non-cclasses.
+(definfinite cclass)
 
 ;; T is also infinite
 (defmethod subctypep (client (ct1 conjunction) (ct2 cmember))
