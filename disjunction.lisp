@@ -58,6 +58,10 @@
   (if (some/tri (lambda (sct) (conjointp client sct ct2)) (junction-ctypes ct1))
       (values t t)
       (values nil nil)))
+(defmethod conjointp (client (ct1 disjunction) (ct2 disjunction))
+  (if (and (null (junction-ctypes ct1)) (null (junction-ctypes ct2)))
+      (values nil t)
+      (values nil nil)))
 
 (defmethod negate (client (ctype disjunction))
   (apply #'conjoin

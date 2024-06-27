@@ -36,6 +36,13 @@
   ;; this also covers the case of ct2 being top.
   (every/tri (lambda (sct) (subctypep client ct1 sct)) (junction-ctypes ct2)))
 
+(defmethod disjointp (client (ct1 conjunction) (ct2 conjunction))
+  ;; I don't know if there's a better method here, but at least make sure that
+  ;; (disjointp t t) => NIL T
+  (if (and (null (junction-ctypes ct1)) (null (junction-ctypes ct2)))
+      (values nil t)
+      (values nil nil)))
+
 (define-commutative-method disjointp (client (ct1 conjunction) (ct2 ctype))
   ;; if a ^ z = 0 then a ^ b ^ z = 0.
   ;; doesn't follow the other way, though.
