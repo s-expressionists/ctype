@@ -378,7 +378,10 @@
         (range-ctype client 'real low high env)))
   (def (satisfies)
       (destructuring-bind (fname) rest
-        (satisfies-ctype fname)))
+        (let ((alias (satisfies-alias client fname)))
+          (if alias
+              (specifier-ctype client alias env)
+              (satisfies-ctype fname)))))
   (def (short-float)
       (destructuring-bind (&optional (low '*) (high '*)) rest
         (range-ctype client 'short-float low high env)))

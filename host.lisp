@@ -319,3 +319,24 @@
                  (sicl-array:vector-unsigned-byte-64 (vector (unsigned-byte 64)))
                  (sicl-array:vector-signed-byte-64 (vector (signed-byte 64))))))
   #-(or abcl ccl clasp cmucl ecl sbcl sicl) ()) ; guess!
+
+(defmethod satisfies-alias (client function-name)
+  (declare (ignore client))
+  (second
+   (assoc function-name
+          '((arrayp array) (atom atom) (bit-vector-p bit-vector)
+            (characterp character)
+            ;; compiled-function may be defined in terms of satisfies
+            ;; so we skip it.
+            (consp cons) (floatp float) (functionp function)
+            (hash-table-p hash-table) (integerp integer)
+            ;; keyword may be defined in terms of satisfies so we skip it.
+            (listp list) (numberp number) (packagep package)
+            (pathnamep pathname) (random-state-p random-state)
+            (rationalp rational) (readtablep readtable) (realp real)
+            (simple-bit-vector-p simple-bit-vector)
+            (simple-string-p simple-string) (simple-vector-p simple-vector)
+            (streamp stream) (stringp string) (symbolp symbol)
+            ;; standard-char-p isn't really a type predicate since it
+            ;; only accepts characters.
+            (vectorp vector)))))

@@ -20,6 +20,8 @@
 (defgeneric subclassp (client class1 class2))
 (defgeneric class-alias (client class-name))
 
+(defgeneric satisfies-alias (client function-name))
+
 (defgeneric standard-charset-pairs (client))
 (defgeneric base-charset-pairs (client))
 (defgeneric char-code-limit (client))
