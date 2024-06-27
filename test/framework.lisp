@@ -13,6 +13,8 @@
 
 (defun disjointp (t1 t2)
   (ctype:disjointp ctype-extrinsic:*client* t1 t2))
+(defun conjointp (t1 t2)
+  (ctype:conjointp ctype-extrinsic:*client* t1 t2))
 
 (defun most-positive-fixnum ()
   (ctype:most-positive-fixnum ctype-extrinsic:*client*))
@@ -74,6 +76,22 @@
      (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
        (%surely-subtypep s1 s2 t1 t2)
        (%surely-not-subtypep s2 s1 t2 t1))))
+
+;;; Check that ctype doesn't pretend to know anything about the relation.
+(defmacro %unsurely-is (op string s1 s2 t1 t2)
+  `(multiple-value-bind (sub surety) (,op ,t1 ,t2)
+     (5am:is (equal '(nil nil) (list sub surety))
+             "~s is ~a~a ~s"
+             ,s1 (if sub "" "not ") ,string ,s2)))
+
+(defmacro is-unknown (s1 s2)
+  `(let ((s1 ,s1) (s2 ,s2))
+     (let ((t1 (specifier-ctype s1)) (t2 (specifier-ctype s2)))
+       (%unsurely-is subctypep "a subtype of" s1 s2 t1 t2)
+       (%unsurely-is subctypep "a subtype of" s2 s1 t2 t1)
+       (%unsurely-is ctype= "equal to" s1 s2 t1 t2)
+       (%unsurely-is disjointp "disjoint to" s1 s2 t1 t2)
+       (%unsurely-is conjointp "conjoint to" s1 s2 t1 t2))))
 
 (defmacro are-strict-subtypes ((&rest s1) (&rest s2))
   `(progn
