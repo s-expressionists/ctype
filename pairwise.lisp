@@ -215,6 +215,13 @@
 (definfinite carray)
 (definfinite cfunction)
 
+;; T is also infinite
+(defmethod subctypep (client (ct1 conjunction) (ct2 cmember))
+  (let ((cts (junction-ctypes ct1)))
+    (if (null cts)
+        (values nil t)
+        (values nil nil))))
+
 ;; note that e.g. (cons (eql 1) (eql 1)) is still infinite, since you can keep
 ;; calling cons to get fresh conses of (1 . 1).
 (defmethod subctypep (client (ct1 ccons) (ct2 cmember))
