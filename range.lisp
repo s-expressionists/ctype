@@ -33,6 +33,33 @@
                                 (not (range-high-exclusive-p ct2)))))))))
    t))
 
+;;; If we have a finite range, we can check subctypep by exhaustion on ctypep.
+;;; This is important for things like (subtypep '(member 10) whatever).
+;;; The only finite ranges are integer ranges and single numbers.
+;;; ("finite" in the sense of "has a finite number of elements")
+;;; The limit is to avoid effectively hanging given large ranges
+;;; (e.g. (subtypep 'fixnum '(satisfies minusp))).
+;;; The number is made up, could maybe be customizable or something.
+(defconstant +finite-range-limit+ #.(ash 1 16))
+
+(defmethod subctypep (client (ct1 range) (ct2 ctype))
+  (cond ((and (eql (range-low ct1) (range-high ct1))
+              (range-low ct1) ; not unbounded
+              (not (range-low-exclusive-p ct1))
+              (not (range-high-exclusive-p ct1)))
+         (values (ctypep client (range-low ct1) ct2) t))
+        ((and (eq (range-kind ct1) 'integer) (range-low ct1) (range-high ct1)
+              (< (- (range-high ct1) (range-low ct1)) +finite-range-limit+))
+         (values (loop for i from (if (range-low-exclusive-p ct1)
+                                      (1+ (range-low ct1))
+                                      (range-low ct1))
+                         to (if (range-high-exclusive-p ct1)
+                                (1- (range-high ct1))
+                                (range-high ct1))
+                       always (ctypep client i ct2))
+                 t))
+        (t (values nil nil))))
+
 (defmethod ctype= (client (ct1 range) (ct2 range))
   (declare (ignore client))
   (values (and (eq (range-kind ct1) (range-kind ct2))
@@ -67,6 +94,24 @@
      (or (not (eq rk1 rk2))
          (ranges-disjoint-p low1 lxp1 high1 hxp1 low2 lxp2 high2 hxp2))
      t)))
+
+(define-commutative-method disjointp (client (ct1 range) (ct2 ctype))
+  (cond ((and (eql (range-low ct1) (range-high ct1))
+              (range-low ct1)
+              (not (range-low-exclusive-p ct1))
+              (not (range-high-exclusive-p ct1)))
+         (values (not (ctypep client (range-low ct1) ct2)) t))
+        ((and (eq (range-kind ct1) 'integer) (range-low ct1) (range-high ct1)
+              (< (- (range-high ct1) (range-low ct1)) +finite-range-limit+))
+         (values (loop for i from (if (range-low-exclusive-p ct1)
+                                      (1+ (range-low ct1))
+                                      (range-low ct1))
+                         to (if (range-high-exclusive-p ct1)
+                                (1- (range-high ct1))
+                                (range-high ct1))
+                       never (ctypep client i ct2))
+                 t))
+        (t (values nil nil))))
 
 (defmethod conjointp (client (ct1 range) (ct2 range))
   (declare (ignore client))
