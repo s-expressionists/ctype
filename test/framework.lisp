@@ -20,6 +20,8 @@
   (ctype:most-positive-fixnum ctype-extrinsic:*client*))
 (defun most-negative-fixnum ()
   (ctype:most-negative-fixnum ctype-extrinsic:*client*))
+(defun upgraded-array-element-type (specifier)
+  (ctype:upgraded-array-element-type ctype-extrinsic:*client* specifier))
 
 (defun specifier-ctype (specifier)
   (ctype-extrinsic:specifier-ctype specifier))
@@ -98,6 +100,11 @@
      ,@(loop for sub in s1
              nconc (loop for super in s2
                          collect `(is-strict-subtype ',sub ',super)))))
+
+(defmacro are-type= (&rest specs)
+  `(progn ,@(loop for (spec1 . rest) on specs
+                  nconc (loop for spec2 in rest
+                              collect `(is-type= ',spec1 ',spec2)))))
 
 (defmacro is-unordered (s1 s2)
   `(let ((s1 ,s1) (s2 ,s2))

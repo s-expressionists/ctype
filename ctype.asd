@@ -93,4 +93,5 @@
                  (:file "framework" :depends-on ("packages"))
                  (:file "integer" :depends-on ("framework" "packages"))
                  (:file "member" :depends-on ("framework" "packages"))
-                 (:file "cons" :depends-on ("framework" "packages"))))))
+                 (:file "cons" :depends-on ("framework" "packages"))
+                 (:file "array" :depends-on ("framework" "packages"))))))

@@ -10,12 +10,8 @@
 (5am:in-suite cons)
 
 (5am:def-test cons.id () ; subtypep.cons.1
-  (macrolet ((are-type= (&rest specs)
-               `(progn ,@(loop for (spec1 . rest) on specs
-                               nconc (loop for spec2 in rest
-                                           collect `(is-type= ',spec1 ',spec2))))))
-    (are-type= cons (cons) (cons *) (cons * *) (cons t) (cons t t)
-               (cons t *) (cons * t))))
+  (are-type= cons (cons) (cons *) (cons * *) (cons t) (cons t t)
+             (cons t *) (cons * t)))
 
 (5am:def-test cons.bottom () ; subtypep.cons.2, 35-37
   (macrolet ((are-bot (&rest specs)
