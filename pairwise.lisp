@@ -302,6 +302,18 @@
                               (range k zero t high hxp)))))
         nil)))
 
+;;; Try to answer some (subtypep t '(not ...)) and (subtypep '(not ...) nil)
+;;; negatively.
+;;; These should always terminate since we're removing a negation.
+(defmethod subctypep (client (ct1 conjunction) (ct2 negation))
+  (if (null (junction-ctypes ct1))
+      (subctypep client (negation-ctype ct2) (bot))
+      (values nil nil)))
+(defmethod subctypep (client (ct1 negation) (ct2 disjunction))
+  (if (null (junction-ctypes ct2))
+      (subctypep client (top) (negation-ctype ct1))
+      (values nil nil)))
+
 ;;; This is sort of the hardest method - including both
 ;;; (subtypep t ...) and (subtypep ... nil), which are hard problems in general.
 ;;; If you're wondering, the (disjunction conjunction) is easy - the methods on
