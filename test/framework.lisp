@@ -22,6 +22,8 @@
   (ctype:most-negative-fixnum ctype-extrinsic:*client*))
 (defun upgraded-array-element-type (specifier)
   (ctype:upgraded-array-element-type ctype-extrinsic:*client* specifier))
+(defun distinct-zeroes-p (format)
+  (ctype:distinct-zeroes-p ctype-extrinsic:*client* format))
 
 (defun specifier-ctype (specifier)
   (ctype-extrinsic:specifier-ctype specifier))
