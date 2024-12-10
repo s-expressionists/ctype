@@ -1,7 +1,14 @@
 (in-package #:ctype)
 
 (declaim (inline ratiop))
-(defun ratiop (object) (typep object 'ratio))
+
+(defgeneric ratiop (object))
+
+(defmethod ratiop (object)
+  nil)
+
+(defmethod ratiop ((object ratio))
+  t)
 
 (define-constant +floats+
     '((single-float . sicl-arithmetic:single-float-p)
