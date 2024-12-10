@@ -37,5 +37,6 @@
            #:lambda-list #:lambda-list-required #:lambda-list-optional
            #:lambda-list-rest #:lambda-list-keyp #:lambda-list-key
            #:lambda-list-aokp
+           #:sub-lambda-list-p
            #:cfunction #:cfunction-lambda-list #:cfunction-returns
            #:csatisfies #:csatisfies-fname))
