@@ -8,7 +8,7 @@
    `nil'."))
 
 (defmethod property-ctype ((plist cproperty-list) property-key)
-  (or (cdr (assoc key (key-ctypes property-key)))
+  (or (cdr (assoc property-key (key-ctypes plist)))
       (ctype:top)))
 
 (defmethod keys ((plist cproperty-list))
@@ -29,8 +29,9 @@
 
 (define-extended-type plist (&rest property-ctypes &environment env)
   :documentation
-  "A property list where the `second' of each PROPERTY-CTYPE is the type of
-  the `first' key of each PROPERTY-CTYPE."
+  "A property list where the keys are the keys of the members of this
+ type and the values are the required types of the property
+ associated with the key."
   :simple ((declare (ignore property-ctypes env))
            'list)
   :extended
