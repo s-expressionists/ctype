@@ -4,8 +4,12 @@
 (defun ratiop (object) (core:ratiop object))
 
 (define-constant +floats+
-    '((single-float . core:single-float-p)
-      (double-float . core:double-float-p))
+    '(#+short-float
+      (short-float . core:short-float-p)
+      (single-float . core:single-float-p)
+      (double-float . core:double-float-p)
+      #+long-float
+      (long-float . core:long-float-p))
   :test #'equal)
 
 (define-constant +standard-charset+ '((10 . 10) (32 . 126)) :test #'equal)

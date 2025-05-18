@@ -6,6 +6,7 @@
 (define-constant +floats+
     '((single-float . si:single-float-p)
       (double-float . si:double-float-p)
+      #+long-float
       (long-float . si:long-float-p))
   :test #'equal)
 
