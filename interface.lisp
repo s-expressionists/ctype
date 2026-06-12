@@ -15,3 +15,10 @@
 
 (defun specifier-ctype (type-specifier &optional environment)
   (ctype:specifier-ctype *client* type-specifier environment))
+
+(defun upgraded-array-element-type
+    (type-specifier &optional environment)
+  (ctype:upgraded-array-element-type *client* type-specifier environment))
+(defun upgraded-complex-part-type
+    (type-specifier &optional environment)
+  (ctype:upgraded-complex-part-type *client* type-specifier environment))

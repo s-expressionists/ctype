@@ -54,6 +54,8 @@
 
 (defpackage #:ctype-extrinsic
   (:use #:cl)
-  (:shadow #:typep #:subtypep)
+  (:shadow #:typep #:subtypep
+           #:upgraded-array-element-type #:upgraded-complex-part-type)
   (:export #:*client*)
-  (:export #:typep #:subtypep #:specifier-ctype))
+  (:export #:typep #:subtypep #:specifier-ctype
+           #:upgraded-array-element-type #:upgraded-complex-part-type))

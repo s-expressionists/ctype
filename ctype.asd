@@ -82,3 +82,36 @@
        (:file "numbers" :depends-on ("util" "tfun" "packages"))
        (:file "conses" :depends-on ("util" "tfun" "packages"))
        (:file "arrays" :depends-on ("util" "tfun" "packages"))))))))
+
+(defsystem #:ctype/test
+  :author ("Bike <aeshtaer@gmail.com>")
+  :depends-on (#:ctype #:fiveam)
+  :components
+  ((:module "test"
+    :components ((:file "packages")
+                 (:file "rt" :depends-on ("packages"))
+                 (:file "suites" :depends-on ("packages"))
+                 (:module "ansi"
+                  :depends-on ("suites" "rt" "packages")
+                  :components ((:file "aux")
+                               (:file "subtypep-array"
+                                :depends-on ("aux"))
+                               (:file "subtypep-complex"
+                                :depends-on ("aux"))
+                               (:file "subtypep-cons"
+                                :depends-on ("aux"))
+                               (:file "subtypep-eql"
+                                :depends-on ("aux"))
+                               (:file "subtypep-float"
+                                :depends-on ("aux"))
+                               (:file "subtypep-function"
+                                :depends-on ("aux"))
+                               (:file "subtypep-integer"
+                                :depends-on ("aux"))
+                               (:file "subtypep-member"
+                                :depends-on ("aux"))
+                               (:file "subtypep-rational"
+                                :depends-on ("aux"))
+                               (:file "subtypep-real"
+                                :depends-on ("aux"))
+                               (:file "subtypep" :depends-on ("aux"))))))))
