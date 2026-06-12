@@ -101,6 +101,7 @@
                          when j
                            do (return-from ,name
                                 (apply #',name
+                                       client
                                        (append (substitute j ctype2 rest
                                                            :count 1)
                                                unsimplified))))
