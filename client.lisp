@@ -18,7 +18,10 @@
 
 (defgeneric find-class (client class-name &optional errorp env))
 (defgeneric subclassp (client class1 class2))
-(defgeneric class-alias (client class-name))
+(defgeneric class-aliases (client))
+
+(defun class-alias (client name)
+  (second (assoc name (class-aliases client))))
 
 (defgeneric standard-charset-pairs (client))
 (defgeneric base-charset-pairs (client))
