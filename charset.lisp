@@ -160,10 +160,9 @@
   (charset (disjoin-charset-pairs (charset-pairs ct1) (charset-pairs ct2))))
 
 (defmethod subtract (client (ct1 charset) (ct2 charset))
-  (declare (ignore client))
   ;; lazy
   (charset (conjoin-charset-pairs (charset-pairs ct1)
-                                  (negate-charset-pairs (charset-pairs ct2)))))
+                                  (negate-charset-pairs client (charset-pairs ct2)))))
 
 (defmethod unparse ((ct charset))
   (let ((pairs (charset-pairs ct)))
@@ -175,9 +174,9 @@
            'base-char)
           ((equal pairs `((0 . ,(1- (char-code-limit nil)))))
            'character)
-          ((equal pairs (negate-charset-pairs (standard-charset-pairs nil)))
+          ((equal pairs (negate-charset-pairs nil (standard-charset-pairs nil)))
            '(and character (not standard-char)))
-          ((equal pairs (negate-charset-pairs (base-charset-pairs nil)))
+          ((equal pairs (negate-charset-pairs nil (base-charset-pairs nil)))
            'extended-char)
           (t ; something weird. do a member type.
            `(member
