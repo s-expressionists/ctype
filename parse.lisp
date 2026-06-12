@@ -535,7 +535,8 @@
                (symbol (or (symbol-specifier-ctype client spec env)
                            (class-specifier-ctype
                             (find-class client spec t env) env)))
-               (class (symbol-specifier-ctype client (class-name spec) env))))))
+               (class (or (symbol-specifier-ctype client (class-name spec) env)
+                        (class-specifier-ctype spec env)))))))
     (if *parse-extended-types*
         (typecase specifier
           (cons (let* ((name (car specifier))
