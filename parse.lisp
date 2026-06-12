@@ -86,7 +86,7 @@
                  (range 'ratio low lxp high hxp)))))
 
 (defun float-range (client low lxp high hxp)
-  (let ((lj (loop for (ty) in (distinct-float-types client)
+  (let ((lj (loop for ty in (distinct-float-types client)
                   for nl = (if low (coerce low ty) low)
                   for nh = (if high (coerce high ty) high)
                   collect (range ty nl lxp nh hxp))))
