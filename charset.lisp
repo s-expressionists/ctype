@@ -135,9 +135,12 @@
     ((not pairs2) pairs1)
     (t
      (let ((res nil))
-       (loop (let* ((current (if (> (caar pairs2) (caar pairs1))
-                                 (pop pairs1)
-                                 (pop pairs2)))
+       (loop (let* ((current
+                      (cond ((not pairs2) (pop pairs1))
+                            ((not pairs1) (pop pairs2))
+                            ((> (caar pairs2) (caar pairs1))
+                             (pop pairs1))
+                            (t (pop pairs2))))
                     (low (car current)) (high (cdr current)))
                ;; Keep grabbing overlapping pairs until we run out.
                (loop (cond ((and pairs1
