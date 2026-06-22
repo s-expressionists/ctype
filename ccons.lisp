@@ -159,14 +159,14 @@
   ;; If c <: a, (and c a) = c and (and c (not a)) = 0, so we have
   ;; (cons c (and d (not b))); if also d <: b this is 0.
   (let ((car1 (ccons-car ct1)) (cdr1 (ccons-cdr ct1))
-        (car2 (ccons-car ct1)) (cdr2 (ccons-cdr ct2)))
+        (car2 (ccons-car ct2)) (cdr2 (ccons-cdr ct2)))
     (cond ((disjointp client car1 car2) ct1)
           ((disjointp client cdr1 cdr2) ct1)
           ((subctypep client car1 car2)
            (if (subctypep client cdr1 cdr2)
                (bot)
                (ccons car1 (conjoin client cdr1 (negate client cdr2)))))
-          ((subctypep cdr1 cdr2)
+          ((subctypep client cdr1 cdr2)
            (ccons (conjoin client car1 (negate client car2)) cdr1))
           (t (let ((car1-2 (conjoin client car1 (negate client car2)))
                    (cdr1-2 (conjoin client cdr1 (negate client cdr2))))
