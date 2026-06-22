@@ -61,6 +61,8 @@
    ;; or * indicating nothing specified.
    (%dims :initarg :dims :reader carray-dims :type (or list (eql *)))))
 
+(defclass csequence (ctype) ())
+
 (defclass charset (ctype)
   ((%pairs :initarg :pairs :reader charset-pairs
            ;; A list of (char-code . char-code) pairs, each representing

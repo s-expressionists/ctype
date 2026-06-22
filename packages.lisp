@@ -43,6 +43,7 @@
            #:fpzero #:fpzero-kind #:fpzero-zero
            #:ccomplex #:ccomplex-ucpt
            #:cmember #:cmember-members
+           #:csequence
            #:carray #:carray-simplicity
            #:carray-uaet #:carray-eaet #:carray-dims
            #:charset #:charset-pairs

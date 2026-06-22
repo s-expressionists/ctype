@@ -35,6 +35,8 @@
     :depends-on ("generic-functions" "create" "classes" "packages"))
    (:file "carray"
     :depends-on ("generic-functions" "create" "classes" "client" "packages"))
+   (:file "csequence"
+    :depends-on ("generic-functions" "create" "classes" "client" "packages"))
    (:file "charset"
     :depends-on ("generic-functions" "create" "classes" "client" "packages"))
    (:file "cvalues"

@@ -291,7 +291,7 @@
   (def ratio (range 'ratio nil nil nil nil))
   (def rational (range-ctype client 'rational '* '* env))
   (def real (range-ctype client 'real '* '* env))
-  ;; SEQUENCE is handled specially as a cclass.
+  (def sequence (make-instance 'csequence))
   (def short-float (range-ctype client 'short-float '* '* env))
   (def signed-byte (range-ctype client 'integer '* '* env))
   (def simple-array (array-ctype client :simple '* '* env))
