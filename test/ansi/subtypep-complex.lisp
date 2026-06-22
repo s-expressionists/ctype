@@ -85,6 +85,33 @@
             (unless (equal result '(t t))
               (list (list :case4 t1 t2 ucpt1 ucpt2 result)))))))))))
 
+#|
+The standard's definition of subtypep on complex types seems broken.
+In CLHS COMPLEX it says:
+
+> (complex type-specifier) refers to all complexes that can result from giving numbers of type type-specifier to the function complex, plus all other complexes of the same specialized representation.
+
+So, say (single-float 0.0 1.0) upgrades to single-float, and (float 0.0 1.0) upgrades to float. Then we can pass a (single-float 0.0 1.0) to COMPLEX like (complex 0.5 0.5), and the object we get back is all of a (complex (single-float 0.0 1.0)), (complex single-float), and (complex float). (complex 2.0 2.0) is _also_ a (complex (single-float 0.0 1.0)) if (eql 2.0) upgrades to single-float, since then it's "of the same specialized representation".
+
+In short, it seems like (complex T1) is a subtype of (complex T2) iff T1 is a subtype of T2. However, under subtypep the standard says:
+
+>  For all type-specifiers T1 and T2 other than *,
+> (subtypep '(complex T1) '(complex T2)) → true, true
+> if:
+>    1. T1 is a subtype of T2, or
+>    2. (upgraded-complex-part-type 'T1) and (upgraded-complex-part-type 'T2) return two different type specifiers that always refer to the same sets of objects; in this case, (complex T1) and (complex T2) both refer to the same specialized representation.
+> The values are false and true otherwise.
+> The form
+> (subtypep '(complex single-float) '(complex float))
+> must return true in all implementations, but
+> (subtypep '(array single-float) '(array float))
+> returns true only in implementations that do not have a specialized array representation for single floats distinct from that for other floats.
+
+Now this makes no sense to me. In particular point 2 seems to say that if T1 is not a subtype of T2, (complex T1) is only a subtype of (complex T2) if (u-c-p-t T1) and (u-c-p-t T2) return **different specifiers for the same type**. What on earth? Why? Or am I supposed to not take the "different" literally, so (complex T1) is only a subtype of (complex T2) if (u-c-p-t T1) and (u-c-p-t T2) are the **same** type, as with array upgrading? Except that unlike array upgrading, (complex T1) is also a subtype of (complex T2) if T1 is a subtype of T2, so complex types need to track the expressed element type as well.
+
+I don't get it so I'm going to leave this for now.
+|#
+#+(or)
 (deftest subtypep-complex.8
   (let ((types (reverse
                 '(bit fixnum bignum integer unsigned-byte rational ratio
