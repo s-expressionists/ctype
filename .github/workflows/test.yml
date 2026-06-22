@@ -1,0 +1,49 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.host }} / ${{ matrix.mode }}
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+        - sbcl
+
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Install SBCL
+      if: matrix.host == 'sbcl'
+      run: |
+        sudo apt-get update
+        sudo apt install -y sbcl
+
+    - name: Install Quicklisp
+      run: |
+        curl -kLO https://beta.quicklisp.org/quicklisp.lisp
+        sbcl --non-interactive --load quicklisp.lisp --eval "(quicklisp-quickstart:install)" --eval "(ql-util:without-prompting (ql:add-to-init-file))"
+    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        path: ctype
+
+    - name: Configure ASDF to find everything
+      run: |
+        mkdir -p $HOME/.config/common-lisp/source-registry.conf.d
+        echo "(:TREE #P\"${{ github.workspace }}/\")" > $HOME/.config/common-lisp/source-registry.conf.d/ctype.conf
+
+    - name: Run tests
+      run: |
+        sbcl --non-interactive --load "${{ github.workspace }}/ctype/test/script.lisp"
