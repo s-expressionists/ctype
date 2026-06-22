@@ -31,13 +31,6 @@
   (defrange~ double-float)
   (defrange~ long-float))
 
-(defmethod complex-ucptp (client (object complex) ucpt)
-  (declare (ignore client) (ignorable ucpt))
-  (cl:typep object `(complex ,ucpt)))
-(defmethod complex-ucptp (client object ucpt)
-  (declare (ignore client object ucpt))
-  nil)
-
 (macrolet ((defsap (&environment e)
              ;; simple-array is a type in the standard, so it may or may not
              ;; correspond to a class.

@@ -42,9 +42,7 @@
    (%zero :initarg :zero :reader fpzero-zero :type float)))
 
 (defclass ccomplex (ctype)
-  (;; The upgraded complex part type is some thing that can be meaningfully
-   ;; compared with EQUAL. CL:* is always allowed and has the standard meaning.
-   (%ucpt :initarg :ucpt :reader ccomplex-ucpt)))
+  ((%ucpt :initarg :ucpt :reader ccomplex-ucpt :type ctype)))
 
 (defclass cmember (ctype)
   ((%members :initarg :members :reader cmember-members :type list)))

@@ -6,7 +6,6 @@
 (defgeneric reduce-float-type (client type))
 (defgeneric distinct-float-types (client))
 (defgeneric distinct-zeroes-p (client type))
-(defgeneric complex-ucptp (client object upgraded-complex-part-type))
 (defgeneric upgraded-complex-part-type (client type-specifier
 					&optional environment))
 

@@ -50,8 +50,6 @@
   nil)
 
 (defun check-complex-upgrading (t1 t2)
-  (declare (ignore t1 t2))
-  #+(or)
   (let* ((ucpt1 (upgraded-complex-part-type t1))
          (ucpt2 (upgraded-complex-part-type t2))
          (result (multiple-value-list

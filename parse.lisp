@@ -123,8 +123,11 @@
 
 (defun complex-ctype (client element-type env)
   (ccomplex (if (eq element-type '*)
-                element-type
-                (upgraded-complex-part-type client element-type env))))
+                (top)
+                (specifier-ctype
+                 client
+                 (upgraded-complex-part-type client element-type env)
+                 env))))
 
 (defun %parse-lambda-list (client ll env)
   (loop with state = :required
