@@ -2,6 +2,19 @@
 
 ;;; Various helpers from ANSI tests' ansi-aux.lsp, universe.lsp, etc.
 
+(defun notnot (x) (not (not x)))
+
+;;; The function SUBTYPEP should return two generalized booleans.
+;;; This auxiliary function returns booleans instead
+;;; (which makes it easier to write tests).
+;;; ctype subtypep should always return two booleans anyway,
+;;; but we keep the looser semantics.
+;;;
+(defun subtypep* (type1 type2)
+  (apply #'values
+         (mapcar #'notnot
+                 (multiple-value-list (subtypep type1 type2)))))
+
 (defparameter *array-element-types*
   '(t (integer 0 0)
       bit (unsigned-byte 8) (unsigned-byte 16)
@@ -197,8 +210,6 @@
 (defparameter *types-list3*
   (reduce #'append *disjoint-types-list2* :from-end t))
 
-(defun notnot (x) (not (not x)))
-
 (defun trim-list (list n)
   (let ((len (length list)))
     (if (<= len n) list
@@ -216,18 +227,6 @@
   (and (or (is-builtin-class c1)
            (is-builtin-class c2))
        (check-disjointness c1 c2)))
-
-;;;
-;;; The function SUBTYPEP should return two generalized booleans.
-;;; This auxiliary function returns booleans instead
-;;; (which makes it easier to write tests).
-;;; ctype subtypep should always return two booleans anyway,
-;;; but we keep the looser semantics.
-;;;
-(defun subtypep* (type1 type2)
-  (apply #'values
-         (mapcar #'notnot
-                 (multiple-value-list (subtypep type1 type2)))))
 
 (defun check-subtypep (type1 type2 is-sub &optional should-be-valid)
   (multiple-value-bind
