@@ -51,9 +51,9 @@
                           for ej = (elt sequence j)
                             thereis (funcall function ei ej)))))
 
-(define-tfun = (num1 &rest tail)
+(define-tfun = (client num1 &rest tail)
   (let ((tys (all-rest-values tail))
-        (false (specifier-ctype 'null)))
+        (false (specifier-ctype client 'null)))
     (single-value
      (cond
        ;; If some pair of types is disjoint, always false.
@@ -61,7 +61,7 @@
        ;; If every type is a constant, e.z.
        ((every #'constant-type-p tys)
         (if (apply #'= (mapcar #'constant-type-value tys))
-            (negate false)
+            (negate client false)
             false))
        ;; If some types are constant we may still eke out a false.
        ((some #'constant-type-p tys)
@@ -82,12 +82,12 @@
 ;;; so that, e.g.,
 ;;; (< (the (integer 10 11) x) (the integer y) (the (integer 0 5) z)) is caught
 ;;; Failing that, it gives up and returns unknown.
-(defun order (function types)
+(defun order (function client types)
   (loop with total-surety = t
         for stypes on types
         while (consp (cdr stypes))
         do (let ((t1 (first stypes)) (t2 (second stypes)))
-             (multiple-value-bind (val surety) (funcall function t1 t2)
+             (multiple-value-bind (val surety) (funcall function client t1 t2)
                (cond (val)
                      (surety (return-from order (values nil t)))
                      (t (setf total-surety nil)))))
@@ -97,17 +97,17 @@
         while (consp (cdr stypes))
         do (let (;; skip (first stypes) since we did that in the prev loop.
                  (t2 (second stypes)))
-             (multiple-value-bind (val surety) (funcall function t1 t2)
+             (multiple-value-bind (val surety) (funcall function client t1 t2)
                (when (and surety (not val))
                  (return-from order (values nil t))))))
   ;; Give up.
   (values nil nil))
 
 ;;; ORDER2 is like ORDER above, but handles a &rest argument type.
-(defun order2 (function types tail &optional (reflexivep t))
-  (let ((false (specifier-ctype 'null))
+(defun order2 (function client types tail &optional (reflexivep t))
+  (let ((false (specifier-ctype client 'null))
         (tailp (not (bot-p tail))))
-    (multiple-value-bind (value surety) (order function types)
+    (multiple-value-bind (value surety) (order client function types)
       (cond (value
              (if tailp
                  ;; can't be sure about the tail,
@@ -117,35 +117,36 @@
                  (if (and (not reflexivep) (constant-type-p tail))
                      false
                      (top))
-                 (negate false)))
+                 (negate client false)))
             (surety false)
             (t
              (if tailp
                  ;; It's possible we could prove false from the tail type
                  ;; e.g. (apply #'< 8 (the (list-of bit) y))
+                 ;; FIXME: Does this apply if the list is empty? (< 8) -> T
                  (if (some (lambda (ty)
                              (multiple-value-bind (v s)
-                                 (funcall function ty tail)
+                                 (funcall function client ty tail)
                                (and s (not v))))
                            types)
                      false
                      (top))))))))
 
-(defun compare-conjunction (function conjunction ctype)
+(defun compare-conjunction (function client conjunction ctype)
   ;; this is easy: if any of the supertypes of the conjunction have a clear
   ;; answer, so do we.
   (loop for ty in (junction-ctypes conjunction)
-        do (multiple-value-bind (v s) (funcall function ty ctype)
+        do (multiple-value-bind (v s) (funcall function client ty ctype)
              (when s (return-from compare-conjunction (values v s)))))
   (values nil nil))
-(defun compare-disjunction (function disjunction ctype)
+(defun compare-disjunction (function client disjunction ctype)
   ;; if every subtype of the disjunction has a clear answer, and they all
   ;; agree on that answer, we can use that.
   ;; I think?
   (loop with surety = t
         with value = :unknown
         for ty in (junction-ctypes disjunction)
-        do (multiple-value-bind (v s) (funcall function ty ctype)
+        do (multiple-value-bind (v s) (funcall function client ty ctype)
              (when s
                (cond ((eq value :unknown) (setf value v))
                      ((eq value v))
@@ -154,14 +155,12 @@
         finally (assert (member value '(t nil)))
                 (return (values value surety))))
 
-(declaim (inline flip))
-(defun flip (f) (lambda (t2 t1) (funcall f t1 t2)))
-
-(defgeneric t<  (t1 t2))
-(defgeneric t>  (t1 t2))
-(defgeneric t<= (t1 t2))
-(defgeneric t>= (t1 t2))
-(defmethod t< ((t1 range) (t2 range))
+(defgeneric t<  (client t1 t2))
+(defgeneric t>  (client t1 t2))
+(defgeneric t<= (client t1 t2))
+(defgeneric t>= (client t1 t2))
+(defmethod t< (c (t1 range) (t2 range))
+  (declare (ignore c))
   (with-ranges (((low1 lxp1 high1 hxp1) t1)
                 ((low2 lxp2 high2 hxp2) t2))
     (declare (ignore lxp1 lxp2 hxp2))
@@ -169,7 +168,8 @@
           ((and low1 high2 (<= low1 high2)) (values nil t))
           ((and high1 low2 (= high1 low2) hxp1) (values t t))
           (t (values nil nil)))))
-(defmethod t> ((t1 range) (t2 range))
+(defmethod t> (c (t1 range) (t2 range))
+  (declare (ignore c))
   (with-ranges (((low1 lxp1 high1 hxp1) t1)
                 ((low2 lxp2 high2 hxp2) t2))
     (declare (ignore lxp1 lxp2 hxp1))
@@ -177,7 +177,8 @@
           ((and low2 high1 (<= low2 high1)) (values nil t))
           ((and high2 low1 (= high2 low1) hxp2) (values t t))
           (t (values nil nil)))))
-(defmethod t<= ((t1 range) (t2 range))
+(defmethod t<= (c (t1 range) (t2 range))
+  (declare (ignore c))
   (with-ranges (((low1 lxp1 high1 hxp1) t1)
                 ((low2 lxp2 high2 hxp2) t2))
     (declare (ignore lxp2 hxp1))
@@ -185,7 +186,8 @@
           ((and low1 high2 (< low1 high2)) (values nil t))
           ((and low1 high2 (= low1 high2) (or lxp1 hxp2)) (values nil t))
           (t (values nil nil)))))
-(defmethod t>= ((t1 range) (t2 range))
+(defmethod t>= (c (t1 range) (t2 range))
+  (declare (ignore c))
   (with-ranges (((low1 lxp1 high1 hxp1) t1)
                 ((low2 lxp2 high2 hxp2) t2))
     (declare (ignore lxp1 hxp2))
@@ -195,39 +197,46 @@
           (t (values nil nil)))))
 (macrolet ((defdefault (fname)
              `(progn
-                (defmethod ,fname ((t1 ctype) (t2 ctype)) (values nil nil))
-                (defmethod ,fname ((t1 conjunction) (t2 ctype))
+                (defmethod ,fname (client (t1 ctype) (t2 ctype))
+                  (declare (ignore client))
+                  (values nil nil))
+                (defmethod ,fname (client (t1 conjunction) (t2 ctype))
+                  (declare (ignore client))
                   (compare-conjunction #',fname t1 t2))
-                (defmethod ,fname ((t1 ctype) (t2 conjunction))
-                  (compare-conjunction (flip #',fname) t2 t1))
-                (defmethod ,fname ((t1 disjunction) (t2 ctype))
-                  (compare-disjunction #',fname t1 t2))
-                (defmethod ,fname ((t1 ctype) (t2 disjunction))
-                  (compare-disjunction (flip #',fname) t2 t1))))
+                (defmethod ,fname (client (t1 ctype) (t2 conjunction))
+                  (declare (ignore client))
+                  (compare-conjunction
+                   (lambda (c ty1 ty2) (,fname c ty2 ty1)) t2 t1))
+                (defmethod ,fname (client (t1 disjunction) (t2 ctype))
+                  (compare-disjunction #',fname client t1 t2))
+                (defmethod ,fname (client (t1 ctype) (t2 disjunction))
+                  (declare (ignore client))
+                  (compare-disjunction
+                   (lambda (c ty1 ty2) (,fname c ty2 ty1)) t2 t1))))
            (defdefaults (&rest fnames)
              `(progn ,@(loop for fn in fnames collect `(defdefault ,fn)))))
   (defdefaults t< t> t<= t>=))
 
-(define-tfun < (num1 &rest tail)
+(define-tfun < (c num1 &rest tail)
   (let ((types (list* num1 (append (cvalues-required tail)
                                    (cvalues-optional tail))))
         (tail (cvalues-rest tail)))
-    (single-value (order2 #'t< types tail nil))))
-(define-tfun > (num1 &rest tail)
+    (single-value (order2 #'t< c types tail nil))))
+(define-tfun > (c num1 &rest tail)
   (let ((types (list* num1 (append (cvalues-required tail)
                                    (cvalues-optional tail))))
         (tail (cvalues-rest tail)))
-    (single-value (order2 #'t> types tail nil))))
-(define-tfun <= (num1 &rest tail)
+    (single-value (order2 #'t> c types tail nil))))
+(define-tfun <= (c num1 &rest tail)
   (let ((types (list* num1 (append (cvalues-required tail)
                                    (cvalues-optional tail))))
         (tail (cvalues-rest tail)))
-    (single-value (order2 #'t<= types tail t))))
-(define-tfun >= (num1 &rest tail)
+    (single-value (order2 #'t<= c types tail t))))
+(define-tfun >= (c num1 &rest tail)
   (let ((types (list* num1 (append (cvalues-required tail)
                                    (cvalues-optional tail))))
         (tail (cvalues-rest tail)))
-    (single-value (order2 #'t>= types tail t))))
+    (single-value (order2 #'t>= c types tail t))))
 
 (defun contagion (kind1 kind2)
   (ecase kind1
@@ -256,7 +265,7 @@
 
 ;;; MAX and MIN can return contagion'd results or the originals.
 ;;; Nother implementation-defined bit.
-(defun mm-contagion (result other-kind)
+(defun mm-contagion (client result other-kind)
   (let* ((resultk (range-kind result))
          (low (range-low result)) (high (range-high result))
          (lxp (range-low-exclusive-p result))
@@ -265,61 +274,64 @@
     (if (or (member contk '(integer ratio rational))
             (eq resultk contk))
         result
-        (disjoin result
+        (disjoin client result
                  (range contk
                         (if low (coerce low contk) low) lxp
                         (if high (coerce high contk) high) hxp)))))
 
-(defgeneric tmax (real1 real2))
-(defdefaults tmax (real1 real2) (specifier-ctype 'real))
-(defmethod tmax ((real1 range) (real2 range))
-  (cond ((t< real1 real2) (mm-contagion real2 (range-kind real1)))
-        ((t< real2 real1) (mm-contagion real1 (range-kind real2)))
+(defgeneric tmax (client real1 real2))
+(defdefaults tmax (c real1 real2) (specifier-ctype c 'real))
+(defmethod tmax (c (real1 range) (real2 range))
+  (cond ((t< real1 real2) (mm-contagion c real2 (range-kind real1)))
+        ((t< real2 real1) (mm-contagion c real1 (range-kind real2)))
         (t
          ;; FIXME: This is suboptimal.
          ;; For example, (max (integer 0 7) (integer 4 9))
          ;; clearly would be (integer 4 9), not (integer 0 9).
-         (disjoin (mm-contagion real2 (range-kind real1))
+         (disjoin c
+                  (mm-contagion real2 (range-kind real1))
                   (mm-contagion real1 (range-kind real2))))))
 
-(defun reduce-mm (function vtype initial-value)
-  (loop with base = (reduce function (cvalues-required vtype)
+(defun reduce-mm (client function vtype initial-value)
+  (loop with base = (reduce (lambda (ct1 ct2) (funcall function client ct1 ct2))
+                            (cvalues-required vtype)
                             :initial-value initial-value)
         for opt in (cvalues-optional vtype)
-        do (setf base (disjoin base (funcall function base opt)))
+        do (setf base (disjoin client base (funcall function client base opt)))
         finally (return
-                  (disjoin base
-                           (funcall function base (cvalues-rest vtype))))))
+                  (disjoin client base
+                           (funcall function client base (cvalues-rest vtype))))))
 
-(define-tfun max (real1 &rest reals)
-  (single-value (reduce-mm #'tmax reals real1)))
+(define-tfun max (c real1 &rest reals)
+  (single-value (reduce-mm c #'tmax reals real1)))
 
-(defgeneric tmin (real1 real2))
-(defdefaults tmin (real1 real2) (specifier-ctype 'real))
-(defmethod tmin ((real1 range) (real2 range))
-  (cond ((t> real1 real2) (mm-contagion real2 (range-kind real1)))
-        ((t> real2 real1) (mm-contagion real1 (range-kind real2)))
+(defgeneric tmin (client real1 real2))
+(defdefaults tmin (c real1 real2) (specifier-ctype c 'real))
+(defmethod tmin (c (real1 range) (real2 range))
+  (cond ((t> real1 real2) (mm-contagion c real2 (range-kind real1)))
+        ((t> real2 real1) (mm-contagion c real1 (range-kind real2)))
         (t
-         (disjoin (mm-contagion real2 (range-kind real1))
-                  (mm-contagion real1 (range-kind real2))))))
+         (disjoin c (mm-contagion c real2 (range-kind real1))
+                  (mm-contagion c real1 (range-kind real2))))))
 
-(define-tfun min (real1 &rest reals)
-  (single-value (reduce-mm #'tmin reals real1)))
+(define-tfun min (c real1 &rest reals)
+  (single-value (reduce-mm c #'tmin reals real1)))
 
-(defun rational-range (low lxp high hxp)
+(defun rational-range (client low lxp high hxp)
   (specifier-ctype
+   client
    `(rational ,(if (and lxp low) `(,low) low)
               ,(if (and hxp high) `(,high) high))))
 
 ;;; like RANGE, but accepts contagion results (RATIONAL is the weird one).
-(defun contagion-range (kind low lxp high hxp)
+(defun contagion-range (client kind low lxp high hxp)
   (if (eq kind 'rational)
-      (rational-range low lxp high hxp)
+      (rational-range client low lxp high hxp)
       (range kind low lxp high hxp)))
 
-(defgeneric t+ (t1 t2))
-(defdefaults t+ (num1 num2) (specifier-ctype 'number))
-(defmethod t+ ((t1 range) (t2 range))
+(defgeneric t+ (client t1 t2))
+(defdefaults t+ (c num1 num2) (specifier-ctype c 'number))
+(defmethod t+ (c (t1 range) (t2 range))
   (with-ranges (((low1 lxp1 high1 hxp1) t1)
                 ((low2 lxp2 high2 hxp2) t2))
     (let ((kind (contagion (range-kind t1) (range-kind t2)))
@@ -332,24 +344,28 @@
                     (+ high1 high2)
                     nil))
           (hxp (or hxp1 hxp2)))
-      (contagion-range kind low lxp high hxp))))
+      (contagion-range c kind low lxp high hxp))))
 
 ;;; What is the type of (apply #'+ (list-of x))?
 ;;; If x is nil (i.e. the list is zero length), the result is 0, so (eql 0)
 ;;; is in there no matter what.
 ;;; Otherwise, if the lower bound of x is at least 0, the result has
 ;;; the same lower bound. And similarly with signs flipped.
-(defgeneric t+exp (type))
-(defmethod t+exp ((type ctype)) (specifier-ctype 'number))
-(defmethod t+exp :around ((type ctype))
+(defgeneric t+exp (client type))
+(defmethod t+exp (c (type ctype)) (specifier-ctype c 'number))
+(defmethod t+exp :around (c (type ctype))
   (disjoin
+   c
    (range 'integer 0 nil 0 nil)
-   (conjoin (call-next-method) (specifier-ctype 'number))))
-(defmethod t+exp ((type conjunction))
-  (apply #'conjoin (mapcar #'t+exp (junction-ctypes type))))
-(defmethod t+exp ((type disjunction))
-  (apply #'disjoin (mapcar #'t+exp (junction-ctypes type))))
-(defmethod t+exp ((type range))
+   (conjoin c (call-next-method) (specifier-ctype c 'number))))
+(defmethod t+exp (c (type conjunction))
+  (apply #'conjoin c
+         (mapcar (lambda (ct) (t+exp c ct)) (junction-ctypes type))))
+(defmethod t+exp (c (type disjunction))
+  (apply #'disjoin c
+         (mapcar (lambda (ct) (t+exp c ct)) (junction-ctypes type))))
+(defmethod t+exp (c (type range))
+  (declare (ignore c))
   (let ((low (range-low type)) (high (range-high type))
         (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
         (kind (range-kind type)))
@@ -363,52 +379,55 @@
               (values nil nil))
         (range kind low lxp high hxp)))))
 
-(defun ts+ (tail)
+(defun ts+ (client tail)
   (let* ((req (cvalues-required tail))
          (opt (cvalues-optional tail))
          (rest (cvalues-rest tail))
-         (tail (t+exp rest))
-         (sub (reduce #'t+ req :initial-value tail)))
+         (tail (t+exp client rest))
+         (sub (reduce (lambda (ct1 ct2) (t+ client ct1 ct2))
+                      req :initial-value tail)))
     (apply #'disjoin
-           sub
+           client sub
            (loop for o in opt
                  for s = sub then lastsub
-                 for lastsub = (t+ o s)
+                 for lastsub = (t+ client o s)
                  collect lastsub))))
 
-(define-tfun + (&rest tail) (single-value (ts+ tail)))
+(define-tfun + (c &rest tail) (single-value (ts+ c tail)))
 
-(defgeneric tneg (type)) ; arithmetic negation
-(defdefaults tneg (number) (specifier-ctype 'number))
-(defmethod tneg ((type negation))
-  (negate (tneg (negation-ctype type))))
-(defmethod tneg ((type range))
+(defgeneric tneg (client type)) ; arithmetic negation
+(defdefaults tneg (c number) (specifier-ctype c 'number))
+(defmethod tneg (c (type negation))
+  (negate c (tneg (negation-ctype type))))
+(defmethod tneg (c (type range))
+  (declare (ignore c))
   (let ((low (range-low type)) (high (range-high type))
         (lxp (range-low-exclusive-p type))
         (hxp (range-low-exclusive-p type))
         (kind (range-kind type)))
     (range kind (if high (- high) nil) hxp (if low (- low) nil) lxp)))
 
-(define-tfun - (minuend &rest subtrahends)
+(define-tfun - (c minuend &rest subtrahends)
   (single-value
    ;; - is a bit weird in doing completely different operations depending on
    ;; how many arguments it gets. We distinguish them as best we can.
-   (cond ((cvalues-required subtrahends) (t+ minuend (tneg (ts+ subtrahends))))
-         ((values-bot-p subtrahends) (tneg minuend))
-         (t (disjoin (t+ minuend (tneg (ts+ subtrahends)))
-                     (tneg minuend))))))
+   (cond ((cvalues-required subtrahends) (t+ minuend (tneg c (ts+ c subtrahends))))
+         ((values-bot-p subtrahends) (tneg c minuend))
+         (t (disjoin c (t+ c minuend (tneg c (ts+ c subtrahends)))
+                     (tneg c minuend))))))
 
-(defgeneric t*exp (type))
-(defmethod t*exp ((type ctype)) (specifier-ctype 'number))
-(defmethod t*exp :around ((type ctype))
+(defgeneric t*exp (client type))
+(defmethod t*exp (c (type ctype)) (specifier-ctype c 'number))
+(defmethod t*exp :around (c (type ctype))
   (disjoin
+   c
    (range 'integer 1 nil 1 nil)
-   (conjoin (call-next-method) (specifier-ctype 'number))))
-(defmethod t*exp ((type conjunction))
-  (apply #'conjoin (mapcar #'t+exp (junction-ctypes type))))
-(defmethod t*exp ((type disjunction))
-  (apply #'disjoin (mapcar #'t+exp (junction-ctypes type))))
-(defmethod t*exp ((type range))
+   (conjoin c (call-next-method) (specifier-ctype c 'number))))
+(defmethod t*exp (c (type conjunction))
+  (apply #'conjoin c (mapcar (lambda (ct) (t+exp c ct)) (junction-ctypes type))))
+(defmethod t*exp (c (type disjunction))
+  (apply #'disjoin c (mapcar (lambda (ct) (t+exp c ct)) (junction-ctypes type))))
+(defmethod t*exp (c (type range))
   (let ((low (range-low type)) (high (range-high type))
         (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
         (kind (range-kind type)))
@@ -421,15 +440,15 @@
            ;; integer powers are at least that bound squared.
            ;; e.g. powers of (integer * -7) are
            ;; (or (integer * -7) (integer 49 *))
-           (disjoin (range kind nil nil high hxp)
+           (disjoin c (range kind nil nil high hxp)
                     (range kind (* high high) hxp nil nil)))
           ((and low (>= low -1) high (<= high 1))
            ;; Magnitude is <= 1, so multiplication doesn't grow.
            type)
           (t (range kind nil nil nil nil)))))
 
-(defgeneric t* (t1 t2))
-(defdefaults t* (t1 t2) (specifier-ctype 'number))
+(defgeneric t* (client t1 t2))
+(defdefaults t* (c t1 t2) (specifier-ctype c 'number))
 (defun multiply-bound (bound1 xp1 bound2 xp2)
   (case bound1
     ((:-infinity)
@@ -481,7 +500,8 @@
   (unless (bound< bound3 bxp3 bound4 bxp4)
     (rotatef (values bound3 bxp3) (values bound4 bxp4)))
   (values bound1 bxp1 bound4 bxp4))
-(defmethod t* ((t1 range) (t2 range))
+(defmethod t* (c (t1 range) (t2 range))
+  (declare (ignore c))
   (let ((low1 (or (range-low t1) :-infinity))
         (high1 (or (range-high t1) :+infinity))
         (lxp1 (range-low-exclusive-p t1))
@@ -501,26 +521,27 @@
         (range (contagion (range-kind t1) (range-kind t2))
                low lxp high hxp)))))
 
-(defun ts* (tail)
+(defun ts* (client tail)
   (let* ((req (cvalues-required tail))
          (opt (cvalues-optional tail))
          (rest (cvalues-rest tail))
-         (tail (t*exp rest))
-         (sub (reduce #'t* req :initial-value tail)))
+         (tail (t*exp client rest))
+         (sub (reduce (lambda (ct1 ct2) (t* client ct1 ct2))
+                      req :initial-value tail)))
     (apply #'disjoin
-           sub
+           client sub
            (loop for o in opt
                  for s = sub then lastsub
-                 for lastsub = (t* o s)
+                 for lastsub = (t* client o s)
                  collect lastsub))))
 
-(define-tfun * (&rest multiplicands) (single-value (ts* multiplicands)))
+(define-tfun * (c &rest multiplicands) (single-value (ts* c multiplicands)))
 
-(defgeneric tinv (type)) ; arithmetic inverse
-(defdefaults tinv (number) (specifier-ctype 'number))
-(defmethod tinv ((type negation))
-  (negate (tinv (negation-ctype type))))
-(defmethod tinv ((type range))
+(defgeneric tinv (client type)) ; arithmetic inverse
+(defdefaults tinv (c number) (specifier-ctype c 'number))
+(defmethod tinv (c (type negation))
+  (negate c (tinv c (negation-ctype type))))
+(defmethod tinv (c (type range))
   (let* ((low (range-low type)) (high (range-high type))
          (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
          (kind (range-kind type))
@@ -544,25 +565,26 @@
                 (low (values (/ low) lxp))
                 (t (values zero t)))
         (case kind
-          ((integer ratio) (rational-range ilow ilxp ihigh ihxp))
+          ((integer ratio) (rational-range c ilow ilxp ihigh ihxp))
           (t (range kind ilow ilxp ihigh ihxp)))))))
 
-(define-tfun / (numerator &rest denominators)
+(define-tfun / (c numerator &rest denominators)
   (single-value
    (cond ((cvalues-required denominators)
-          (t* numerator (tinv (ts* denominators))))
-         ((values-bot-p denominators) (tinv numerator))
-         (t (disjoin (t* numerator (tinv (ts* denominators)))
-                     (tinv numerator))))))
+          (t* c numerator (tinv c (ts* c denominators))))
+         ((values-bot-p denominators) (tinv c numerator))
+         (t (disjoin c (t* c numerator (tinv c (ts* c denominators)))
+                     (tinv c numerator))))))
 
-(define-tfun 1+ (number)
-  (single-value (t+ number (range 'integer  1 nil  1 nil))))
-(define-tfun 1- (number)
-  (single-value (t+ number (range 'integer -1 nil -1 nil))))
+(define-tfun 1+ (c number)
+  (single-value (t+ c number (range 'integer  1 nil  1 nil))))
+(define-tfun 1- (c number)
+  (single-value (t+ c number (range 'integer -1 nil -1 nil))))
 
-(defgeneric tabs (number))
-(defdefaults tabs (number) (specifier-ctype '(real 0)))
-(defmethod tabs ((type range))
+(defgeneric tabs (client number))
+(defdefaults tabs (c number) (specifier-ctype c '(real 0)))
+(defmethod tabs (c (type range))
+  (declare (ignore c))
   (let* ((low (range-low type)) (high (range-high type))
          (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
          (kind (range-kind type)))
@@ -579,16 +601,16 @@
             (t (range kind (coerce 0 kind) nil high hxp))))
         type)))
 
-(define-tfun abs (number) (single-value (tabs number)))
+(define-tfun abs (c number) (single-value (tabs c number)))
 
 ;;; exponentiation
-(defgeneric texp (type))
-(defdefaults texp (number) (specifier-ctype 'number))
+(defgeneric texp (client type))
+(defdefaults texp (c number) (specifier-ctype c 'number))
 ;; Due to rational/float substitutability, we can't validly do negations.
-;; e.g., (texp '(integer 1 7)) is (single-float 2.71... 1096...).
-;; but (texp '(not (integer 1 7))) also includes (single-float 2.71... 1096...)
+;; e.g., (texp c '(integer 1 7)) is (single-float 2.71... 1096...).
+;; but (texp c '(not (integer 1 7))) also includes (single-float 2.71... 1096...)
 ;; because the argument could be a single float.
-(defmethod texp ((type range))
+(defmethod texp (c (type range))
   (let* ((low (range-low type)) (high (range-high type))
          (lxp (range-low-exclusive-p type)) (hxp (range-high-exclusive-p type))
          (kind (range-kind type))
@@ -620,21 +642,22 @@
               (values nil nil))
         (let ((range (range kind low lxp high hxp)))
           (if int1p
-              (disjoin range (range 'integer 1 nil 1 nil))
+              (disjoin c range (range 'integer 1 nil 1 nil))
               range))))))
 
-(define-tfun exp (number) (single-value (texp number)))
+(define-tfun exp (c number) (single-value (texp c number)))
 
-(defgeneric trandom (real))
-(defdefaults trandom (real) (specifier-ctype '(real 0)))
-(defmethod trandom ((real range))
+(defgeneric trandom (client real))
+(defdefaults trandom (c real) (specifier-ctype c '(real 0)))
+(defmethod trandom (c (real range))
+  (declare (ignore c))
   (let ((high (range-high real)) (kind (range-kind real)))
     (when (eq kind 'ratio) (return-from trandom (bot)))
     (when (and high (<= high 0)) (return-from trandom (bot)))
     (range kind (coerce 0 kind) nil high (if high t nil))))
 
-(define-tfun random (real &optional random-state)
-  (single-value (trandom real)))
+(define-tfun random (c real &optional random-state)
+  (single-value (trandom c real)))
 
 (defun %float-proto (real protok)
   (let ((low (range-low real)) (lxp (range-low-exclusive-p real))
@@ -647,21 +670,22 @@
           (if high (values (coerce high protok) hxp) (values nil nil))
         (range protok low lxp high hxp)))))
 
-(defgeneric float-proto (real proto))
-(defdefaults float-proto (real proto) (specifier-ctype 'float))
-(defmethod float-proto ((real range) (proto range))
+(defgeneric float-proto (client real proto))
+(defdefaults float-proto (c real proto) (specifier-ctype c 'float))
+(defmethod float-proto (c (real range) (proto range))
+  (declare (ignore c))
   (%float-proto real (range-kind proto)))
 
 (defun float-noproto (real) (%float-proto real 'single-float))
 
-(define-tfun float (real &rest rest)
+(define-tfun float (c real &rest rest)
   (single-value
    (let ((req (cvalues-required rest)) (opt (cvalues-optional rest))
          (rest (cvalues-rest rest)))
      (cond ((> (length req) 1) (bot))
            (req (float-proto real (first req)))
            ((bot-p (or (first opt) rest)) (float-noproto real))
-           (t (disjoin (float-proto real (or (first req) (first opt) rest))
+           (t (disjoin c (float-proto real (or (first req) (first opt) rest))
                        (float-noproto real)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -697,7 +721,7 @@
                   (t 0))))
       (range 'integer low nil high nil))))
 
-(define-tfun ash (integer count) (single-value (tash integer count)))
+(define-tfun ash (c integer count) (single-value (tash integer count)))
 
 (defgeneric tinteger-length (type))
 (defdefaults tinteger-length (integer) (range 'integer 0 nil nil nil))
@@ -722,7 +746,7 @@
                           (min (integer-length low) (integer-length high)))))))
       (range 'integer low nil high nil))))
 
-(define-tfun integer-length (integer) (single-value (tinteger-length integer)))
+(define-tfun integer-length (c integer) (single-value (tinteger-length c integer)))
 
 (defgeneric tlogcount (type))
 (defdefaults tlogcount (integer) (range 'integer 0 nil nil nil))
@@ -738,4 +762,4 @@
                     nil)))
       (range 'integer low nil high nil))))
 
-(define-tfun logcount (integer) (single-value (tlogcount integer)))
+(define-tfun logcount (c integer) (single-value (tlogcount integer)))

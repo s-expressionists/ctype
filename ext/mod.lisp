@@ -41,11 +41,13 @@
                (canonicalize-congruence modulus congruences)
              (%congruence modulus congruences)))))
 
-(defmethod ctypep (object (ct congruence))
+(defmethod ctypep (client object (ct congruence))
+  (declare (ignore client))
   (and (integerp object)
        (logbitp (mod object (modulus ct)) (congruences ct))))
 
-(defmethod subctypep ((ct1 congruence) (ct2 congruence))
+(defmethod subctypep (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
   (let ((mod1 (modulus ct1)) (cong1 (congruences ct1))
         (mod2 (modulus ct2)) (cong2 (congruences ct2)))
     ;; We assume there are no degenerate congruences.
@@ -64,12 +66,14 @@
                (return-from subctypep (values nil t)))
              (setf cong1 (ash cong2 (- mod1))))))))
 
-(defmethod ctype= ((ct1 congruence) (ct2 congruence))
+(defmethod ctype= (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
   ;; Again, we need the canonicalization above for this to be valid
   (and (= (modulus ct1) (modulus ct2))
        (= (congruences ct1) (congruences ct2))))
 
-(defmethod disjointp ((ct1 congruence) (ct2 congruence))
+(defmethod disjointp (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
   (let ((mod1 (modulus ct1)) (cong1 (congruences ct1))
         (mod2 (modulus ct2)) (cong2 (congruences ct2)))
     (let ((mod (lcm mod1 mod2)))
@@ -79,10 +83,15 @@
                       (repeat-bits cong2 mod2 (truncate mod mod2))))
        t))))
 
-(defmethod conjointp ((ct1 congruence) (ct2 congruence)) (values nil t))
-(defmethod cofinitep ((ct1 congruence)) (values nil t))
+(defmethod conjointp (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
+  (values nil t))
+(defmethod cofinitep (client (ct1 congruence))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod negate ((ct congruence))
+(defmethod negate (client (ct congruence))
+  (declare (ignore client))
   ;; (not (satisfies evenp)) = (or (not integer) (satisfies oddp))
   (disjunction (negation (range 'integer nil nil nil nil))
                (let ((m (modulus ct)))
@@ -98,7 +107,8 @@
             then (logior (ash result len) byte)
           finally (return result))))
 
-(defmethod conjoin/2 ((ct1 congruence) (ct2 congruence))
+(defmethod conjoin/2 (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
   (let ((mod1 (modulus ct1)) (cong1 (congruences ct1))
         (mod2 (modulus ct2)) (cong2 (congruences ct2)))
     (let* ((mod (lcm mod1 mod2))
@@ -107,7 +117,8 @@
                          (repeat-bits cong2 mod2 (truncate mod mod2)))))
       (congruence mod cong))))
 
-(defmethod disjoin/2 ((ct1 congruence) (ct2 congruence))
+(defmethod disjoin/2 (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
   (let ((mod1 (modulus ct1)) (cong1 (congruences ct1))
         (mod2 (modulus ct2)) (cong2 (congruences ct2)))
     (let* ((mod (lcm mod1 mod2))
@@ -116,7 +127,8 @@
                          (repeat-bits cong2 mod2 (truncate mod mod2)))))
       (congruence mod cong))))
 
-(defmethod subtract ((ct1 congruence) (ct2 congruence))
+(defmethod subtract (client (ct1 congruence) (ct2 congruence))
+  (declare (ignore client))
   (let ((mod1 (modulus ct1)) (cong1 (congruences ct1))
         (mod2 (modulus ct2)) (cong2 (congruences ct2)))
     (let* ((mod (lcm mod1 mod2))
@@ -140,12 +152,14 @@
 
 ;;;
 
-(defmethod subctypep ((ct1 congruence) (ct2 range))
+(defmethod subctypep (client (ct1 congruence) (ct2 range))
+  (declare (ignore client))
   (values (and (eq (range-kind ct2) 'integer)
                (null (range-low ct2))
                (null (range-high ct2)))
           t))
-(defmethod subctypep ((ct1 range) (ct2 congruence))
+(defmethod subctypep (client (ct1 range) (ct2 congruence))
+  (declare (ignore client))
   ;; FIXME: This is pretty inaccurate; e.g. we could check small ranges.
   (if (or (not (eq (range-kind ct1) 'integer))
           ;; A range unbounded on one side necessarily includes all
@@ -156,7 +170,8 @@
       (values nil t)
       (values nil nil)))
 
-(define-commutative-method disjointp ((congruence congruence) (range range))
+(define-commutative-method disjointp (client (congruence congruence) (range range))
+  (declare (ignore client))
   ;; FIXME: Inaccurate in basically the same way.
   (if (or (not (eq (range-kind range) 'integer))
           ;; A range unbounded on one side necessarily includes all
@@ -167,7 +182,8 @@
       (values t t)
       (values nil nil)))
 
-(define-commutative-method conjointp ((ct1 congruence) (ct2 range))
+(define-commutative-method conjointp (client (ct1 congruence) (ct2 range))
+  (declare (ignore client))
   (values nil t))
 
 (defexclusives congruence cclass ccomplex carray charset cfunction fpzero)
