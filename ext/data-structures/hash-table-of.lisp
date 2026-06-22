@@ -15,13 +15,15 @@
    :key key-ctype
    :value value-ctype))
 
-(define-extended-type hash-table-of (key-type value-type &environment env)
-  :documentation "A hash-table whose keys are of type KEY-TYPE and values are of type VALUE-TYPE."
-  :simple ((declare (ignore key-type value-type env))
-           'hash-table)
-  :extended
-  ((chash-table-of (extended-specifier-ctype key-type env)
-                   (extended-specifier-ctype value-type env))))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'hash-table-of))
+                                 rest env)
+  (destructuring-bind (&optional (key-type '*) (value-type '*)) rest
+    (chash-table-of (if (eql key-type '*)
+                        (top)
+                        (specifier-ctype client key-type env))
+                    (if (eql value-type '*)
+                        (top)
+                        (specifier-ctype client value-type env)))))
 
 (defmethod ctypep (client (object t) (ctype chash-table-of))
   (declare (ignore client))
@@ -29,45 +31,26 @@
 (defmethod ctypep (client (object hash-table) (ctype chash-table-of))
   (let ((key-ctype (key-ctype ctype))
         (value-ctype (value-ctype ctype)))
-    (loop for key being each hash-key of object using (hash-value value) do
-      (unless (and (ctypep client key key-ctype)
-                   (ctypep client value value-ctype))
-        (return-from ctypep nil))))
-  t)
-
-(defun compare-chash-table-of (predicate combiner client ctype1 ctype2)
-  (let ((key1 (key-ctype ctype1))
-        (key2 (key-ctype ctype2))
-        (value1 (value-ctype ctype1))
-        (value2 (value-ctype ctype2)))
-    (multiple-value-bind (key-comparison key-valid)
-        (funcall predicate client key1 key2)
-      (multiple-value-bind (value-comparison value-valid)
-          (funcall predicate client value1 value2)
-        (values (funcall combiner #'identity (list key-comparison value-comparison))
-                (funcall combiner #'identity (list key-valid value-valid)))))))
+    (loop for key being each hash-key of object using (hash-value value)
+          always (and (ctypep client key key-ctype)
+                      (ctypep client value value-ctype)))))
 
 (defmethod subctypep (client (ctype1 chash-table-of) (ctype2 cclass))
-  (declare (ignore client))
   (values
-   (eql (find-class 'hash-table)
-        (cclass-class ctype2))
+   (eql (ctype:find-class client 'hash-table) (cclass-class ctype2))
    t))
 
 (defmethod subctypep (client (ctype1 chash-table-of) (ctype2 chash-table-of))
-  (compare-chash-table-of
-   #'subctypep #'every
-   client ctype1 ctype2))
+  (and/tri (subctypep client (key-ctype ctype1) (key-ctype ctype2))
+           (subctypep client (value-ctype ctype1) (value-ctype ctype2))))
 
 (defmethod ctype= (client (ctype1 chash-table-of) (ctype2 chash-table-of))
-  (compare-chash-table-of
-   #'ctype= #'every
-   client ctype1 ctype2))
+  (and/tri (ctype= client (key-ctype ctype1) (key-ctype ctype2))
+           (ctype= client (value-ctype ctype1) (value-ctype ctype2))))
 
 (defmethod disjointp (client (ctype1 chash-table-of) (ctype2 chash-table-of))
-  (compare-chash-table-of
-   #'disjointp #'some
-   client ctype1 ctype2))
+  (or/tri (disjointp client (key-ctype ctype1) (key-ctype ctype2))
+          (disjointp client (value-ctype ctype1) (value-ctype ctype2))))
 
 (defmethod cofinitep (client (ctype chash-table-of))
   (declare (ignore client))
@@ -89,7 +72,8 @@
 
 (defexclusives chash-table-of range ccomplex carray charset cfunction fpzero)
 
-(define-commutative-method conjointp ((ct1 cclass) (ct2 chash-table-of))
+(define-commutative-method conjointp (client (ct1 cclass) (ct2 chash-table-of))
+  (declare (ignore client))
   (values nil t))
 
 (defexistential chash-table-of)

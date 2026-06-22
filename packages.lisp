@@ -12,18 +12,19 @@
            #:every/tri #:some/tri #:notevery/tri #:notany/tri
            #:and/tri #:or/tri #:surely
            #:defexistential #:defexclusives
-           #:define-commutative-method
-           #:define-extended-type
-           #:+complex-arrays-exist-p+)
+           #:define-commutative-method)
+  ;; Parsing
+  (:export #:symbol-specifier-ctype #:cons-specifier-ctype
+           #:class-specifier-ctype)
   ;; Client customization
   (:shadow #:most-positive-fixnum #:most-negative-fixnum
            #:upgraded-complex-part-type #:upgraded-array-element-type
            #:find-class #:char-code-limit)
   (:export #:most-positive-fixnum #:most-negative-fixnum
            #:upgraded-complex-part-type #:upgraded-array-element-type
-           #:find-class #:subclassp #:class-alias #:sfdefinition
+           #:find-class #:subclassp #:class-aliases #:sfdefinition
            #:reduce-float-type #:distinct-float-types #:distinct-zeroes-p
-           #:range-kindp #:complex-ucptp
+           #:range-kindp
            #:simple-array-p #:complex-arrays-distinct-p #:string-uaets
            #:standard-charset-pairs #:base-charset-pairs #:char-code-limit
            #:typexpand)

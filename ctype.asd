@@ -61,10 +61,11 @@
      (:module "data-structures"
       :depends-on ("packages")
       :components
-      ((:file "list-of")
-       (:file "plist" :depends-on ("list-of"))
-       (:file "array-of")
-       (:file "hash-table-of")))))))
+      ((:file "client")
+       (:file "list-of" :depends-on ("client"))
+       (:file "plist" :depends-on ("list-of" "client"))
+       (:file "array-of" :depends-on ("client"))
+       (:file "hash-table-of" :depends-on ("client"))))))))
 
 (defsystem :ctype/tfun
   :description "Derived function return types for Common Lisp."

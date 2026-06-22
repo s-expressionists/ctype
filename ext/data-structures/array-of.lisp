@@ -1,9 +1,10 @@
 (in-package #:ctype.ext.data-structures)
 
 (defclass carray-of (carray) ()
-  (:documentation "Homogeneous array ctype."))
+  (:documentation "Homogeneous array ctype. Uses the actual type of the elements and not just the upgraded element type."))
 
-(defun carray-of (element-ctype &optional (dims '*) (upgraded-element-type '*) simplicity)
+(defun carray-of (client element-ctype
+                  &optional (dims '*) (upgraded-element-type '*) simplicity)
   (if simplicity
       (make-instance
        'carray-of
@@ -12,61 +13,59 @@
               (make-instance
                'carray-of
                :simplicity :simple :uaet upgraded-element-type :eaet element-ctype :dims dims)))
-        (if ctype:+complex-arrays-exist-p+
+        (if (complex-arrays-distinct-p client)
             (disjoin simple
                      (make-instance
                       'carray-of
                       :simplicity :complex :uaet upgraded-element-type :eaet element-ctype :dims dims))
             simple))))
 
-(define-extended-type array-of (element-type &optional (dims '*) (upgraded-element-type '*) &environment env)
-  :documentation "An array whose elements are of type ELEMENT-TYPE."
-  :simple ((declare (ignore upgraded-element-type env))
-           `(array ,element-type ,dims))
-  :extended
-  ((carray-of (extended-specifier-ctype element-type env) dims upgraded-element-type)))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'array-of)) rest env)
+  (destructuring-bind (element-type
+                       &optional (dims '*) (upgraded-element-type '*))
+      rest
+    (carray-of client (specifier-ctype client element-type env) dims
+               upgraded-element-type)))
 
-(defun simple-carray-of (element-ctype &optional (dims '*) (upgraded-element-type '*))
+(defun simple-carray-of (client element-ctype
+                         &optional (dims '*) (upgraded-element-type '*))
+  (declare (ignore client))
   (make-instance
    'carray-of
-   :simplicity :simple :uaet upgraded-element-type :eaet element-ctype :dims dims))
+    :simplicity :simple :uaet upgraded-element-type :eaet element-ctype :dims dims))
 
-(define-extended-type simple-array-of (element-type &optional (dims '*) (upgraded-element-type '*) &environment env)
-  :documentation "A simple array whose elements are of type ELEMENT-TYPE."
-  :simple ((declare (ignore upgraded-element-type env))
-           `(simple-array ,element-type ,dims))
-  :extended
-  ((simple-carray-of (extended-specifier-ctype element-type env) dims upgraded-element-type)))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'simple-array-of))
+                                 rest env)
+  (destructuring-bind (element-type
+                       &optional (dims '*) (upgraded-element-type '*))
+      rest
+    (simple-carray-of client
+                      (specifier-ctype client element-type env)
+                      dims upgraded-element-type)))
 
 (defun cvector-of (element-ctype &optional (length '*) (upgraded-element-type '*) simplicity)
   (carray-of
-   element-ctype
-   (if (eq length '*)
-       length
-       (list length))
-   upgraded-element-type simplicity))
+   element-ctype length upgraded-element-type simplicity))
 
-(define-extended-type vector-of (element-type &optional (length '*) (upgraded-element-type '*) &environment env)
-  :documentation "A vector whose elements are of type ELEMENT-TYPE."
-  :simple ((declare (ignore upgraded-element-type env))
-           `(vector ,element-type ,length))
-  :extended
-  ((cvector-of (extended-specifier-ctype element-type env) length upgraded-element-type)))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'vector-of))
+                                 rest env)
+  (destructuring-bind (element-type
+                       &optional (length '*) (upgraded-element-type '*))
+      rest
+    (cvector-of (specifier-ctype client element-type env)
+                length upgraded-element-type)))
 
 (defun simple-cvector-of (element-ctype &optional (length '*) (upgraded-element-type '*))
   (simple-carray-of
-   element-ctype
-   (if (eq length '*)
-       length
-       (list length))
-   upgraded-element-type))
+   element-ctype (list length) upgraded-element-type))
 
-(define-extended-type simple-vector-of (element-type &optional (length '*) (upgraded-element-type '*) &environment env)
-  :documentation "A simple vector whose elements are of type ELEMENT-TYPE."
-  :simple ((declare (ignore upgraded-element-type env))
-           `(simple-vector ,element-type ,length))
-  :extended
-  ((simple-cvector-of (extended-specifier-ctype element-type env) length upgraded-element-type)))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'simple-vector-of))
+                                 rest env)
+  (destructuring-bind (element-type
+                       &optional (length '*) (upgraded-element-type '*))
+      rest
+    (simple-cvector-of (specifier-ctype client element-type env)
+                       length upgraded-element-type)))
 
 (defun unparse-vector-simple (type length)
   (let* ((front `(simple-vector-of ,type))
@@ -97,99 +96,37 @@
             `(and (array ,@tail) (not simple-array))))))
 
 (defmethod ctypep (client (object array) (ct carray-of))
-  (let ((element-ctype (carray-eaet ct))
-        (dims (carray-dims ct)))
-    (and (or (eq dims '*)
-             (let ((rank (length dims)))
-               (and (= (array-rank object) rank)
-                    (loop for i from 0 below rank
-                          for dim in dims
-                          always (or (eq dim '*)
-                                     (= (array-dimension object i) dim))))))
-         (let ((all-indexes (mapcar #'iota (array-dimensions object))))
-           (block check-elements-types
-             (apply #'map-product
-                    (lambda (&rest indexes)
-                      (unless (ctypep client (apply #'aref object indexes) element-ctype)
-                        (return-from check-elements-types nil)))
-                    all-indexes)
-             t)))))
+  (and/tri (call-next-method) ; check uaet, dimensions
+           ;; check elements
+           (values (loop with element-ctype = (carray-eaet ct)
+                         for i below (array-total-size object)
+                         for elem = (row-major-aref object i)
+                         always (ctypep client elem element-ctype))
+                   t)))
 (defmethod ctypep (client (object t) (ct carray-of))
   (declare (ignore client))
   nil)
 
 (defmethod subctypep (client (ct1 carray-of) (ct2 carray-of))
-  (let ((element-ctype1 (carray-eaet ct1))
-        (dims1 (carray-dims ct1))
-        (simplicity1 (carray-simplicity ct1))
-        (element-ctype2 (carray-eaet ct2))
-        (dims2 (carray-dims ct2))
-        (simplicity2 (carray-simplicity ct2)))
-    (and/tri
-     (subctypep client element-ctype1 element-ctype2)
-     (values
-      (and (eq simplicity1 simplicity2)
-           (or (eq dims2 '*)
-               (and (not (eq dims1 '*))
-                    (= (length dims1) (length dims2))
-                    (loop for dim1 in dims1
-                          for dim2 in dims2
-                          always (or (eq dim2 '*)
-                                     (and (not (eq dim1 '*))
-                                          (= dim1 dim2)))))))
-      t))))
+  (and/tri (call-next-method)
+           (subctypep client
+                      (carray-eaet ct1) (carray-eaet ct2))))
 
-(defmethod conjoin/2 (client (array1 carray-of) (array2 carray-of))
-  (let ((uaet1 (carray-uaet array1))
-        (eaet1 (carray-eaet array1))
-        (dims1 (carray-dims array1))
-        (simplicity1 (carray-simplicity array1))
-        (uaet2 (carray-uaet array2))
-        (eaet2 (carray-eaet array2))
-        (dims2 (carray-dims array2))
-        (simplicity2 (carray-simplicity array2)))
-    (let ((new-simplicity
-            (cond ((eq simplicity1 :simple)
-                   (unless (eq simplicity2 :simple)
-                     ;; simplicity mismatch
-                     (return-from conjoin/2 (bot)))
-                   simplicity1)
-                  ((eq simplicity1 :complex)
-                   (unless (eq simplicity2 :complex)
-                     (return-from conjoin/2 (bot)))
-                   simplicity2)))
-          (new-uaet
-            (cond ((eq uaet1 '*) uaet2)
-                  ((eq uaet2 '*) uaet1)
-                  ((equal uaet1 uaet2) uaet1)
-                  ;; UAET mismatch
-                  (t (return-from conjoin/2 (bot)))))
-          (new-dims
-            (cond ((eq dims2 '*) dims1)
-                  ((eq dims1 '*) dims2)
-                  ((= (length dims1) (length dims2))
-                   (loop for dim1 in dims1
-                         for dim2 in dims2
-                         collect (cond ((eq dim1 '*) dim2)
-                                       ((eq dim2 '*) dim1)
-                                       ((= dim1 dim2) dim1)
-                                       ;; Dimension mismatch
-                                       (t (return-from conjoin/2 (bot))))))
-                  (t ;; Rank mismatch
-                   (return-from conjoin/2 (bot)))))
-          (new-eaet (conjoin client eaet1 eaet2)))
-      (if (bot-p new-eaet)
-          (bot)
-          (carray-of new-eaet new-dims new-uaet new-simplicity)))))
+(define-commutative-method conjoin/2
+    (client (array1 carray-of) (array2 ctype))
+  ;; Use the next methods (on basic carrays) and copy everything into a carray-of.
+  ;; carray already merges the expressed array element types.
+  (let ((result (call-next-method)))
+    (if (typep result 'carray)
+        (make-instance 'carray
+          :dims (carray-dims result) :simplicity (carray-simplicity result)
+          :eaet (carray-eaet result) :uaet (carray-uaet result))
+        result))) ; nil or bottom
 
-(define-commutative-method conjoin/2 ((cclass cclass) (carray carray-of))
-  (if (sequence-cclass-p cclass)
-      (let ((dims (carray-dims carray)))
-        (cond ((eq dims '*)
-               (carray-of (carray-eaet carray)
-                          '(*)
-                          (carray-uaet carray)
-                          (carray-simplicity carray)))
-              ((= (length dims) 1) carray)
-              (t (bot))))
-      (bot)))
+(defmethod disjointp (client (ct1 carray-of) (ct2 carray-of))
+  (or/tri (call-next-method)
+          (disjointp client (carray-eaet ct1) (carray-eaet ct2))))
+
+(defmethod ctype= (client (ct1 carray-of) (ct2 carray-of))
+  (and/tri (call-next-method)
+           (ctype= client (carray-eaet ct1) (carray-eaet ct2))))

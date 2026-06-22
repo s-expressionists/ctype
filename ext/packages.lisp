@@ -1,8 +1,10 @@
 (defpackage #:ctype.ext.data-structures
   (:use #:cl #:ctype)
-  (:import-from #:alexandria
-                #:map-product
-                #:iota)
+  (:shadowing-import-from #:cl #:most-positive-fixnum #:most-negative-fixnum
+                          #:upgraded-array-element-type
+                          #:upgraded-complex-part-type #:find-class
+                          #:char-code-limit)
+  (:export #:client)
   ;; ctypes
   (:export
    #:clist-of

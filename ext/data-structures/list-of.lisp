@@ -2,7 +2,7 @@
 
 (defclass clist-of (ctype)
   ((%etype :initarg :etype :reader element-ctype))
-  (:documentation "Proper homogeneous list ctype."))
+  (:documentation "Homogeneous list ctype."))
 
 (defmethod unparse ((object clist-of))
   `(list-of ,(unparse (element-ctype object))))
@@ -12,25 +12,27 @@
       (cmember nil)
       (make-instance 'clist-of :etype ect)))
 
-(define-extended-type list-of (element-type &environment env)
-  :documentation "A proper list whose elements are all of type ELEMENT-TYPE."
-  :simple ((declare (ignore element-type env))
-           'list)
-  :extended
-  ((clist-of (extended-specifier-ctype element-type env))))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'list-of))
+                                 rest env)
+  (destructuring-bind (&optional (element-type '*)) rest
+    (clist-of (if (eql element-type '*)
+                  (top)
+                  (specifier-ctype client element-type env)))))
 
 (defmethod ctypep (client (object null) (ct clist-of))
   (declare (ignore client))
   t)
 (defmethod ctypep (client (object cons) (ct clist-of))
-  (let ((ect (element-ctype ct)))
-    (and (ctypep client (car object) ect)
-         ;; Traverse circular lists carefully
-         (loop for sub = (cdr object) then (cdr sub)
-               until (or (null sub) (eq sub object))
-               unless (ctypep client (car sub) ect)
-                 return nil
-               finally (return t)))))
+  (loop with ect = (element-ctype ct)
+        ;; traverse potentially circular or dotted lists carefully
+        ;; (Floyd's tortoise and hare)
+        for tortoise = object then (cdr tortoise)
+        for hare = (cdr object)
+          then (when (and (consp hare) (consp (cdr hare)))
+                 (cddr hare))
+        until (or (null tortoise) (eq tortoise hare))
+        always (and (consp tortoise)
+                    (ctypep client (car tortoise) ect))))
 (defmethod ctypep (client (object t) (ct clist-of))
   (declare (ignore client))
   nil)
@@ -52,7 +54,7 @@
 
 (defmethod conjoin/2 (client (ct1 clist-of) (ct2 clist-of))
   (clist-of (conjoin client (element-ctype ct1) (element-ctype ct2))))
-(defmethod disjoin/2 ((ct1 clist-of) (ct2 clist-of))
+(defmethod disjoin/2 (client (ct1 clist-of) (ct2 clist-of))
   (clist-of (disjoin client (element-ctype ct1) (element-ctype ct2))))
 
 (defmethod subtract (client (ct1 clist-of) (ct2 clist-of))
@@ -67,7 +69,7 @@
 (defmethod subctypep (client (ct1 ccons) (ct2 clist-of))
   (let ((element-type (element-ctype ct2)))
     (do ((ct1 ct1 (ccons-cdr ct1)))
-        ((ctype= (cmember nil) ct1)
+        ((ctype= client (cmember nil) ct1)
          (values t t))
       (let ((type (ccons-car ct1)))
         (unless (subctypep client type element-type)

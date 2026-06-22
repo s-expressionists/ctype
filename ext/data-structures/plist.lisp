@@ -2,14 +2,10 @@
 
 (defclass cproperty-list (ctype)
   ((%key-ctypes :initarg :key-ctypes :reader key-ctypes :type list))
-  (:documentation
-   "Property list where each can can be of a different type. Other
-   properties are allowed. Absent properties are considered to be
-   `nil'."))
+  (:documentation "The type of property lists where values of the given keys must be of the corresponding types. Other properties are allowed but ignored. If one of the given keys is not present, its value is considered `nil'."))
 
 (defmethod property-ctype ((plist cproperty-list) property-key)
-  (or (cdr (assoc property-key (key-ctypes plist)))
-      (ctype:top)))
+  (or (cdr (assoc property-key (key-ctypes plist))) (top)))
 
 (defmethod keys ((plist cproperty-list))
   (mapcar #'car (key-ctypes plist)))
@@ -27,138 +23,98 @@
    'cproperty-list
    :key-ctypes key-ctypes))
 
-(define-extended-type plist (&rest property-ctypes &environment env)
-  :documentation
-  "A property list where the keys are the keys of the members of this
- type and the values are the required types of the property
- associated with the key."
-  :simple ((declare (ignore property-ctypes env))
-           'list)
-  :extended
-  ((cproperty-list
-    (loop for (key type) on property-ctypes by #'cddr
-          collect (cons key (extended-specifier-ctype type env))))))
+(defmethod cons-specifier-ctype ((client client) (head (eql 'plist))
+                                 rest env)
+  (destructuring-bind (&rest property-ctypes &key &allow-other-keys) rest
+    (cproperty-list
+     (loop for (key type) on property-ctypes
+           collect (cons key (specifier-ctype client type env))))))
 
-(defmethod ctypep ((list list) (ct cproperty-list))
-  (and (evenp (length list))
+(defmethod ctypep (client (list list) (ct cproperty-list))
+  (and (let ((len (list-length list))) (and len (evenp len)))
        (loop for (key . type) in (key-ctypes ct)
-             always
-             (ctypep (getf list key) type))))
-(defmethod ctypep ((object t) (ct cproperty-list)) nil)
+             always (ctypep client (getf list key) type))))
+(defmethod ctypep (client (object t) (ct cproperty-list))
+  (declare (ignore client))
+  nil)
 
-(defmethod subctypep ((ct1 cproperty-list) (ct2 cproperty-list))
+(defmethod subctypep (client (ct1 cproperty-list) (ct2 cproperty-list))
   (values
    (loop for (key . type2) in (key-ctypes ct2)
          always
-         (subctypep (property-ctype ct1 key) type2))
+         (subctypep client (property-ctype ct1 key) type2))
    t))
 
-(defmethod disjointp ((ct1 cproperty-list) (ct2 cproperty-list))
-  (let (total-disjointp (total-surep t))
-    (loop for key in (union (keys ct1) (keys ct2)) do
-          (multiple-value-bind (disjointp surep) (disjointp (property-ctype ct1 key) (property-ctype ct2 key))
-            (setq total-disjointp (or total-disjointp disjointp)
-                  total-surep (and total-surep surep))))
-    (values total-disjointp total-surep)))
+(defmethod disjointp (client (ct1 cproperty-list) (ct2 cproperty-list))
+  (some/tri (lambda (key)
+              (disjointp client
+                         (property-ctype ct1 key) (property-ctype ct2 key)))
+            (union (keys ct1) (keys ct2))))
 
-(defmethod conjointp ((ct1 cproperty-list) (ct2 cproperty-list)) (values nil t))
+(defmethod conjointp (client (ct1 cproperty-list) (ct2 cproperty-list))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod cofinitep ((ct cproperty-list)) (values nil t))
+(defmethod cofinitep (client (ct cproperty-list))
+  (declare (ignore client))
+  (values nil t))
 
-(defmethod conjoin/2 ((ct1 cproperty-list) (ct2 cproperty-list))
+(defmethod conjoin/2 (client (ct1 cproperty-list) (ct2 cproperty-list))
   (cproperty-list
    (loop for key in (union (keys ct1) (keys ct2))
-         collect
-         (let ((type (conjoin (property-ctype ct1 key)
-                              (property-ctype ct2 key))))
-           (if (bot-p type)
-               (return-from conjoin/2 (ctype:bot))
-               (cons key type))))))
+         for con = (conjoin client (property-ctype ct1 key)
+                            (property-ctype ct2 key))
+         if (bot-p con)
+           do (return-from conjoin/2 con)
+         else collect (cons key con))))
 
-(defmethod disjoin/2 ((ct1 cproperty-list) (ct2 cproperty-list))
+(defmethod disjoin/2 (client (ct1 cproperty-list) (ct2 cproperty-list))
   (cproperty-list
    (loop for key in (union (keys ct1) (keys ct2))
-         collect
-         (cons key (disjoin (property-ctype ct1 key)
-                            (property-ctype ct2 key))))))
+         for dis = (disjoin client
+                            (property-ctype ct1 key) (property-ctype ct2 key))
+         unless (top-p dis)
+           collect (cons key dis))))
 
-(defmethod subtract ((ct1 cproperty-list) (ct2 cproperty-list))
+(defmethod subtract (client (ct1 cproperty-list) (ct2 cproperty-list))
   (cproperty-list
    (loop for key in (union (keys ct1) (keys ct2))
-         collect
-         (cons key (conjoin (property-ctype ct1 key)
-                            (negate (property-ctype ct2 key)))))))
+         for con = (conjoin client (property-ctype ct1 key)
+                            (negate client (property-ctype ct2 key)))
+         if (bot-p con)
+           do (return-from subtract con)
+         else collect (cons key con))))
 
 ;;;
-
-(defmethod subctypep ((ct1 cproperty-list) (ct2 ccons))
-  (values
-   (and
-    (top-p (ccons-car ct2))
-    (top-p (ccons-cdr ct2))
-    (loop for (key . type) in (key-ctypes ct1)
-          never
-          (subctypep (cmember nil) type)))
-   t))
-
-(defmethod subctypep ((ct1 ccons) (ct2 cproperty-list))
-  (let ((not-present-keys (keys ct2)))
-    (do ((ct1 ct1 (ccons-cdr (ccons-cdr ct1))))
-        ((ctype= (cmember nil) ct1))
-      (when (ctype= (cmember nil) (ccons-cdr ct1))
-        (return-from subctypep (values nil t)))
-      (let ((key-spot (ccons-car ct1))
-            (type (ccons-car (ccons-cdr ct1))))
-        (if (typep key-spot 'cmember)
-            (dolist (key (cmember-members key-spot))
-              (setq not-present-keys (delete key not-present-keys))
-              (unless (subctypep type (property-ctype ct2 key))
-                (return-from subctypep (values nil t))))
-            (return-from subctypep (values nil nil)))))
-    (dolist (key not-present-keys)
-      (unless (subctypep (cmember nil) (property-ctype ct2 key))
-        (return-from subctypep (values nil t))))
-    (values t t)))
-
-(defmethod subctypep ((ct1 cmember) (ct2 cproperty-list))
-  (values
-   (and (equal (cmember-members ct1) '(nil))
-        (every
-         (lambda (property-ctype)
-           (subctypep (cmember nil) (cdr property-ctype)))
-         (key-ctypes ct2)))
-   t))
-
-(define-commutative-method disjointp ((plist cproperty-list) (ccons ccons))
-  (multiple-value-bind (subctypep surep)
-      (or/tri (subctypep plist ccons)
-              (subctypep ccons plist))
-    (values (not subctypep) surep)))
-
-(define-commutative-method disjointp ((plist cproperty-list) (cmember cmember))
-  (values (not (and (member nil (cmember-members cmember))
-                    (ctypep nil plist)))
-          t))
 
 (defexclusives cproperty-list range ccomplex carray charset cfunction fpzero)
 
 (defun sequence-cclass-p (cclass)
   (eq (class-name (cclass-class cclass)) 'sequence))
-(defmethod subctypep ((ct1 cproperty-list) (ct2 cclass))
+(defmethod subctypep (client (ct1 cproperty-list) (ct2 cclass))
+  (declare (ignore client))
   (values (sequence-cclass-p ct2) t))
-(defmethod subctypep ((ct1 cclass) (ct2 cproperty-list)) (values nil t))
-(define-commutative-method disjointp ((ct1 cproperty-list) (ct2 cclass))
+(defmethod subctypep (client (ct1 cclass) (ct2 cproperty-list))
+  (declare (ignore client))
+  (values nil t))
+(define-commutative-method disjointp (client (ct1 cproperty-list) (ct2 cclass))
+  (declare (ignore client))
   (values (not (sequence-cclass-p ct2)) t))
-(define-commutative-method conjoin/2 ((ct1 cproperty-list) (ct2 cclass))
+(define-commutative-method conjoin/2 (client (ct1 cproperty-list) (ct2 cclass))
+  (declare (ignore client))
   (if (sequence-cclass-p ct2) ct1 (bot)))
-(define-commutative-method disjoin/2 ((ct1 cproperty-list) (ct2 cclass))
+(define-commutative-method disjoin/2 (client (ct1 cproperty-list) (ct2 cclass))
+  (declare (ignore client))
   (if (sequence-cclass-p ct2) ct2 nil))
-(defmethod subtract ((ct1 cproperty-list) (ct2 cclass))
+(defmethod subtract (client (ct1 cproperty-list) (ct2 cclass))
+  (declare (ignore client))
   (if (sequence-cclass-p ct2) (bot) ct1))
-(defmethod subtract ((ct1 cclass) (ct2 cproperty-list))
+(defmethod subtract (client (ct1 cclass) (ct2 cproperty-list))
+  (declare (ignore client))
   (if (sequence-cclass-p ct1) nil (bot)))
 
-(defmethod subctypep ((plist cproperty-list) (list-of clist-of))
+(defmethod subctypep (client (plist cproperty-list) (list-of clist-of))
+  (declare (ignore client))
   (if (top-p (element-ctype list-of))
       (values t t)
-      (values nil t)))
+      (values nil nil)))

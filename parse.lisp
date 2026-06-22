@@ -318,8 +318,10 @@
         (specifier-ctype client p env)
         nil)))
 
-(defun class-specifier-ctype (class env)
-  (declare (ignore env))
+(defgeneric class-specifier-ctype (client class environment))
+
+(defmethod class-specifier-ctype (client (class class) env)
+  (declare (ignore client env))
   (cclass class))
 
 (defgeneric cons-specifier-ctype (client head rest env))
@@ -431,135 +433,18 @@
       (destructuring-bind (&optional (et '*) (length '*)) rest
         (array-ctype client :either et (list length) env))))
 
-(defvar *parse-extended-types* nil
-  "When `t', `specifier-ctype' will parse extended types. Use
-  `extended-specifier-ctype' instead of using this variable directly.")
-
-(defun remove-environment (lambda-list)
-  "Return(0) a new lambda list like LAMBDA-LIST but without the &environment
-  parameter. Return(1) the name of the removed &environment parameter."
-  (let (environment)
-    (values
-     (loop for keys on lambda-list
-           for key = (first keys)
-           if (eq key '&environment) do
-             (setq environment (second keys)
-                   keys (rest keys))
-           else collect key)
-     environment)))
-
-(defun declare-p (form)
-  (and (consp form)
-       (eq 'declare (first form))))
-
-(defun declaration-abouts (declaration)
-  (case (first declaration)
-    ((type ftype) (rest (rest declaration)))
-    (otherwise (rest declaration))))
-
-(defun declaration-specifier (declaration)
-  (case (first declaration)
-    ((type ftype) (subseq declaration 0 2))
-    (otherwise (subseq declaration 0 1))))
-
-(defun declarations-by (filter forms)
-  (let (result)
-    (dolist (form forms result)
-      (if (not (declare-p form))
-          (push form result)
-          (dolist (declaration (rest form))
-            (let ((vars (funcall filter (declaration-abouts declaration))))
-              (when vars
-                (push (list 'declare
-                            (append (declaration-specifier declaration)
-                                    vars))
-                      result))))))
-    (nreverse result)))
-
-(defun remove-declarations-for (var-name forms)
-  (declarations-by
-   (lambda (abouts)
-     (remove var-name abouts))
-   forms))
-
-(defun declarations-for (var-name forms)
-  (remove-if-not
-   #'declare-p
-   (declarations-by
-    (lambda (abouts)
-      (remove var-name abouts :test-not #'eql))
-    forms)))
-
-(defmacro define-extended-type (name lambda-list &key (documentation "") simple extended)
-  "Define a type NAME that can be used as a type specifier and as a constructor
-  for a custom ctype. The :simple expander is used by programs that only work
-  with type specifiers like `specifier-ctype'. The :extended expander is used by
-  programs that can take advantage of ctype extensions like
-  `extended-specifier-ctype'.
-
-  SIMPLE is a list of forms that return a type specifier that might not
-  completely represent the custom type.
-
-  EXTENDED is a list of forms that return a ctype that completely represents the
-  custom type.
-
-  Both the SIMPLE and the EXTENDED forms share the parameters of LAMBDA-LIST.
-
-  LAMBDA-LIST is a macro lambda list."
-  (assert simple nil "simple form is required")
-  (assert extended nil "extended form is required")
-  `(progn
-     (deftype ,name ,lambda-list
-       ,documentation
-       ,@simple)
-     (setf (get ',name 'extended-type-parser)
-           ,(multiple-value-bind
-                  (clean-lambda-list env-name) (remove-environment lambda-list)
-              (let* ((args (gensym)) (env (gensym))
-                     (body `(destructuring-bind ,clean-lambda-list ,args
-                              ,@(if env-name
-                                    (remove-declarations-for env-name extended)
-                                    extended))))
-                `(lambda (,args ,env)
-                   ,documentation
-                   ,@(if env-name
-                         `((let ((,env-name ,env))
-                             ,@(declarations-for env-name extended)
-                            ,body))
-                         `((declare (ignore ,env))
-                           ,body))))))
-     ',name))
-
 (defgeneric parse-expanded (client specifier environment))
 (defmethod parse-expanded (client (spec cons) env)
   (cons-specifier-ctype client (car spec) (cdr spec) env))
 (defmethod parse-expanded (client (spec symbol) env)
   (or (symbol-specifier-ctype client spec env)
-      (class-specifier-ctype (find-class client spec t env) env)))
+      (class-specifier-ctype client (find-class client spec t env) env)))
 (defmethod parse-expanded (client (spec class) env)
   (or (symbol-specifier-ctype client (class-name spec) env)
-      (class-specifier-ctype spec env)))
-
-(defgeneric parse-extended (client specifier environment))
-(defmethod parse-extended (client (specifier cons) env)
-  (let* ((name (car specifier))
-         (args (cdr specifier))
-         (parser (get name 'extended-type-parser)))
-    (if parser
-        (funcall parser args env)
-        (parse-expanded client (typexpand client specifier env) env))))
-(defmethod parse-extended (client (specifier symbol) env)
-  (let ((parser (get specifier 'extended-type-parser)))
-    (if parser
-        (funcall parser nil env)
-        (parse-expanded client (typexpand client specifier env) env))))
-(defmethod parse-extended (client specifier env)
-  (parse-expanded client (typexpand client specifier env) env))
+      (class-specifier-ctype client spec env)))
 
 (defun parse (client specifier env)
-  (if *parse-extended-types*
-      (parse-extended client specifier env)
-      (parse-expanded client (typexpand client specifier env) env)))
+  (parse-expanded client (typexpand client specifier env) env))
 
 (defun specifier-ctype (client specifier &optional env)
   (let ((ct (parse client specifier env)))
