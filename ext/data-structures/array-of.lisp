@@ -107,26 +107,34 @@
   (declare (ignore client))
   nil)
 
-(defmethod subctypep (client (ct1 carray-of) (ct2 carray-of))
+(defmethod subctypep :around (client (ct1 carray-of) (ct2 carray-of))
   (and/tri (call-next-method)
            (subctypep client
                       (carray-eaet ct1) (carray-eaet ct2))))
 
-(define-commutative-method conjoin/2
-    (client (array1 carray-of) (array2 ctype))
+;; can't use define-commutative-method because of the :around
+(defun to-array-of (result)
+  (make-instance 'carray
+    :dims (carray-dims result) :simplicity (carray-simplicity result)
+    :eaet (carray-eaet result) :uaet (carray-uaet result)))
+
+(defmethod conjoin/2 :around (client (array1 carray-of) (array2 ctype))
   ;; Use the next methods (on basic carrays) and copy everything into a carray-of.
   ;; carray already merges the expressed array element types.
   (let ((result (call-next-method)))
     (if (typep result 'carray)
-        (make-instance 'carray
-          :dims (carray-dims result) :simplicity (carray-simplicity result)
-          :eaet (carray-eaet result) :uaet (carray-uaet result))
+        (to-array-of result)
         result))) ; nil or bottom
+(defmethod conjoin/2 :around (client (array1 ctype) (array2 carray-of))
+  (let ((result (call-next-method)))
+    (if (typep result 'carray)
+        (to-array-of result)
+        result)))
 
-(defmethod disjointp (client (ct1 carray-of) (ct2 carray-of))
+(defmethod disjointp :around (client (ct1 carray-of) (ct2 carray-of))
   (or/tri (call-next-method)
           (disjointp client (carray-eaet ct1) (carray-eaet ct2))))
 
-(defmethod ctype= (client (ct1 carray-of) (ct2 carray-of))
+(defmethod ctype= :around (client (ct1 carray-of) (ct2 carray-of))
   (and/tri (call-next-method)
            (ctype= client (carray-eaet ct1) (carray-eaet ct2))))

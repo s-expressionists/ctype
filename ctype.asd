@@ -89,7 +89,7 @@
 
 (defsystem #:ctype/test
   :author ("Bike <aeshtaer@gmail.com>")
-  :depends-on (#:ctype #:fiveam)
+  :depends-on (#:ctype #:ctype/ext #:fiveam)
   :components
   ((:module "test"
     :components ((:file "packages")
@@ -118,4 +118,7 @@
                                 :depends-on ("aux"))
                                (:file "subtypep-real"
                                 :depends-on ("aux"))
-                               (:file "subtypep" :depends-on ("aux"))))))))
+                               (:file "subtypep" :depends-on ("aux"))))
+                 (:module "ext"
+                  :depends-on ("suites" "rt" "packages")
+                  :components ((:file "data-structures")))))))
