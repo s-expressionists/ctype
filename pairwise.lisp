@@ -32,28 +32,13 @@
 (defexclusives cclass carray range ccomplex charset)
 (defexclusives fpzero cmember ccomplex carray charset cfunction)
 
-;;; cons types are unfortunately ambiguous: (cons (satisfies foo)) MIGHT be
-;;; bottom "in disguise", and might not be.
-;;; This is basically (subctypep ccons (bot)), but we use this in subctypep
-;;; methods themselves, so we have to reduce it to mimic the usual subctypep
-;;; method in ccons.lisp.
-;;; To be clear, the idea here is not that a subctypep will ever return true-
-;;; thanks to normalization, it won't. But whether the cons is definitely NOT
-;;; bottom can vary.
-(defun ccons-bottom-p (client ccons)
-  (or/tri (subctypep client (ccons-car ccons) (bot))
-          (subctypep client (ccons-cdr ccons) (bot))))
-
-(defmethod subctypep (client (ct1 ccons) (ct2 ctype))
-  (if (ccons-bottom-p client ct1) (values t t) (values nil nil)))
-
 (macrolet ((consxclusive/1 (class)
              `(progn
                 (defmethod subctypep (client (ct1 ccons) (ct2 ,class))
                   ;; ct1 and ct2 are basically exclusive, so if ct1 is
                   ;; definitely NOT bottom, they really are exclusive.
                   ;; That's why this is different from the general method above.
-                  (ccons-bottom-p client ct1))
+                  (emptyp client ct1))
                 (defmethod subctypep (client (ct1 ,class) (ct2 ccons))
                   (declare (ignore client))
                   (values nil t))
@@ -160,61 +145,10 @@
       nil
       ct1))
 
-;;; Some ctypes are never empty and also never top. Define this explicitly.
-(defmacro defexistential (class)
-  `(progn
-     (defmethod subctypep (client (ct1 ,class) (ct2 disjunction))
-       (declare (ignore client))
-       (if (bot-p ct2)
-           (values nil t)
-           (values nil nil)))
-     (defmethod subctypep (client (ct1 conjunction) (ct2 ,class))
-       (declare (ignore client))
-       (if (top-p ct1)
-           (values nil t)
-           (values nil nil)))))
-(defexistential cclass)
-(defexistential range)
-(defexistential ccomplex)
-(defexistential carray)
-(defexistential charset)
-(defexistential cfunction)
-(defexistential csequence)
-
-;;; See ccons-bottom-p above
-(defmethod subctypep (client (ct1 ccons) (ct2 disjunction))
-  (if (bot-p ct2)
-      (ccons-bottom-p client ct1)
-      (values nil nil)))
-(defmethod subctypep (client (ct1 conjunction) (ct2 ccons))
-  (if (top-p ct1)
-      (values nil t)
-      (values nil nil)))
-
-;;; Some ctypes represent an infinite number of possible objects, so they are
-;;; never subctypes of any member ctype.
-
-(defmacro definfinite (class)
-  `(defmethod subctypep (client (ct1 ,class) (ct2 cmember))
-     (declare (ignore client))
-     (values nil t)))
-
-(definfinite range)
-(definfinite ccomplex)
-(definfinite carray)
-(definfinite cfunction)
-(definfinite csequence)
-
-;; note that e.g. (cons (eql 1) (eql 1)) is still infinite, since you can keep
-;; calling cons to get fresh conses of (1 . 1).
-(defmethod subctypep (client (ct1 ccons) (ct2 cmember))
-  (or/tri (ccons-bottom-p client ct1) (values nil t)))
-
 ;;; We normalize characters out of member types, so members never contain
 ;;; characters. charsets are not infinite, though.
-(defmethod subctypep (client (ct1 charset) (ct2 cmember))
-  (declare (ignore client))
-  (values nil t))
+;;; Reals are also normalized out.
+(defexclusives cmember charset range)
 
 ;;; Resolve some (subtypep '(not X) '(member ...)) questions negatively.
 (defmethod subctypep (client (ct1 negation) (ct2 cmember))
@@ -279,32 +213,6 @@
                               (range k low lxp zero t)
                               (range k zero t high hxp)))))
         nil)))
-
-;;; This is sort of the hardest method - including both
-;;; (subtypep t ...) and (subtypep ... nil), which are hard problems in general.
-;;; If you're wondering, the (disjunction conjunction) is easy - the methods on
-;;; both (disjunction ctype) and (ctype conjunction) give comprehensive answers.
-;;; FIXME: Hard it may be, but we can improve on this.
-(defmethod subctypep (client (ct1 conjunction) (ct2 disjunction))
-  (let ((cjs (junction-ctypes ct1)) (djs (junction-ctypes ct2)))
-    (cond ((null cjs) ; (subtypep 't '(or ...))
-           (case (length djs)
-             ((0) (values nil t)) ; (subtypep 't 'nil)
-             ;; degenerate; normalization ought to make this impossible
-             ((1) (subctypep client ct1 (first djs)))
-             ((2)
-              ;; Special case: we can use conjointp, which will sometimes
-              ;; give definitive negative answers: e.g.
-              ;; (subtypep 't '(or cons integer)) is false.
-              (conjointp client (first djs) (second djs)))
-             (t (values nil nil))))
-          ((null djs) ; (subtypep '(and ...) 'nil)
-           (case (length cjs)
-             ((1) (subctypep client (first cjs) ct2)) ; degenerate
-             ((2) (disjointp client (first cjs) (second cjs)))
-             (t (values nil nil))))
-          (t ; (subtypep '(and ...) '(or ...))
-           (values nil nil)))))
 
 ;;; dumb KLUDGE: the standard requires that (subtypep 'keyword nil)
 ;;; and (subtypep 'compiled-function nil) give valid answers (i.e., false)

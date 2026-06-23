@@ -11,10 +11,8 @@
   ;; this also covers the case of ct1 being bot.
   (every/tri (lambda (sct) (subctypep client sct ct2)) (junction-ctypes ct1)))
 (defmethod subctypep (client (ct1 ctype) (ct2 disjunction))
-  #+(or)
-  (or/tri
-   (some/tri (lambda (sct) (subctypep client ct1 sct)) (junction-ctypes ct2))
-   (call-next-method))
+  (when (null (junction-ctypes ct2))
+    (return-from subctypep (emptyp client ct1)))
   ;; a <: (z v y) <=> a ^ (z v y) = a <=> (a ^ z) v (a ^ y) = a
   ;; Obviously if a <: z this reduces to a v (a ^ y) = a which is true. Ditto y.
   ;; Getting a definite negative result is a little more challenging.
@@ -58,6 +56,20 @@
   (if (some/tri (lambda (sct) (conjointp client sct ct2)) (junction-ctypes ct1))
       (values t t)
       (values nil nil)))
+
+(defmethod emptyp (client (ctype disjunction))
+  (every/tri (lambda (sct) (emptyp client sct)) (junction-ctypes ctype)))
+(defmethod universalp (client (ctype disjunction))
+  (case (length (junction-ctypes ctype))
+    ((0) (values nil t)) ; this ensures that e.g. (subtypep t nil) => NIL T
+    ((1) (universalp client (first (junction-ctypes ctype)))) ; degenerate
+    ((2) (conjointp client (first (junction-ctypes ctype))
+                    (second (junction-ctypes ctype))))
+    ;; here we could do a quadratic search over all pairs. but that's expensive
+    ;; and conjointness is rare. Also note that DISJOIN does a quadratic search
+    ;; with disjoin/2 already, and doing that at construction time is better than
+    ;; doing it here.
+    (t (values nil nil))))
 
 (defmethod negate (client (ctype disjunction))
   (apply #'conjoin

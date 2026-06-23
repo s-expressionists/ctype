@@ -67,6 +67,13 @@
                (equal (carray-dims ct1) (carray-dims ct2)))
           t))
 
+(defexistential carray)
+
+(defmethod finitep (client (ct carray))
+  (declare (ignore client))
+  ;; Array types are not finite even if the element type is, since one can
+  ;; keep consing new distinct arrays with the same elements.
+  (values nil t))
 (defmethod cofinitep (client (ct carray))
   (declare (ignore client))
   (values nil t))

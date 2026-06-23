@@ -12,6 +12,8 @@
   (declare (ignore client))
   (values (eql (cclass-class ct1) (cclass-class ct2)) t))
 
+(defexistential cclass)
+
 (defmethod cofinitep (client (ct cclass))
   (declare (ignore client))
   (values nil t))

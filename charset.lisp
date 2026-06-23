@@ -42,6 +42,13 @@
   (declare (ignore client))
   (values nil t))
 
+(defexistential charset)
+
+;;; these methods are a little pointless since charset-cmember comparisons are
+;;; special cased in pairwise.lisp, but we keep them for completeness.
+(defmethod finitep (client (ct charset))
+  (declare (ignore client))
+  (values t t))
 (defmethod cofinitep (client (ct charset))
   (declare (ignore client))
   (values nil t))

@@ -42,6 +42,16 @@
 (define-commutative-method conjointp (client (ct1 negation) (ct2 ctype))
   (subctypep client (negation-ctype ct1) ct2))
 
+(defmethod emptyp (client (ct negation))
+  (universalp client (negation-ctype ct)))
+(defmethod universalp (client (ct negation))
+  (emptyp client (negation-ctype ct)))
+
+(defmethod finitep (client (ct negation))
+  (cofinitep client (negation-ctype ct)))
+(defmethod cofinitep (client (ct negation))
+  (finitep client (negation-ctype ct)))
+
 (defmethod negate (client (ctype negation))
   (declare (ignore client))
   (negation-ctype ctype))

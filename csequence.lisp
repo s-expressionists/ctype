@@ -29,6 +29,11 @@
   (declare (ignore client))
   (values nil t))
 
+(defexistential csequence)
+
+(defmethod finitep (client (ct csequence))
+  (declare (ignore client))
+  (values nil t))
 (defmethod cofinitep (client (ct csequence))
   (declare (ignore client))
   (values nil t))

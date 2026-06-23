@@ -32,6 +32,11 @@
   (declare (ignore client))
   (values nil t))
 
+;;; pointless since fpzero-cmember comparisons are special cased in pairwise.lisp
+;;; but done for completeness. May also be relevant with negations.
+(defmethod finitep (client (ct fpzero))
+  (declare (ignore client))
+  (values t t))
 (defmethod cofinitep (client (ct fpzero))
   (declare (ignore client))
   (values nil t))

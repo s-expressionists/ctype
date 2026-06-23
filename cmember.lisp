@@ -8,6 +8,10 @@
   (values (loop for m in (cmember-members ct1)
                 always (ctypep client m ct2))
           t))
+(defmethod subctypep (client (ct1 ctype) (ct2 cmember))
+  (if (finitep client ct1)
+      (values nil nil)
+      (values nil t)))
 (defmethod subctypep (client (ct1 cmember) (ct2 cmember))
   (declare (ignore client))
   (values (subsetp (cmember-members ct1) (cmember-members ct2)) t))
@@ -23,6 +27,16 @@
   (declare (ignore client))
   (values nil t))
 
+(defmethod emptyp (client (cmember cmember))
+  (declare (ignore client))
+  (values (null (cmember-members cmember)) t)) ; degenerate but just in case
+(defmethod universalp (client (ct cmember))
+  (declare (ignore client))
+  (values nil t))
+
+(defmethod finitep (client (ct cmember))
+  (declare (ignore client))
+  (values t t))
 (defmethod cofinitep (client (ct cmember))
   (declare (ignore client))
   (values nil t))

@@ -38,9 +38,37 @@
     (declare (ignore client))
     (values nil nil)))
 
+;;; Same restrictions. Is a type empty or everything (bottom or top)?
+;;; Used for e.g. (subtypep t 'x), and indirectly for (subtypep '(not x) nil)
+;;; which would otherwise be challenging.
+;;; Note that this is distinct from bot-p and top-p, which only determine whether
+;;; a type is the particular NIL or T type, i.e. does not do any analysis.
+;;; Note also that these methods are NOT used in a default method on subctypep
+;;; above. The idea is that a ctype class should do specific subctypep processing
+;;; that removes the need for those generalities, although there's no problem
+;;; with specific methods using emptyp/universalp (see ccons for example).
+;;; A default method also would have to ignore NIL T results even if they do mean
+;;; not-subtype for the particular case.
+;;; Again see ccons (consxclusive/1 in pairwise.lisp).
+(defgeneric emptyp (client ctype)
+  (:method-combination basic surely)
+  (:method (client (ctype ctype))
+    (declare (ignore client))
+    (values nil nil)))
+(defgeneric universalp (client ctype)
+  (:method-combination basic surely)
+  (:method (client (ctype ctype))
+    (declare (ignore client))
+    (values nil nil)))
+
 ;;; Ditto the restrictions etc., and returns the same kinds of values.
-;;; Determines whether the negation of a type is finite. This is used to
+;;; Determines whether a type or its negation are finite. This is used to
 ;;; resolve questions like (subtypep '(not X) '(member ...))
+(defgeneric finitep (client ctype)
+  (:method-combination basic surely)
+  (:method (client (ct ctype))
+    (declare (ignore client))
+    (values nil nil)))
 (defgeneric cofinitep (client ctype)
   (:method-combination basic surely)
   (:method (client (ct ctype))
@@ -89,6 +117,17 @@
         (print-unreadable-object (ct stream :type t)
           (write unparse :stream stream))))
   ct)
+
+;;; convenience macro for the very common case of a type always existing
+;;; and never being the universe.
+(defmacro defexistential (class)
+  `(progn
+     (defmethod emptyp (client (ctype ,class))
+       (declare (ignore client))
+       (values nil t))
+     (defmethod universalp (client (ctype ,class))
+       (declare (ignore client))
+       (values nil t))))
 
 (macrolet
     ((defjoin (name simp junct)

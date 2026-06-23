@@ -72,6 +72,8 @@
   (declare (ignore client))
   (values nil t))
 
+(defexistential range)
+
 (defmethod cofinitep (client (ct range))
   (declare (ignore client))
   (values nil t))

@@ -10,6 +10,8 @@
   ;; Knowing conjointness is much rarer than knowing disjointness, but does
   ;; happen occasionally; an example is that we can know that
   ;; (subtypep '(and (not integer) (not cons)) 'integer) => NIL, T
+  (when (null (junction-ctypes ct1))
+    (return-from subctypep (universalp client ct2)))
   (loop with surety = t
         with not-subtype = 0
         with not-subtype-and-not-conjoint = 0
@@ -48,6 +50,19 @@
 (define-commutative-method conjointp (client (ct1 conjunction) (ct2 ctype))
   ;; (a ^ b) v z = T <=> (a v z) ^ (b v z) = T
   (every/tri (lambda (sct) (conjointp client sct ct2)) (junction-ctypes ct1)))
+
+(defmethod emptyp (client (ctype conjunction))
+  (case (length (junction-ctypes ctype))
+    ((0) (values nil t))
+    ((1) (emptyp client (first (junction-ctypes ctype))))
+    ((2) (disjointp client (first (junction-ctypes ctype))
+                    (second (junction-ctypes ctype))))
+    (t (values nil nil))))
+(defmethod universalp (client (ctype conjunction))
+  (every/tri (lambda (sct) (universalp client sct)) (junction-ctypes ctype)))
+
+(defmethod finitep (client (ctype conjunction))
+  (some/tri (lambda (sct) (finitep client sct)) (junction-ctypes ctype)))
 
 (defmethod negate (client (ctype conjunction))
   ;; de Morgan: ~(a & b) = ~a | ~b

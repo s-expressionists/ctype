@@ -10,6 +10,10 @@
 (defmethod subctypep (client (ct1 ccons) (ct2 ccons))
   (and/tri (subctypep client (ccons-car ct1) (ccons-car ct2))
            (subctypep client (ccons-cdr ct1) (ccons-cdr ct2))))
+(defmethod subctypep (client (ct1 ccons) (ct2 ctype))
+  (if (emptyp client ct1)
+      (values t t)
+      (values nil nil)))
 
 (defmethod ctype= (client (ct1 ccons) (ct2 ccons))
   (and/tri (ctype= client (ccons-car ct1) (ccons-car ct2))
@@ -22,6 +26,23 @@
   (declare (ignore client))
   (values nil t))
 
+;;; cons types are unfortunately ambiguous: (cons (satisfies foo)) MIGHT be
+;;; bottom "in disguise", and might not be.
+;;; To be clear, the idea here is not that a subctypep will ever return true-
+;;; thanks to normalization, it won't. But whether the cons is definitely NOT
+;;; bottom can vary.
+(defmethod emptyp (client (ct ccons))
+  (or/tri (emptyp client (ccons-car ct))
+          (emptyp client (ccons-cdr ct))))
+(defmethod universalp (client (ct ccons))
+  (declare (ignore client))
+  (values nil t))
+
+(defmethod finitep (client (ct ccons))
+  ;; note that e.g. (cons (eql 1) (eql 1)) is still infinite, since you can keep
+  ;; calling cons to get fresh conses of (1 . 1).
+  ;; But (cons nil nil) is finite because it has zero elements.
+  (emptyp client ct))
 (defmethod cofinitep (client (ct1 ccons))
   (declare (ignore client))
   (values nil t))

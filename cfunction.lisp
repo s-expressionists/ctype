@@ -59,6 +59,11 @@
                 (surety1 (values t t))
                 (t (values nil nil)))))))
 
+(defexistential cfunction)
+
+(defmethod finitep (client (ct cfunction))
+  (declare (ignore client))
+  (values nil t))
 (defmethod cofinitep (client (ct cfunction))
   (declare (ignore client))
   (values nil t))

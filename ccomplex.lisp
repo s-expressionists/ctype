@@ -19,6 +19,8 @@
   (declare (ignore client))
   (values nil t))
 
+(defexistential ccomplex)
+
 (defmethod cofinitep (client (ct ccomplex))
   (declare (ignore client))
   (values nil t))
