@@ -179,6 +179,7 @@
 (defexistential carray)
 (defexistential charset)
 (defexistential cfunction)
+(defexistential csequence)
 
 ;;; See ccons-bottom-p above
 (defmethod subctypep (client (ct1 ccons) (ct2 disjunction))
@@ -202,6 +203,7 @@
 (definfinite ccomplex)
 (definfinite carray)
 (definfinite cfunction)
+(definfinite csequence)
 
 ;; note that e.g. (cons (eql 1) (eql 1)) is still infinite, since you can keep
 ;; calling cons to get fresh conses of (1 . 1).
