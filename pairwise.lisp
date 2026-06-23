@@ -305,3 +305,26 @@
              (t (values nil nil))))
           (t ; (subtypep '(and ...) '(or ...))
            (values nil nil)))))
+
+;;; dumb KLUDGE: the standard requires that (subtypep 'keyword nil)
+;;; and (subtypep 'compiled-function nil) give valid answers (i.e., false)
+;;; but there's no natural way to represent these types.
+;;; We use SATISFIES, which is hard to do anything with.
+;;; Here we special case some SATISFIES disjointp queries so that these two
+;;; types are known to be above NIL. I think this is the last bad way to do it.
+;;; Note that we do _not_ define subctypep for the admittedly dumb reason that
+;;; (and function (satisfies ...)) is easier to work with in some ways than
+;;; (satisfies compiled-function-p) would be, and ditto keywordp.
+(define-commutative-method disjointp (client (class1 csatisfies) (class2 cclass))
+  (declare (ignore client))
+  (if (and (eq (csatisfies-fname class1) 'keywordp)
+           (eq (class-name (cclass-class class2)) 'symbol))
+      (values nil t)
+      (values nil nil)))
+(define-commutative-method disjointp
+    (client (class1 csatisfies) (class2 cfunction))
+  (declare (ignore client))
+  (if (and (eq (csatisfies-fname class1) 'compiled-function-p)
+           (function-top-p class2))
+      (values nil t)
+      (values nil nil)))

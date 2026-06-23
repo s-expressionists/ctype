@@ -204,7 +204,7 @@
 (5am:test subtypep.nil.1
   (loop for (type) in *subtype-table*
         unless (member type '(nil extended-char))
-        do (check-all-not-subtypep type nil nil)))
+        do (check-all-not-subtypep type nil)))
 
 (5am:test subtypep.nil.2
   (loop for (type) in *subtype-table*
