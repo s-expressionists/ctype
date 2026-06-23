@@ -458,13 +458,3 @@
         ct
         ;; Treat X as (values X).
         (parse-values-ctype client `(,specifier) env))))
-
-(defun extended-specifier-ctype (client specifier &optional env)
-  "Return the ctype specified by the possibly extended SPECIFIER."
-  (let ((*parse-extended-types* t))
-    (specifier-ctype client specifier env)))
-
-(defun extended-values-specifier-ctype (client specifier &optional env)
-  "Return the ctype specified by the possibly extended values SPECIFIER."
-  (let ((*parse-extended-types* t))
-    (values-specifier-ctype client specifier env)))
