@@ -238,7 +238,35 @@
             (and valid (not sub) is-sub)
             (and (not valid) should-be-valid))
         `(((SUBTYPEP ,type1 ,type2) :==> ,sub ,valid))
-      nil)));;; Check that the subtype relationships implied
+        nil)))
+
+(defun check-disjointp (type1 type2 is-dis &optional should-be-valid)
+  (multiple-value-bind (dis valid)
+      (ctype:disjointp ctype-extrinsic:*client*
+                       (ctype-extrinsic:specifier-ctype type1)
+                       (ctype-extrinsic:specifier-ctype type2))
+    (unless (constantp type1) (setq type1 (list 'quote type1)))
+    (unless (constantp type2) (setq type2 (list 'quote type2)))
+    (if (or (and valid dis (not is-dis))
+            (and valid (not dis) is-dis)
+            (and (not valid) should-be-valid))
+        `(((CTYPE:DISJOINTP ,type1 ,type2) :==> ,dis ,valid))
+        nil)))
+
+(defun check-type= (type1 type2 is-type= &optional should-be-valid)
+  (multiple-value-bind (type= valid)
+      (ctype:ctype= ctype-extrinsic:*client*
+                    (ctype-extrinsic:specifier-ctype type1)
+                    (ctype-extrinsic:specifier-ctype type2))
+    (unless (constantp type1) (setq type1 (list 'quote type1)))
+    (unless (constantp type2) (setq type2 (list 'quote type2)))
+    (if (or (and valid type= (not is-type=))
+            (and valid (not type=) is-type=)
+            (and (not valid) should-be-valid))
+        `(((CTYPE:CTYPE= ,type1 ,type2) :==> ,type= ,valid))
+        nil)))
+
+;;; Check that the subtype relationships implied
 ;;; by disjointness are not contradicted.  Return NIL
 ;;; if ok, or a list of error messages if not.
 
@@ -262,6 +290,7 @@
 ;;;   (check-subtypep type2 `(or (not ,type1) ,type2) t)
    (check-subtypep t `(or (not ,type1) (not ,type2)) t)
    (check-subtypep t `(or (not ,type2) (not ,type1)) t)
+   (check-disjointp type1 type2 t)
    ))
 
 (defun check-equivalence (type1 type2)
@@ -277,7 +306,8 @@
    (check-subtypep t `(or ,type1 (not ,type2)) t)
    (check-subtypep t `(or ,type2 (not ,type1)) t)
    (check-subtypep t `(or (not ,type2) ,type1) t)
-   (check-subtypep t `(or (not ,type1) ,type2) t)))
+   (check-subtypep t `(or (not ,type1) ,type2) t)
+   (check-type= type1 type2 t)))
 
 (defun check-all-subtypep (type1 type2)
   (append
