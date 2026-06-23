@@ -13,12 +13,10 @@
 
 (defmethod ctypep (client object (ct cfunction))
   (declare (ignore client))
-  (if (functionp object)
-      (if (function-top-p ct)
-          t
-          (error "Cannot use complex function type ~a for ~a"
-                 ct 'ctypep))
-      nil))
+  (if (function-top-p ct)
+      (functionp object)
+      (error "Cannot use complex function type ~a for ~a"
+             ct 'ctypep)))
 
 (defun sub-lambda-list-p (client ll1 ll2)
   (let ((req1 (lambda-list-required ll1)) (req2 (lambda-list-required ll2))
