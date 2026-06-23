@@ -5,11 +5,15 @@
 
 (defun run! (*client*) (5am:run! 'ctype))
 
+(defvar *strict* nil)
+
 ;;; misc operators
 ;; like ansi-test's check-subtypep, but more 5am-y
 (defun is-subtypep (type1 type2 &optional (is-sub t) (should-be-valid is-sub))
   (multiple-value-bind (sub valid) (subtypep type1 type2)
-    (5am:is-true (if valid (eq is-sub sub) (not should-be-valid))
+    (5am:is-true (if valid
+                     (eq is-sub sub)
+                     (and (not *strict*) (not should-be-valid)))
                  "~s was~:[ not~;~] recognizably~:[ not~;~] a subtype of ~s"
                  type1 valid is-sub type2)))
 
@@ -17,7 +21,9 @@
   (multiple-value-bind (dis valid)
       (ctype:disjointp ctype-extrinsic:*client*
                        (specifier-ctype type1) (specifier-ctype type2))
-    (5am:is-true (if valid (eq is-dis dis) (not should-be-valid))
+    (5am:is-true (if valid
+                     (eq is-dis dis)
+                     (and (not *strict*) (not should-be-valid)))
                  "~s was~:[ not~;~] recognizably~:[ not~;~] disjoint from ~s"
                  type1 valid is-dis type2)))
 
@@ -25,7 +31,9 @@
   (multiple-value-bind (eqv valid)
       (ctype:ctype= ctype-extrinsic:*client*
                     (specifier-ctype type1) (specifier-ctype type2))
-    (5am:is-true (if valid (eq is-eqv eqv) (not should-be-valid))
+    (5am:is-true (if valid
+                     (eq is-eqv eqv)
+                     (and (not *strict*) (not should-be-valid)))
                  "~s was~:[ not~;~] recognizably~:[ not~;~] equivalent to ~s"
                  type1 valid is-eqv type2)))
 
