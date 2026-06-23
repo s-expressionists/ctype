@@ -49,4 +49,4 @@
 
 (defmethod subclassp (client (sub class) (super class))
   (declare (ignore client))
-  (cl:subtypep sub super))
+  (values (cl:subtypep sub super)))
