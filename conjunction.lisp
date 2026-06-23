@@ -39,9 +39,11 @@
 (define-commutative-method disjointp (client (ct1 conjunction) (ct2 ctype))
   ;; if a ^ z = 0 then a ^ b ^ z = 0.
   ;; doesn't follow the other way, though.
-  (if (some/tri (lambda (sct) (disjointp client sct ct2)) (junction-ctypes ct1))
-      (values t t)
-      (values nil nil)))
+  (cond ((null (junction-ctypes ct1)) (values nil t)) ; T is disjoint from nothing
+        ((some/tri (lambda (sct) (disjointp client sct ct2))
+                   (junction-ctypes ct1))
+         (values t t))
+        (t (values nil nil))))
 
 (define-commutative-method conjointp (client (ct1 conjunction) (ct2 ctype))
   ;; (a ^ b) v z = T <=> (a v z) ^ (b v z) = T
