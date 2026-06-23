@@ -131,91 +131,83 @@
     (values t t))
   t t)
 
-(deftest subtypep.extended-char.3
+(5am:test subtypep.extended-char.3
   (check-equivalence 'extended-char '(and character (not base-char)))
   nil)
 
 
 ;;; Some and, or combinations
 
-(deftest subtypep.and/or.1
+(5am:test subtypep.and/or.1
   (check-equivalence
    '(and (or symbol (integer 0 15))
          (or symbol (integer 10 25)))
    '(or symbol (integer 10 15)))
   nil)
 
-(deftest subtypep.and/or.2
+(5am:test subtypep.and/or.2
   (check-equivalence
    '(and (or (not symbol) (integer 0 10))
          (or symbol (integer 11 25)))
    '(integer 11 25))
   nil)
 
-(deftest subtypep.and.1
+(5am:test subtypep.and.1
   (loop for type in *types-list3*
-        append (check-equivalence `(and ,type ,type) type))
+        do (check-equivalence `(and ,type ,type) type))
   nil)
 
-(deftest subtypep.or.1
+(5am:test subtypep.or.1
   (loop for type in *types-list3*
-        append (check-equivalence `(or ,type ,type) type))
+        do (check-equivalence `(or ,type ,type) type))
   nil)
 
-(deftest subtypep.and.2
+(5am:test subtypep.and.2
   (check-equivalence t '(and))
   nil)
 
-(deftest subtypep.or.2
+(5am:test subtypep.or.2
   (check-equivalence nil '(or))
   nil)
 
-(deftest subtypep.and.3
+(5am:test subtypep.and.3
   (loop for type in *types-list3*
-        append (check-equivalence `(and ,type) type))
+        do (check-equivalence `(and ,type) type))
   nil)
 
-(deftest subtypep.or.3
+(5am:test subtypep.or.3
   (loop for type in *types-list3*
-        append (check-equivalence `(or ,type) type))
+        do (check-equivalence `(or ,type) type))
   nil)
 
-(deftest subtypep.and.4
+(5am:test subtypep.and.4
   (let* ((n (length *types-list3*))
          (a (make-array n :initial-contents *types-list3*)))
-    (trim-list
+    (loop for i below 1000
+          for tp1 = (aref a (random n))
+          for tp2 = (aref a (random n))
+          do (check-equivalence `(and ,tp1 ,tp2)
+                                `(and ,tp2 ,tp1)))))
+
+(5am:test subtypep.or.4
+  (let* ((n (length *types-list3*))
+         (a (make-array n :initial-contents *types-list3*)))
      (loop for i below 1000
            for tp1 = (aref a (random n))
            for tp2 = (aref a (random n))
-           append (check-equivalence `(and ,tp1 ,tp2)
-                                     `(and ,tp2 ,tp1)))
-     100))
-  nil)
-
-(deftest subtypep.or.4
-  (let* ((n (length *types-list3*))
-         (a (make-array n :initial-contents *types-list3*)))
-    (trim-list
-     (loop for i below 1000
-           for tp1 = (aref a (random n))
-           for tp2 = (aref a (random n))
-           append (check-equivalence `(or ,tp1 ,tp2)
-                                     `(or ,tp2 ,tp1)))
-     100))
-  nil)
+           do (check-equivalence `(or ,tp1 ,tp2)
+                                 `(or ,tp2 ,tp1)))))
 
 ;;; Check that types that are supposed to be nonempty are
 ;;; not subtypes of NIL
 
-(deftest subtypep.nil.1
+(5am:test subtypep.nil.1
   (loop for (type) in *subtype-table*
         unless (member type '(nil extended-char))
-        append (check-all-not-subtypep type nil))
-  nil)
+        do (check-all-not-subtypep type nil nil)))
 
-(deftest subtypep.nil.2
+(5am:test subtypep.nil.2
   (loop for (type) in *subtype-table*
         for class = (find-class type nil)
         unless (or (not class) (member type '(nil extended-char)))
-        append (check-all-not-subtypep class nil))
-  nil)
+        do (check-all-not-subtypep class nil)))

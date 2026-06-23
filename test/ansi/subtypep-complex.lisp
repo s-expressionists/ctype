@@ -17,37 +17,26 @@
   nil t)
 
 (defun check-not-complex-type (type)
-  (let ((result1 (multiple-value-list (subtypep* type 'complex)))
-        (result2 (multiple-value-list (subtypep* 'complex type))))
-    (if (and (equal result1 '(nil t))
-             (equal result2 '(nil t)))
-        nil
-      (list (list type result1 result2)))))
+  (check-disjointness type 'complex t))
 
-(deftest subtypep-complex.3
-  (mapcan #'check-not-complex-type
+(5am:test subtypep-complex.3
+  (mapc #'check-not-complex-type
           '(bit unsigned-byte integer rational ratio real float short-float
-                single-float double-float long-float fixnum bignum))
-  nil)
+                single-float double-float long-float fixnum bignum)))
 
-(deftest subtypep-complex.4
+(5am:test subtypep-complex.4
   (loop for i from 1 to 100
-        nconc (check-not-complex-type `(unsigned-byte ,i)))
-  nil)
+        do (check-not-complex-type `(unsigned-byte ,i))))
 
-(deftest subtypep-complex.5
+(5am:test subtypep-complex.5
   (loop for i from 1 to 100
-        nconc (check-not-complex-type `(signed-byte ,i)))
-  nil)
+        do (check-not-complex-type `(signed-byte ,i))))
 
-(deftest subtypep-complex.7
+(5am:test subtypep-complex.7
   (let ((types '(complex (complex) (complex *))))
     (loop for tp1 in types
-          nconc (loop for tp2 in types
-                      for result = (multiple-value-list (subtypep* tp1 tp2))
-                      unless (equal result '(t t))
-                      collect (list tp1 tp2 result))))
-  nil)
+          do (loop for tp2 in types
+                   do (is-subtypep tp1 tp2 t t)))))
 
 (defun check-complex-upgrading (t1 t2)
   (let* ((ucpt1 (upgraded-complex-part-type t1))

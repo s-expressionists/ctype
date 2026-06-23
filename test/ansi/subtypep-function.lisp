@@ -8,18 +8,14 @@
 (5am:def-suite subtypep.function :in subtypep)
 (5am:in-suite subtypep.function)
 
-(deftest subtypep-function.1
-  (check-all-not-subtypep t '(function (t) t))
-  nil)
+(5am:test subtypep-function.1
+  (check-all-not-subtypep t '(function (t) t)))
 
-(deftest subtypep-function.2
-  (check-all-subtypep nil '(function (t) t))
-  nil)
+(5am:test subtypep-function.2
+  (check-all-subtypep nil '(function (t) t)))
 
-(deftest subtypep-function.3
-  (check-all-subtypep '(function (t) t) 'function)
-  nil)
+(5am:test subtypep-function.3
+  (check-all-subtypep '(function (t) t) 'function))
 
-(deftest subtypep-function.4
-  (check-all-subtypep '(function (t) integer) '(function (t) real))
-  nil)
+(5am:test subtypep-function.4
+  (check-all-subtypep '(function (t) integer) '(function (t) real)))

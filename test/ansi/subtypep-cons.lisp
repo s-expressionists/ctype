@@ -14,59 +14,47 @@
   '(cons (cons) (cons *) (cons * *) (cons t) (cons t t)
          (cons t *) (cons * t)))
 
-(deftest subtypep.cons.1
+(5am:test subtypep.cons.1
   (loop for t1 in *cons-types*
         append (loop for t2 in *cons-types*
-                     unless (equal (mapcar #'notnot
-                                           (multiple-value-list
-                                            (subtypep t1 t2)))
-                                   '(t t))
-                     collect (list t1 t2)))
-  nil)
+                     do (is-subtypep t1 t2 t t))))
 
-(deftest subtypep.cons.2
+(5am:test subtypep.cons.2
   (loop for t1 in '((cons nil) (cons nil *) (cons nil t)
                     (cons * nil) (cons t nil) (cons nil nil))
-        unless (subtypep t1 nil)
-        collect t1)
-  nil)
+        do (is-subtypep t1 nil t t)))
 
-(deftest subtypep.cons.3
+(5am:test subtypep.cons.3
   (check-equivalence '(and (cons symbol *) (cons * symbol))
-                     '(cons symbol symbol))
-  nil)
+                     '(cons symbol symbol)))
 
-(deftest subtypep.cons.4
+(5am:test subtypep.cons.4
   (check-equivalence '(and (cons (integer 0 10) *)
                            (cons (integer 5 15) (integer 10 20))
                            (cons * (integer 15 25)))
-                     '(cons (integer 5 10) (integer 15 20)))
-  nil)
+                     '(cons (integer 5 10) (integer 15 20))))
 
-(deftest subtypep.cons.5
+(5am:test subtypep.cons.5
   (check-equivalence
    '(and cons (not (cons symbol symbol)))
    '(or (cons (not symbol) *)
-        (cons * (not symbol))))
-  nil)
+        (cons * (not symbol)))))
 
-(deftest subtypep.cons.6
+(5am:test subtypep.cons.6
   (check-equivalence
    '(or (cons integer symbol) (cons integer integer)
         (cons symbol integer) (cons symbol symbol))
-   '(cons (or integer symbol) (or integer symbol)))
-  nil)
+   '(cons (or integer symbol) (or integer symbol))))
 
-(deftest subtypep.cons.7
+(5am:test subtypep.cons.7
   (check-equivalence
    '(or (cons (integer 0 8) (integer 5 15))
         (cons (integer 0 7) (integer 0 6))
         (cons (integer 6 15) (integer 0 9))
         (cons (integer 3 15) (integer 4 15)))
-   '(cons (integer 0 15) (integer 0 15)))
-  nil)
+   '(cons (integer 0 15) (integer 0 15))))
 
-(deftest subtypep.cons.8
+(5am:test subtypep.cons.8
   (check-equivalence
    '(or
      (cons integer (cons symbol integer))
@@ -78,10 +66,9 @@
      (cons integer (cons integer integer))
      (cons integer (cons symbol symbol)))
    '(cons (or symbol integer)
-          (cons (or symbol integer) (or symbol integer))))
-  nil)
+          (cons (or symbol integer) (or symbol integer)))))
 
-(deftest subtypep.cons.9
+(5am:test subtypep.cons.9
   (check-equivalence
    '(or
      (cons (integer 0 (3)) (integer 0 (6)))
@@ -89,10 +76,9 @@
      (cons (integer 0 (6)) (integer 6 (9)))
      (cons (integer 6 (9)) (integer 3 (9)))
      (cons (integer 3 (6)) (integer 3 (6))))
-   '(cons (integer 0 (9)) (integer 0 (9))))
-  nil)
+   '(cons (integer 0 (9)) (integer 0 (9)))))
 
-(deftest subtypep.cons.10
+(5am:test subtypep.cons.10
   (check-equivalence
    '(or
      (cons (rational 0 (3)) (rational 0 (6)))
@@ -100,10 +86,9 @@
      (cons (rational 0 (6)) (rational 6 (9)))
      (cons (rational 6 (9)) (rational 3 (9)))
      (cons (rational 3 (6)) (rational 3 (6))))
-   '(cons (rational 0 (9)) (rational 0 (9))))
-  nil)
+   '(cons (rational 0 (9)) (rational 0 (9)))))
 
-(deftest subtypep.cons.11
+(5am:test subtypep.cons.11
   (check-equivalence
    '(or
      (cons (real 0 (3)) (real 0 (6)))
@@ -111,51 +96,48 @@
      (cons (real 0 (6)) (real 6 (9)))
      (cons (real 6 (9)) (real 3 (9)))
      (cons (real 3 (6)) (real 3 (6))))
-   '(cons (real 0 (9)) (real 0 (9))))
-  nil)
+   '(cons (real 0 (9)) (real 0 (9)))))
 
 ;;; Test suggested by C.R.
-(deftest subtypep.cons.12
+(5am:test subtypep.cons.12
   (check-all-not-subtypep
    '(cons (or integer symbol)
           (or integer symbol))
    '(or (cons integer symbol)
-        (cons symbol integer)))
-  nil)
+     (cons symbol integer))
+   nil))
 
-(deftest subtypep.cons.13
-  (check-all-not-subtypep '(not list) 'cons)
-  nil)
+(5am:test subtypep.cons.13
+  (check-all-not-subtypep '(not list) 'cons))
 
 
 ;;; a -> b, a ==> b
-(deftest subtypep.cons.14
+(5am:test subtypep.cons.14
   (check-all-subtypep
    '(and (or (cons (not symbol)) (cons * integer))
          (cons symbol))
-   '(cons * integer))
-  nil)
+   '(cons * integer)
+   nil))
 
 ;;; a -> b, not b ==> not a
-(deftest subtypep.cons.15
+(5am:test subtypep.cons.15
   (check-all-subtypep
    '(and (or (cons (not symbol)) (cons * integer))
          (cons * (not integer)))
-   '(cons (not symbol)))
-  nil)
+   '(cons (not symbol))))
 
 ;;; (and (or a b) (or (not b) c)) ==> (or a c)
-(deftest subtypep.cons.16
+(5am:test subtypep.cons.16
   (check-all-subtypep
    '(and (or (cons symbol (cons * *))
-             (cons * (cons integer *)))
-         (or (cons * (cons (not integer) *))
-             (cons * (cons * float))))
+          (cons * (cons integer *)))
+     (or (cons * (cons (not integer) *))
+      (cons * (cons * float))))
    '(or (cons symbol (cons * *))
-        (cons * (cons * float))))
-  nil)
+     (cons * (cons * float)))
+   nil))
 
-(deftest subtypep.cons.17
+(5am:test subtypep.cons.17
   (check-all-subtypep
    '(and (or (cons symbol (cons * *))
              (cons * (cons integer *)))
@@ -163,17 +145,15 @@
              (cons * (cons * float)))
          (or (cons * (cons * (not float)))
              (cons symbol (cons * *))))
-   '(cons symbol))
-  nil)
+   '(cons symbol)))
 
-(deftest subtypep.cons.18
+(5am:test subtypep.cons.18
   (check-all-subtypep
    '(cons symbol)
    '(or (cons symbol (not integer))
-        (cons * integer)))
-  nil)
+        (cons * integer))))
 
-(deftest subtypep.cons.19
+(5am:test subtypep.cons.19
   (check-equivalence
    '(or
      (cons (eql a) (eql x))
@@ -185,10 +165,9 @@
      (cons (eql a) (eql z))
      (cons (eql b) (eql x))
      (cons (eql c) (eql y)))
-   '(cons (member a b c) (member x y z)))
-  nil)
+   '(cons (member a b c) (member x y z))))
 
-(deftest subtypep.cons.20
+(5am:test subtypep.cons.20
   (check-equivalence
    '(or
      (cons (eql a) (eql x))
@@ -200,21 +179,18 @@
      (cons (eql b) (eql x))
      (cons (eql c) (eql y)))
    '(and (cons (member a b c) (member x y z))
-         (not (cons (eql c) (eql z)))))
-  nil)
+         (not (cons (eql c) (eql z))))))
 
 ;;; Test case that came up in SBCL
-(deftest subtypep.cons.21
+(5am:test subtypep.cons.21
   (check-all-subtypep
    '(cons integer single-float)
-   '(or (cons fixnum single-float) (cons bignum single-float)))
-  nil)
+   '(or (cons fixnum single-float) (cons bignum single-float))))
 
-(deftest subtypep.cons.22
+(5am:test subtypep.cons.22
   (check-all-subtypep
    '(cons single-float integer)
-   '(or (cons single-float fixnum) (cons single-float bignum)))
-  nil)
+   '(or (cons single-float fixnum) (cons single-float bignum))))
 
 ;;; More test cases from SBCL, CMUCL, culled from random test failures
 
