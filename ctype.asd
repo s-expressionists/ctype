@@ -118,7 +118,8 @@
                                 :depends-on ("aux"))
                                (:file "subtypep-real"
                                 :depends-on ("aux"))
-                               (:file "subtypep" :depends-on ("aux"))))
+                               (:file "subtypep" :depends-on ("aux"))
+                               (:file "typep" :depends-on ("aux"))))
                  (:module "ext"
                   :depends-on ("suites" "rt" "packages")
                   :components ((:file "data-structures")))))))

@@ -4,5 +4,6 @@
 
 (5am:def-suite ansi :in ctype)
 (5am:def-suite subtypep :in ansi)
+(5am:def-suite typep :in ansi)
 
 (5am:def-suite ext :in ctype)

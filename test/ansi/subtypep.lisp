@@ -67,15 +67,15 @@
             (%foo)))
   t)
 
-(deftest subtypep.error.1
+(5am:test subtypep.error.1
   (signals-error (subtypep) program-error)
   t)
 
-(deftest subtypep.error.2
+(5am:test subtypep.error.2
   (signals-error (subtypep t) program-error)
   t)
 
-(deftest subtypep.error.3
+(5am:test subtypep.error.3
   (signals-error (subtypep t t nil nil) program-error)
   t)
 

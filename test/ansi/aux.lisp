@@ -3,6 +3,13 @@
 ;;; Various helpers from ANSI tests' ansi-aux.lsp, universe.lsp, etc.
 
 (defun notnot (x) (not (not x)))
+(defmacro notnot-mv (form)
+  `(multiple-value-call
+       (lambda (&optional first &rest results)
+         (if first
+             (apply #'values (not (not first)) results)
+             (values)))
+     ,form))
 
 ;;; The function SUBTYPEP should return two generalized booleans.
 ;;; This auxiliary function returns booleans instead
