@@ -106,10 +106,10 @@
                   ;; (< (cdr pair2) pair1-high)
                   ;; so pair2 is a strict subrange of pair1 - advance 2 only,
                   ;; and "modify" pair1 accordingly
+                  (setf pair1 (cons (1+ (cdr pair2)) pair1-high))
                   (if (null pairs2)
                       (return)
-                      (setf pair2 (pop pairs2)))
-                  (setf pair1 (cons (1+ (cdr pair2)) pair1-high)))))
+                      (setf pair2 (pop pairs2))))))
               (t
                ;; (> (cdr pair2) (cdr pair1))
                ;; so the ranges overlap, but only partially.
